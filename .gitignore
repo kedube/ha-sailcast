@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+
+# The built panel. CI builds it into each release's zip.
+custom_components/sailcast/frontend/
+
+# Home Assistant started by scripts/develop
+config/*
+!config/configuration.yaml
+
+# macOS
+.DS_Store
