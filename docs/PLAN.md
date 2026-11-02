@@ -714,7 +714,7 @@ Each milestone ends with something you can install and try.
 
 ## 17. Review history
 
-On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme.
+On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme, and had the icon and logo redrawn in its blues.
 
 ## 18. Sources
 
@@ -779,7 +779,7 @@ Checked November 1, 2026. Home Assistant details were checked against the 2026.1
 
 **Design**
 
-- "Under the Wave" palette (Paper Heart Design), used for the icon and logo: <https://paperheartdesign.com/blog/color-palette-peaceful-palettes>
+- "Under the Wave" palette (Paper Heart Design), tried on November 2 and not kept: <https://paperheartdesign.com/blog/color-palette-peaceful-palettes>
 
 **Safety limits**
 
