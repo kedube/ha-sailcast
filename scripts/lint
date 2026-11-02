@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Format and lint everything, fixing what can be fixed.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+.venv/bin/ruff format .
+.venv/bin/ruff check . --fix
+.venv/bin/mypy
+.venv/bin/python scripts/check_translations.py
+npm run --prefix frontend format
+npm run --prefix frontend lint
