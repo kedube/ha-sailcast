@@ -42,9 +42,12 @@ export const brandIcon = html`<svg viewBox="0 0 512 512" role="img" aria-label="
   </g>
 </svg>`;
 
-/** Two waves for the bottom of the welcome banner, as in the icon. */
+/**
+ * Two waves for the bottom of the welcome banner, shaped like the icon's. The
+ * panel colors them through the `back`, `front` and `crest` classes.
+ */
 export const bannerWaves = svg`
-  <path d="M0 50 C150 20 300 24 450 50 C600 76 750 80 900 54 C1000 37 1100 32 1200 36 L1200 120 L0 120 Z" fill="#0855b1" opacity=".7" />
-  <path d="M0 84 C160 58 310 60 460 84 C610 108 770 110 920 86 C1030 70 1120 64 1200 66 L1200 120 L0 120 Z" fill="#4fa5d8" opacity=".55" />
-  <path d="M0 84 C160 58 310 60 460 84 C610 108 770 110 920 86 C1030 70 1120 64 1200 66" fill="none" stroke="#daeaf7" stroke-width="2" opacity=".6" />
+  <path class="back" d="M0 50 C150 20 300 24 450 50 C600 76 750 80 900 54 C1000 37 1100 32 1200 36 L1200 120 L0 120 Z" />
+  <path class="front" d="M0 84 C160 58 310 60 460 84 C610 108 770 110 920 86 C1030 70 1120 64 1200 66 L1200 120 L0 120 Z" />
+  <path class="crest" d="M0 84 C160 58 310 60 460 84 C610 108 770 110 920 86 C1030 70 1120 64 1200 66" />
 `;

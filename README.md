@@ -58,7 +58,7 @@ The repository holds no personal data. Test data uses neutral names and shifted 
 
 ## Credits
 
-- Colors: the "Under the Wave" palette by [Paper Heart Design](https://paperheartdesign.com/blog/color-palette-peaceful-palettes).
+- Icon and logo colors: the "Under the Wave" palette by [Paper Heart Design](https://paperheartdesign.com/blog/color-palette-peaceful-palettes).
 - Wordmark: [Outfit](https://github.com/Outfitio/Outfit-Fonts), under the SIL Open Font License 1.1. More in [docs/brand](docs/brand/README.md).
 
 ## License

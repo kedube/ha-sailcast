@@ -1,57 +1,82 @@
 /**
- * SailCast's own look: Paper Heart Design's "Under the Wave" palette, in a day
- * and a night version. The panel doesn't take colors from the Home Assistant
- * theme. Green, amber, orange and red are kept for safety ratings.
+ * SailCast follows the Home Assistant theme: its page, toolbar, cards and text
+ * take the theme's colors, in light and dark mode. SailCast's own day and
+ * night palettes fill in anything a theme doesn't set, and supply the deep sea
+ * blue that marks SailCast's own parts. Green, amber, orange and red are kept
+ * for safety ratings.
  */
-export const WAVE = {
-  abyss: "#00022b",
-  deep: "#010e54",
-  ocean: "#0855b1",
-  sky: "#4fa5d8",
-  foam: "#daeaf7",
-} as const;
-
 export type Mode = "day" | "night";
+
+/** The Home Assistant theme variable each SailCast color follows. */
+export const THEME_VARIABLES: Record<string, string> = {
+  page: "primary-background-color",
+  toolbar: "app-header-background-color",
+  "toolbar-ink": "app-header-text-color",
+  card: "card-background-color",
+  fg: "primary-text-color",
+  fg2: "secondary-text-color",
+  line: "divider-color",
+};
 
 export const PALETTES: Record<Mode, Record<string, string>> = {
   day: {
-    page: "#dce9f6",
-    toolbar: "#f0f6fc",
+    page: "#f4f6f8",
+    toolbar: "#ffffff",
+    "toolbar-ink": "#15222c",
     card: "#ffffff",
-    fg: WAVE.abyss,
-    fg2: "#3a4872",
-    line: "#cadbee",
-    line2: "#e2ecf6",
-    "primary-ink": WAVE.ocean,
-    "primary-tint": "rgba(8, 85, 177, 0.1)",
-    btn: WAVE.ocean,
+    fg: "#15222c",
+    fg2: "#52616d",
+    line: "#d9e1e7",
+    line2: "#ebf0f3",
+    "primary-ink": "#0a6a9c",
+    "primary-tint": "rgba(3, 169, 244, 0.11)",
+    btn: "#0a6a9c",
     "btn-ink": "#ffffff",
-    focus: WAVE.ocean,
+    focus: "#0a6a9c",
+    sea: "#0b4466",
+    "sea-ink": "#ffffff",
+    "sea-ink2": "rgba(255, 255, 255, 0.76)",
+    "sea-wave": "rgba(255, 255, 255, 0.08)",
+    "sea-wave2": "rgba(255, 255, 255, 0.18)",
+    "sea-wave3": "rgba(255, 255, 255, 0.05)",
     danger: "#b32222",
     "danger-bg": "#f8d6d6",
   },
   night: {
-    page: WAVE.abyss,
-    toolbar: "#020837",
-    card: "#0a1755",
-    fg: WAVE.foam,
-    fg2: "#9db7d8",
-    line: "#1e2f78",
-    line2: "#142264",
-    "primary-ink": "#7cc0e8",
-    "primary-tint": "rgba(79, 165, 216, 0.17)",
-    btn: WAVE.sky,
-    "btn-ink": WAVE.abyss,
-    focus: "#7cc0e8",
+    page: "#101315",
+    toolbar: "#1a1e21",
+    "toolbar-ink": "#e3e8ec",
+    card: "#1a1e21",
+    fg: "#e3e8ec",
+    fg2: "#a1adb7",
+    line: "#2b3237",
+    line2: "#22282c",
+    "primary-ink": "#63c7f6",
+    "primary-tint": "rgba(3, 169, 244, 0.17)",
+    btn: "#4fbdf2",
+    "btn-ink": "#05202f",
+    focus: "#63c7f6",
+    sea: "#0a344f",
+    "sea-ink": "#ffffff",
+    "sea-ink2": "rgba(255, 255, 255, 0.74)",
+    "sea-wave": "rgba(255, 255, 255, 0.06)",
+    "sea-wave2": "rgba(255, 255, 255, 0.15)",
+    "sea-wave3": "rgba(255, 255, 255, 0.04)",
     danger: "#ff8383",
     "danger-bg": "rgba(211, 47, 47, 0.22)",
   },
 };
 
-/** Return a palette as CSS custom properties, such as `--sc-fg`. */
+/**
+ * Return a palette as CSS custom properties, such as `--sc-fg`. Colors that
+ * follow the Home Assistant theme keep the palette's value as a fallback.
+ */
 export function paletteCss(mode: Mode): string {
   return Object.entries(PALETTES[mode])
-    .map(([name, value]) => `--sc-${name}: ${value};`)
+    .map(([name, value]) => {
+      const variable = THEME_VARIABLES[name];
+      return `--sc-${name}: ${variable ? `var(--${variable}, ${value})` : value};`;
+    })
     .join("\n");
 }
 

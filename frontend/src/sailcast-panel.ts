@@ -10,7 +10,7 @@ import {
 
 import { bannerWaves, brandIcon } from "./brand";
 import { localize } from "./localize";
-import { WAVE, paletteCss } from "./theme";
+import { paletteCss } from "./theme";
 import type { Boat, HomeAssistant, SailCastConfig } from "./types";
 
 const FEET_PER_METER = 3.28084;
@@ -233,10 +233,10 @@ export class SailCastPanel extends LitElement {
         max(12px, var(--sc-inset-left));
       background: var(--sc-toolbar);
       border-bottom: 1px solid var(--sc-line);
-      color: var(--sc-fg);
+      color: var(--sc-toolbar-ink);
     }
     ha-menu-button {
-      color: var(--sc-fg);
+      color: var(--sc-toolbar-ink);
     }
     .logo svg {
       display: block;
@@ -261,8 +261,8 @@ export class SailCastPanel extends LitElement {
       overflow: hidden;
       padding: 28px 28px 76px;
       border-radius: var(--sc-radius);
-      background: linear-gradient(160deg, ${unsafeCSS(WAVE.ocean)}, ${unsafeCSS(WAVE.deep)} 70%);
-      color: #ffffff;
+      background: var(--sc-sea);
+      color: var(--sc-sea-ink);
     }
     .banner h2 {
       margin: 0 0 8px;
@@ -274,7 +274,7 @@ export class SailCastPanel extends LitElement {
       position: relative;
       max-width: 60ch;
       margin: 0;
-      color: ${unsafeCSS(WAVE.foam)};
+      color: var(--sc-sea-ink2);
       font-size: 15px;
       line-height: 1.5;
     }
@@ -283,6 +283,18 @@ export class SailCastPanel extends LitElement {
       inset: auto 0 0;
       width: 100%;
       height: 64px;
+    }
+    .waves .back {
+      fill: var(--sc-sea-wave3);
+    }
+    .waves .front {
+      fill: var(--sc-sea-wave);
+    }
+    .waves .crest {
+      fill: none;
+      stroke: var(--sc-sea-wave2);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
     }
     .profiles {
       display: grid;

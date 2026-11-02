@@ -1,20 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import { PALETTES, WAVE, contrast, type Mode } from "./theme";
+import { PALETTES, contrast, paletteCss, type Mode } from "./theme";
 
 // Text and the backgrounds it sits on. Every pair needs WCAG AA contrast
 // (4.5:1) in both the day and the night palette.
 const PAIRS: [text: string, background: string][] = [
   ["fg", "page"],
-  ["fg", "toolbar"],
   ["fg", "card"],
   ["fg2", "page"],
   ["fg2", "card"],
+  ["toolbar-ink", "toolbar"],
   ["primary-ink", "card"],
   ["primary-ink", "primary-tint"],
   ["btn-ink", "btn"],
+  ["sea-ink", "sea"],
+  ["sea-ink2", "sea"],
   ["danger", "danger-bg"],
 ];
+
+// Card colors of Home Assistant's default theme, which replace SailCast's
+// own inside Home Assistant.
+const HA_CARDS: Record<Mode, string> = { day: "#ffffff", night: "#1c1c1c" };
 
 describe.each(["day", "night"] as Mode[])("the %s palette", (mode) => {
   const palette = PALETTES[mode];
@@ -23,12 +29,22 @@ describe.each(["day", "night"] as Mode[])("the %s palette", (mode) => {
     // See-through backgrounds sit on a card.
     expect(contrast(palette[text], palette[background], palette.card)).toBeGreaterThanOrEqual(4.5);
   });
+
+  it("keeps its own blues readable on Home Assistant's cards", () => {
+    const card = HA_CARDS[mode];
+    expect(contrast(palette["primary-ink"], card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(palette["primary-ink"], palette["primary-tint"], card)).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  });
 });
 
-describe("the welcome banner", () => {
-  it("has readable text on its lightest blue", () => {
-    expect(contrast(WAVE.foam, WAVE.ocean)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast("#ffffff", WAVE.ocean)).toBeGreaterThanOrEqual(4.5);
+describe("paletteCss", () => {
+  it("follows the Home Assistant theme, with SailCast's colors as fallbacks", () => {
+    const css = paletteCss("day");
+    expect(css).toContain("--sc-card: var(--card-background-color, #ffffff);");
+    expect(css).toContain("--sc-toolbar-ink: var(--app-header-text-color, #15222c);");
+    expect(css).toContain("--sc-sea: #0b4466;");
   });
 });
 
