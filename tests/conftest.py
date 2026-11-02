@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+import json
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import (
     DOMAIN,
@@ -16,22 +21,76 @@ from custom_components.sailcast.const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
+from custom_components.sailcast.providers import noaa_coops, nws, open_meteo
 
-# Made-up profiles. The spot is in San Diego Bay, near the test instance's
-# home, and far from any spot the maintainer sails.
-SPOT = ConfigSubentryData(
-    data={
-        "latitude": 32.7,
-        "longitude": -117.2,
-        "radius": 10_000.0,
-        "water_type": "bay",
-        "offshore": ["e"],
-        "exposed": ["sw", "w"],
-    },
-    subentry_id="spot_harbor",
-    subentry_type=SUBENTRY_SPOT,
-    title="Harbor",
-    unique_id=None,
+FIXTURES = Path(__file__).parent / "fixtures"
+# When the fixtures were recorded: 2:36 PM in San Diego.
+RECORDED = datetime(2026, 11, 2, 22, 36, tzinfo=UTC)
+
+# Made-up spots in San Diego, near the test instance's home and far from
+# anywhere the maintainer sails. The fixtures were recorded for them.
+HARBOR_POINT = (32.75, -117.27)
+BAY_POINT = (32.68, -117.17)
+RIVER_POINT = (32.76, -117.24)
+
+
+def fixture(name: str) -> Any:
+    """Return a recorded response."""
+    return json.loads((FIXTURES / f"{name}.json").read_text())
+
+
+def _spot(
+    key: str,
+    point: tuple[float, float],
+    water_type: str,
+    **data: Any,
+) -> ConfigSubentryData:
+    return ConfigSubentryData(
+        data={
+            "latitude": point[0],
+            "longitude": point[1],
+            "radius": 10_000.0,
+            "water_type": water_type,
+            "offshore": [],
+            "exposed": [],
+            "tide_station": None,
+            "current_station": None,
+            "marine_zone": None,
+            **data,
+        },
+        subentry_id=f"spot_{key}",
+        subentry_type=SUBENTRY_SPOT,
+        title=key.title(),
+        unique_id=None,
+    )
+
+
+SPOT = HARBOR = _spot(
+    "harbor",
+    HARBOR_POINT,
+    "open_coast",
+    offshore=["ne", "e", "se"],
+    exposed=["sw", "w", "nw"],
+    tide_station="9410170",
+    marine_zone="PZZ740",
+)
+BAY = _spot(
+    "bay",
+    BAY_POINT,
+    "bay",
+    offshore=["ne", "e"],
+    exposed=["s", "sw"],
+    tide_station="9410166",
+    current_station="PCT0056_1",
+    marine_zone="PZZ740",
+)
+RIVER = _spot(
+    "river",
+    RIVER_POINT,
+    "river",
+    exposed=["w"],
+    tide_station="9410196",
+    marine_zone="PZZ740",
 )
 KEELBOAT = ConfigSubentryData(
     data={"size_class": "small_keelboat", "length": 6.096},
@@ -58,6 +117,19 @@ SAILOR = ConfigSubentryData(
     subentry_id="sailor_alex",
     subentry_type=SUBENTRY_SAILOR,
     title="Alex",
+    unique_id=None,
+)
+BEGINNER = ConfigSubentryData(
+    data={
+        "skill": "beginner",
+        "boats": ["boat_keelboat"],
+        "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+        "start": None,
+        "end": None,
+    },
+    subentry_id="sailor_sam",
+    subentry_type=SUBENTRY_SAILOR,
+    title="Sam",
     unique_id=None,
 )
 
@@ -99,3 +171,42 @@ def full_entry(hass: HomeAssistant) -> MockConfigEntry:
     )
     entry.add_to_hass(hass)
     return entry
+
+
+@pytest.fixture
+def sailcast_entry(hass: HomeAssistant) -> MockConfigEntry:
+    """Return an entry with the three test spots, both boats and two sailors."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=NAME,
+        data={},
+        subentries_data=[HARBOR, BAY, RIVER, KEELBOAT, CRUISER, SAILOR, BEGINNER],
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+def mock_sources(aioclient_mock: AiohttpClientMocker) -> None:
+    """Answer every provider request with the recorded responses."""
+    aioclient_mock.get(open_meteo.FORECAST_URL, json=fixture("open_meteo_forecast"))
+    aioclient_mock.get(open_meteo.MARINE_URL, json=fixture("open_meteo_marine"))
+    for station in ("9410166", "9410170", "9410196"):
+        for interval in ("hilo", "h"):
+            aioclient_mock.get(
+                noaa_coops.DATA_URL,
+                params={"station": station, "interval": interval},
+                json=fixture(f"noaa_tides_{station}_{interval}"),
+            )
+    aioclient_mock.get(
+        noaa_coops.DATA_URL,
+        params={"station": "PCT0056", "product": "currents_predictions"},
+        json=fixture("noaa_currents_PCT0056_1"),
+    )
+    aioclient_mock.get(f"{nws.API}/alerts/active", json=fixture("nws_alerts"))
+
+
+@pytest.fixture
+def sources(aioclient_mock: AiohttpClientMocker) -> AiohttpClientMocker:
+    """Answer every provider request with the recorded responses."""
+    mock_sources(aioclient_mock)
+    return aioclient_mock

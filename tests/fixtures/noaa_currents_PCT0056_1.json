@@ -1,0 +1,700 @@
+{
+ "current_predictions": {
+  "units": "feet, knots",
+  "cp": [
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 02:19",
+    "Depth": "14",
+    "Velocity_Major": -0.66
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 05:59",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 08:53",
+    "Depth": "14",
+    "Velocity_Major": 0.65
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 12:18",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 15:37",
+    "Depth": "14",
+    "Velocity_Major": -0.28
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 18:11",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 20:40",
+    "Depth": "14",
+    "Velocity_Major": 0.37
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-02 23:03",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 03:36",
+    "Depth": "14",
+    "Velocity_Major": -0.68
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 06:56",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 09:45",
+    "Depth": "14",
+    "Velocity_Major": 0.76
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 12:59",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 16:37",
+    "Depth": "14",
+    "Velocity_Major": -0.45
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 19:26",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-03 21:50",
+    "Depth": "14",
+    "Velocity_Major": 0.52
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 00:22",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 04:37",
+    "Depth": "14",
+    "Velocity_Major": -0.7
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 07:42",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 10:27",
+    "Depth": "14",
+    "Velocity_Major": 0.85
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 13:33",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 17:23",
+    "Depth": "14",
+    "Velocity_Major": -0.62
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 20:20",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-04 22:44",
+    "Depth": "14",
+    "Velocity_Major": 0.66
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 01:26",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 05:27",
+    "Depth": "14",
+    "Velocity_Major": -0.7
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 08:19",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 11:04",
+    "Depth": "14",
+    "Velocity_Major": 0.9
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 14:04",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 18:02",
+    "Depth": "14",
+    "Velocity_Major": -0.76
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 21:05",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-05 23:31",
+    "Depth": "14",
+    "Velocity_Major": 0.76
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 02:20",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 06:09",
+    "Depth": "14",
+    "Velocity_Major": -0.67
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 08:52",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 11:36",
+    "Depth": "14",
+    "Velocity_Major": 0.91
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 14:33",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 18:38",
+    "Depth": "14",
+    "Velocity_Major": -0.87
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-06 21:46",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 00:13",
+    "Depth": "14",
+    "Velocity_Major": 0.81
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 03:08",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 06:46",
+    "Depth": "14",
+    "Velocity_Major": -0.61
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 09:20",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 12:05",
+    "Depth": "14",
+    "Velocity_Major": 0.88
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 15:01",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 19:11",
+    "Depth": "14",
+    "Velocity_Major": -0.93
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-07 22:24",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 00:52",
+    "Depth": "14",
+    "Velocity_Major": 0.81
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 03:52",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 07:21",
+    "Depth": "14",
+    "Velocity_Major": -0.54
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 09:44",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 12:31",
+    "Depth": "14",
+    "Velocity_Major": 0.83
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 15:27",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 19:43",
+    "Depth": "14",
+    "Velocity_Major": -0.95
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-08 23:00",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 01:28",
+    "Depth": "14",
+    "Velocity_Major": 0.77
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 04:33",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 07:54",
+    "Depth": "14",
+    "Velocity_Major": -0.46
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 10:07",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 12:55",
+    "Depth": "14",
+    "Velocity_Major": 0.77
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 15:53",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 20:14",
+    "Depth": "14",
+    "Velocity_Major": -0.93
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-09 23:35",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 02:03",
+    "Depth": "14",
+    "Velocity_Major": 0.69
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 05:12",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 08:25",
+    "Depth": "14",
+    "Velocity_Major": -0.38
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 10:28",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 13:17",
+    "Depth": "14",
+    "Velocity_Major": 0.69
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 16:18",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-10 20:46",
+    "Depth": "14",
+    "Velocity_Major": -0.89
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 00:11",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 02:37",
+    "Depth": "14",
+    "Velocity_Major": 0.61
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 05:52",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 08:58",
+    "Depth": "14",
+    "Velocity_Major": -0.3
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 10:51",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "flood",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 13:38",
+    "Depth": "14",
+    "Velocity_Major": 0.61
+   },
+   {
+    "Type": "slack",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 16:44",
+    "Depth": "14",
+    "Velocity_Major": 0
+   },
+   {
+    "Type": "ebb",
+    "meanFloodDir": 62,
+    "Bin": "1",
+    "meanEbbDir": 245,
+    "Time": "2026-11-11 21:20",
+    "Depth": "14",
+    "Velocity_Major": -0.82
+   }
+  ]
+ }
+}

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from types import MappingProxyType
+
+from homeassistant.config_entries import ConfigSubentry
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.sailcast import profiles
@@ -14,8 +17,14 @@ def test_profiles_from_entry(full_entry: MockConfigEntry) -> None:
 
     spot = read.spots["spot_harbor"]
     assert spot.name == "Harbor"
-    assert spot.water_type is WaterType.BAY
-    assert spot.exposed == ("sw", "w")
+    assert spot.water_type is WaterType.OPEN_COAST
+    assert spot.open_water
+    assert spot.exposed == ("sw", "w", "nw")
+    assert (spot.tide_station, spot.current_station, spot.marine_zone) == (
+        "9410170",
+        None,
+        "PZZ740",
+    )
     assert read.boats["boat_cruiser"].size_class is SizeClass.CRUISER
 
     alex = read.sailors["sailor_alex"]
@@ -74,3 +83,29 @@ def test_check_sailor() -> None:
         "end": "end_before_start"
     }
     assert profiles.check_sailor(good | {"start": None}, {"a"}) == {}
+
+
+def test_spots_from_before_sources(entry: MockConfigEntry) -> None:
+    """Spots saved before data sources existed still load, without sources."""
+    subentry = ConfigSubentry(
+        data=MappingProxyType(
+            {
+                "latitude": 32.7,
+                "longitude": -117.2,
+                "radius": 10_000.0,
+                "water_type": "lake",
+                "offshore": [],
+                "exposed": [],
+            }
+        ),
+        subentry_type="spot",
+        title="Lake",
+        unique_id=None,
+    )
+    spot = profiles.Spot.from_subentry(subentry)
+    assert (spot.tide_station, spot.current_station, spot.marine_zone) == (
+        None,
+        None,
+        None,
+    )
+    assert not spot.open_water

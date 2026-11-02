@@ -69,3 +69,8 @@ warn_unreachable = true
 [[tool.mypy.overrides]]
 module = ["homeassistant.*"]
 implicit_reexport = true
+
+# Astral, which Home Assistant uses for sunrise and sunset, has no type hints.
+[[tool.mypy.overrides]]
+module = ["astral", "astral.*"]
+ignore_missing_imports = true

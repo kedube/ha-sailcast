@@ -1,0 +1,91 @@
+{
+ "@context": [
+  "https://geojson.org/geojson-ld/geojson-context.jsonld",
+  {
+   "@version": "1.1",
+   "wx": "https://api.weather.gov/ontology#",
+   "@vocab": "https://api.weather.gov/ontology#"
+  }
+ ],
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5152bb6d81346fbea8be430d8d6877cbf27c5d6c.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5152bb6d81346fbea8be430d8d6877cbf27c5d6c.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.5152bb6d81346fbea8be430d8d6877cbf27c5d6c.001.1",
+    "areaDesc": "Waters from San Mateo point to the Mexican Border Extending 10 to 60 nm out including San Clemente Island",
+    "geocode": {
+     "SAME": [
+      "057745"
+     ],
+     "UGC": [
+      "PZZ745"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/PZZ745"
+    ],
+    "references": [],
+    "sent": "2026-11-02T12:10:00-08:00",
+    "effective": "2026-11-02T12:10:00-08:00",
+    "onset": "2026-11-03T13:00:00-08:00",
+    "expires": "2026-11-03T04:00:00-08:00",
+    "ends": "2026-11-04T04:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Minor",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Small Craft Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS San Diego CA",
+    "headline": "Small Craft Advisory issued November 2 at 12:10PM PST until November 4 at 4:00AM PST by NWS San Diego CA",
+    "description": "* WHAT...Northwest winds 12 to 18 kt with gusts 20 to 25 kt and\nchoppy seas.\n\n* WHERE...Waters from San Mateo Point to the Mexican Border\nExtending 10 to 60 nm out including San Clemente Island.\n\n* WHEN...From 1 PM Tuesday to 4 AM PST Wednesday.\n\n* IMPACTS...Conditions will be hazardous to small craft.\n\n* ADDITIONAL DETAILS...Strongest winds will be near San Clemente\nIsland.",
+    "instruction": "Inexperienced mariners, especially those operating smaller\nvessels, should avoid navigating in hazardous conditions.",
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "MWWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS76 KSGX 022010"
+     ],
+     "NWSheadline": [
+      "SMALL CRAFT ADVISORY IN EFFECT FROM 1 PM TUESDAY TO 4 AM PST WEDNESDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.NEW.KSGX.SC.Y.0015.261103T2100Z-261104T1200Z/"
+     ],
+     "eventEndingTime": [
+      "2026-11-04T04:00:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "SCY"
+     ]
+    }
+   }
+  }
+ ],
+ "title": "Current watches, warnings, and advisories",
+ "updated": "2026-11-02T22:36:01+00:00"
+}

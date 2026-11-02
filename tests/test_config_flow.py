@@ -166,8 +166,8 @@ async def test_edit_spot(hass: HomeAssistant, full_entry: MockConfigEntry) -> No
     result = await _edit(hass, full_entry, "spot_harbor")
     assert _suggested(result, "name") == "Harbor"
     assert _suggested(result, "location") == {
-        "latitude": 32.7,
-        "longitude": -117.2,
+        "latitude": 32.75,
+        "longitude": -117.27,
         "radius": 10_000.0,
     }
 
