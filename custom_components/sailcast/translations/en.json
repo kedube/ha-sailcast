@@ -196,5 +196,95 @@
         "sun": "Sunday"
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot} good to sail"
+      },
+      "marine_warning": {
+        "name": "Marine warning"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "Sailing"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "Next high tide"
+      },
+      "next_low_tide": {
+        "name": "Next low tide"
+      },
+      "next_window": {
+        "name": "Next sailing window"
+      },
+      "rating": {
+        "name": "{spot} rating",
+        "state": {
+          "good": "Good",
+          "caution": "Caution",
+          "not_recommended": "Not recommended",
+          "dangerous": "Dangerous"
+        }
+      },
+      "score": {
+        "name": "{spot} score"
+      },
+      "water_temperature": {
+        "name": "Water temperature"
+      },
+      "wave_height": {
+        "name": "Wave height"
+      },
+      "wind_direction": {
+        "name": "Wind direction"
+      },
+      "wind_gust": {
+        "name": "Gusts"
+      },
+      "wind_speed": {
+        "name": "Wind"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "Get forecast",
+      "description": "Gets a sailor's safety ratings, scores and sailing windows at a spot, for each day and each hour from now.",
+      "fields": {
+        "spot": {
+          "name": "Spot",
+          "description": "The spot's name."
+        },
+        "sailor": {
+          "name": "Sailor",
+          "description": "The sailor's name. Ratings use their skill level."
+        },
+        "boat": {
+          "name": "Boat",
+          "description": "One of the sailor's boats. Leave empty for all of them."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast isn't set up."
+    },
+    "unknown_spot": {
+      "message": "There's no spot named {spot}."
+    },
+    "unknown_sailor": {
+      "message": "There's no sailor named {sailor}."
+    },
+    "unknown_boat": {
+      "message": "{sailor} doesn't sail a boat named {boat}."
+    },
+    "no_forecast": {
+      "message": "There's no forecast for {spot} yet."
+    }
   }
 }

@@ -9,7 +9,7 @@ from __future__ import annotations
 from bisect import bisect_right
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, tzinfo
+from datetime import UTC, date, datetime, time, timedelta, tzinfo
 import math
 import statistics
 from typing import TYPE_CHECKING, Any
@@ -69,7 +69,7 @@ class Hour:
 
 @dataclass(frozen=True, slots=True)
 class Daylight:
-    """Sunrise and sunset on a local date.
+    """Sunrise and sunset on a date in a time zone, in UTC to the minute.
 
     Where the sun doesn't set, they're the day's two midnights; where it
     doesn't rise, they're both noon.
@@ -78,6 +78,7 @@ class Daylight:
     date: date
     sunrise: datetime
     sunset: datetime
+    zone: tzinfo
 
     def covers(self, hour: datetime) -> bool:
         """Return whether most of the hour that begins then is in daylight."""
@@ -93,9 +94,17 @@ def daylight(latitude: float, longitude: float, day: date, zone: tzinfo) -> Dayl
         midnight = datetime.combine(day, time(), zone)
         noon = midnight + timedelta(hours=12)
         if elevation(observer, noon) > 0:
-            return Daylight(day, midnight, midnight + timedelta(days=1))
-        return Daylight(day, noon, noon)
-    return Daylight(day, times["sunrise"], times["sunset"])
+            return Daylight(
+                day, _utc(midnight), _utc(midnight + timedelta(days=1)), zone
+            )
+        return Daylight(day, _utc(noon), _utc(noon), zone)
+    return Daylight(day, _utc(times["sunrise"]), _utc(times["sunset"]), zone)
+
+
+def _utc(when: datetime) -> datetime:
+    """Return a time in UTC, rounded to the minute."""
+    rounded = when + timedelta(seconds=30)
+    return rounded.replace(second=0, microsecond=0).astimezone(UTC)
 
 
 def build(
@@ -113,7 +122,7 @@ def build(
     """
     if not days:
         return []
-    zone = days[0].sunrise.tzinfo
+    zone = days[0].zone
     start = datetime.combine(days[0].date, time(), zone)
     end = datetime.combine(days[-1].date + timedelta(days=1), time(), zone)
     by_date = {day.date: day for day in days}

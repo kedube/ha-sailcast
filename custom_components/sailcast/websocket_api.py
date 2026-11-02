@@ -8,7 +8,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
-from .profiles import SailCastConfigEntry
+from .coordinator import SailCastConfigEntry
 
 
 @callback
@@ -33,4 +33,4 @@ def ws_config(
             msg["id"], websocket_api.ERR_NOT_FOUND, "SailCast isn't set up"
         )
         return
-    connection.send_result(msg["id"], entries[0].runtime_data.as_dict())
+    connection.send_result(msg["id"], entries[0].runtime_data.profiles.as_dict())

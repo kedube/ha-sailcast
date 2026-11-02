@@ -208,9 +208,6 @@ class Profiles:
         }
 
 
-type SailCastConfigEntry = ConfigEntry[Profiles]
-
-
 def _sorted_dicts(profiles: Iterable[Spot | Boat | Sailor]) -> list[dict[str, Any]]:
     return [
         asdict(profile)

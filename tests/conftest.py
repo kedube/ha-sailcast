@@ -8,11 +8,16 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+    AiohttpClientMockResponse,
+)
+from yarl import URL
 
 from custom_components.sailcast.const import (
     DOMAIN,
@@ -32,6 +37,7 @@ RECORDED = datetime(2026, 11, 2, 22, 36, tzinfo=UTC)
 HARBOR_POINT = (32.75, -117.27)
 BAY_POINT = (32.68, -117.17)
 RIVER_POINT = (32.76, -117.24)
+POINTS = (HARBOR_POINT, BAY_POINT, RIVER_POINT)
 
 
 def fixture(name: str) -> Any:
@@ -186,10 +192,43 @@ def sailcast_entry(hass: HomeAssistant) -> MockConfigEntry:
     return entry
 
 
-def mock_sources(aioclient_mock: AiohttpClientMocker) -> None:
-    """Answer every provider request with the recorded responses."""
-    aioclient_mock.get(open_meteo.FORECAST_URL, json=fixture("open_meteo_forecast"))
-    aioclient_mock.get(open_meteo.MARINE_URL, json=fixture("open_meteo_marine"))
+def by_point(name: str, points: tuple[tuple[float, float], ...]) -> Any:
+    """Answer an Open-Meteo request with the recorded place for each point.
+
+    One place comes back on its own, as Open-Meteo sends it.
+    """
+    places = fixture(name)
+
+    async def respond(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
+        lats = [float(value) for value in url.query["latitude"].split(",")]
+        lons = [float(value) for value in url.query["longitude"].split(",")]
+        chosen = [
+            places[points.index((lat, lon))]
+            for lat, lon in zip(lats, lons, strict=True)
+        ]
+        return AiohttpClientMockResponse(
+            method, url, json=chosen if len(chosen) > 1 else chosen[0]
+        )
+
+    return respond
+
+
+def mock_sources(
+    aioclient_mock: AiohttpClientMocker, *, predictions: bool = True
+) -> None:
+    """Answer every provider request with the recorded responses.
+
+    Without predictions, tide and current requests are left unanswered.
+    """
+    aioclient_mock.get(
+        open_meteo.FORECAST_URL, side_effect=by_point("open_meteo_forecast", POINTS)
+    )
+    aioclient_mock.get(
+        open_meteo.MARINE_URL, side_effect=by_point("open_meteo_marine", POINTS[:2])
+    )
+    aioclient_mock.get(f"{nws.API}/alerts/active", json=fixture("nws_alerts"))
+    if not predictions:
+        return
     for station in ("9410166", "9410170", "9410196"):
         for interval in ("hilo", "h"):
             aioclient_mock.get(
@@ -202,7 +241,6 @@ def mock_sources(aioclient_mock: AiohttpClientMocker) -> None:
         params={"station": "PCT0056", "product": "currents_predictions"},
         json=fixture("noaa_currents_PCT0056_1"),
     )
-    aioclient_mock.get(f"{nws.API}/alerts/active", json=fixture("nws_alerts"))
 
 
 @pytest.fixture
@@ -210,3 +248,17 @@ def sources(aioclient_mock: AiohttpClientMocker) -> AiohttpClientMocker:
     """Answer every provider request with the recorded responses."""
     mock_sources(aioclient_mock)
     return aioclient_mock
+
+
+@pytest.fixture
+async def loaded(
+    hass: HomeAssistant,
+    sailcast_entry: MockConfigEntry,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> MockConfigEntry:
+    """Return the test entry, set up at the time the fixtures were recorded."""
+    freezer.move_to(RECORDED)
+    assert await hass.config_entries.async_setup(sailcast_entry.entry_id)
+    await hass.async_block_till_done()
+    return sailcast_entry
