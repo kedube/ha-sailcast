@@ -4,37 +4,37 @@ import { html, svg } from "lit";
 export const brandIcon = html`<svg viewBox="0 0 512 512" role="img" aria-label="SailCast">
   <defs>
     <linearGradient id="sc-bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0855b1" />
-      <stop offset="1" stop-color="#010e54" />
+      <stop offset="0" stop-color="#0a6a9c" />
+      <stop offset="1" stop-color="#0a344f" />
     </linearGradient>
     <radialGradient id="sc-glow" cx=".76" cy=".24" r=".62">
-      <stop offset="0" stop-color="#4fa5d8" stop-opacity=".5" />
-      <stop offset="1" stop-color="#4fa5d8" stop-opacity="0" />
+      <stop offset="0" stop-color="#03a9f4" stop-opacity=".5" />
+      <stop offset="1" stop-color="#03a9f4" stop-opacity="0" />
     </radialGradient>
     <linearGradient id="sc-main" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#ffffff" />
-      <stop offset="1" stop-color="#daeaf7" />
+      <stop offset="1" stop-color="#d8eaf5" />
     </linearGradient>
     <clipPath id="sc-clip"><rect width="512" height="512" rx="116" /></clipPath>
   </defs>
   <g clip-path="url(#sc-clip)">
     <rect width="512" height="512" fill="url(#sc-bg)" />
     <rect width="512" height="512" fill="url(#sc-glow)" />
-    <circle cx="394" cy="132" r="44" fill="#daeaf7" opacity=".95" />
-    <path d="M226 116 L226 400 L106 400 C124 312 166 210 226 116 Z" fill="#4fa5d8" />
+    <circle cx="394" cy="132" r="44" fill="#d8eaf5" opacity=".95" />
+    <path d="M226 116 L226 400 L106 400 C124 312 166 210 226 116 Z" fill="#03a9f4" />
     <path d="M244 56 C320 140 364 252 372 400 L244 400 Z" fill="url(#sc-main)" />
     <path
       d="M0 372 C70 342 150 346 224 372 C298 398 370 402 440 376 C470 365 494 360 512 361 L512 512 L0 512 Z"
-      fill="#0855b1"
+      fill="#0a6a9c"
     />
     <path
       d="M0 428 C76 402 150 404 226 428 C302 452 380 454 456 430 C480 422 498 418 512 417 L512 512 L0 512 Z"
-      fill="#4fa5d8"
+      fill="#03a9f4"
     />
     <path
       d="M0 428 C76 402 150 404 226 428 C302 452 380 454 456 430 C480 422 498 418 512 417"
       fill="none"
-      stroke="#daeaf7"
+      stroke="#d8eaf5"
       stroke-width="8"
       stroke-linecap="round"
       opacity=".75"
