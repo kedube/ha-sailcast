@@ -149,7 +149,10 @@ def _response(
                 "wave_height": height(hour.wave_height),
                 "water_temperature": temperature(hour.water_temperature),
                 "tide_height": height(hour.tide_height),
-                "current": None if hour.current is None else round(hour.current, 2),
+                # Adding 0.0 turns a rounded -0.0 at slack water into 0.0.
+                "current": None
+                if hour.current is None
+                else round(hour.current, 2) + 0.0,
                 "warnings": [alert.event for alert in hour.alerts],
                 "ratings": {
                     size.value: outlook.sizes[size][index].level.key

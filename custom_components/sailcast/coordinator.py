@@ -135,7 +135,7 @@ class MarineCoordinator(SourceCoordinator[dict[str, open_meteo.Marine]]):
         budget: Budget,
     ) -> None:
         """Set up marine data."""
-        super().__init__(hass, entry, profiles, "marine data", MARINE_INTERVAL)
+        super().__init__(hass, entry, profiles, "marine", MARINE_INTERVAL)
         self.budget = budget
 
     async def _async_update_data(self) -> dict[str, open_meteo.Marine]:

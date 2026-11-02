@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -101,3 +102,11 @@ async def test_not_loaded(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
     with pytest.raises(ServiceValidationError) as err:
         await get_forecast(hass, spot="Harbor", sailor="Alex")
     assert err.value.translation_key == "not_loaded"
+
+
+async def test_currents(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
+    """Currents are in knots, positive on the flood, and slack is plain 0."""
+    response = await get_forecast(hass, spot="Bay", sailor="Sam")
+    currents = [hour["current"] for hour in response["hours"]]
+    assert max(currents) > 0 > min(currents)
+    assert all(math.copysign(1, current) > 0 for current in currents if current == 0)
