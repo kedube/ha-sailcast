@@ -15,11 +15,18 @@ from .coordinator import ResultsCoordinator, SailCastConfigEntry
 from .outlook import BoatOutlook, Outlook, SpotConditions
 from .profiles import Sailor, Spot
 
+# The credit each data provider asks for.
+ATTRIBUTION = (
+    "Weather data by Open-Meteo.com. Tide and current predictions from NOAA. "
+    "Warnings from the National Weather Service."
+)
+
 
 class SailCastEntity(CoordinatorEntity[ResultsCoordinator]):
     """An entity that reads SailCast's results."""
 
     _attr_has_entity_name = True
+    _attr_attribution = ATTRIBUTION
 
 
 class SpotEntity(SailCastEntity):

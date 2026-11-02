@@ -44,13 +44,28 @@
             "offshore": "Wind from these directions blows away from the shore.",
             "exposed": "Directions with open water, where waves can build."
           }
+        },
+        "sources": {
+          "title": "Data sources",
+          "description": "SailCast suggests the nearest sources. Tide and current predictions come from NOAA and warnings from the National Weather Service, so for now they cover US waters only.",
+          "data": {
+            "tide_station": "Tide station",
+            "current_station": "Current station",
+            "marine_zone": "Marine warning zone"
+          },
+          "data_description": {
+            "tide_station": "For tide heights, highs and lows.",
+            "current_station": "For the wind-against-current rule. Pick one only if it's close to where you sail.",
+            "marine_zone": "Official warnings, such as a Small Craft Advisory, come from this zone."
+          }
         }
       },
       "error": {
         "name_required": "Enter a name.",
         "name_too_long": "Use 40 characters or fewer.",
         "name_taken": "Another spot already has this name.",
-        "radius_out_of_range": "Make the circle's radius between 2 and 50 km (about 1 to 30 miles)."
+        "radius_out_of_range": "Make the circle's radius between 2 and 50 km (about 1 to 30 miles).",
+        "suggestions_unavailable": "Couldn't look up nearby sources. You can save without them and add them later by editing the spot."
       }
     },
     "boat": {
@@ -194,6 +209,11 @@
         "fri": "Friday",
         "sat": "Saturday",
         "sun": "Sunday"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "None"
       }
     }
   },

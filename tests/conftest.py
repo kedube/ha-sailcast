@@ -262,3 +262,41 @@ async def loaded(
     assert await hass.config_entries.async_setup(sailcast_entry.entry_id)
     await hass.async_block_till_done()
     return sailcast_entry
+
+
+def mock_suggestions(aioclient_mock: AiohttpClientMocker) -> None:
+    """Answer the station and zone lookups for the harbor and bay pins."""
+    aioclient_mock.get(
+        f"{noaa_coops.STATIONS_URL}/tidepredstations.json",
+        json=fixture("noaa_tide_stations"),
+    )
+    aioclient_mock.get(
+        f"{noaa_coops.STATIONS_URL}/stations.json",
+        json=fixture("noaa_current_stations"),
+    )
+    aioclient_mock.get(
+        f"{nws.API}/zones",
+        params={"point": f"{HARBOR_POINT[0]:.4f},{HARBOR_POINT[1]:.4f}"},
+        json=fixture("nws_zones_harbor"),
+    )
+    aioclient_mock.get(
+        f"{nws.API}/zones",
+        params={"point": f"{BAY_POINT[0]:.4f},{BAY_POINT[1]:.4f}"},
+        json=fixture("nws_zones_bay"),
+    )
+    aioclient_mock.get(
+        f"{nws.API}/points/{BAY_POINT[0]:.4f},{BAY_POINT[1]:.4f}",
+        json=fixture("nws_points_bay"),
+    )
+    aioclient_mock.get(f"{nws.API}/zones", json=fixture("nws_zones_coastal"))
+    for zone in ("PZZ740", "PZZ745"):
+        aioclient_mock.get(
+            f"{nws.API}/zones/coastal/{zone}", json=fixture(f"nws_zone_{zone}")
+        )
+
+
+@pytest.fixture
+def suggestions(aioclient_mock: AiohttpClientMocker) -> AiohttpClientMocker:
+    """Answer the station and zone lookups for the test pins."""
+    mock_suggestions(aioclient_mock)
+    return aioclient_mock

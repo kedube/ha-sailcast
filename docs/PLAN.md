@@ -60,7 +60,7 @@ This is the plan SailCast is built from. The [milestones](#15-milestones) sectio
 | Languages | English plus the 11 languages with the most Home Assistant installs (see [Languages](#13-languages)). |
 | Platform | Home Assistant 2026.11 or newer, installed through the Marketplace. Not aiming for Home Assistant core. |
 | Name | SailCast, domain `sailcast`, licensed GPL-3.0. |
-| Privacy | The public repo holds no personal data: test locations are anonymized, boats are described only by size, and commits use a GitHub noreply address. See [privacy](#privacy). |
+| Privacy | The public repo holds no personal data: tests run on data recorded at made-up spots in San Diego, boats are described only by size, and commits use a GitHub noreply address. See [privacy](#privacy). |
 
 ## 2. What the test data showed
 
@@ -122,12 +122,15 @@ ha-sailcast/
 │   ├── manifest.json
 │   ├── config_flow.py         # main entry plus spot, boat and sailor subentries
 │   ├── profiles.py            # spot, boat and sailor schemas and checks, shared by setup and the panel
-│   ├── coordinator.py         # one coordinator per source
+│   ├── sources.py             # nearest tide station, current station and marine zone for a spot
+│   ├── coordinator.py         # one coordinator per source, and one for the results
 │   ├── providers/             # open_meteo, noaa_coops, ndbc, nws, metar, ha_entity, keyed tide providers
 │   ├── timeline.py            # the normalized hourly conditions model
 │   ├── limits.py              # the safety limits table (versioned)
 │   ├── rating.py              # safety rating rules
 │   ├── scoring.py             # score, windows, confidence
+│   ├── outlook.py             # ratings, scores and windows for each sailor at each spot
+│   ├── services.py            # the get_forecast action
 │   ├── advice.py              # rule-based advice as translation keys
 │   ├── ai.py                  # optional AI summary through AI Task
 │   ├── sensor.py, binary_sensor.py, calendar.py
@@ -139,9 +142,9 @@ ha-sailcast/
 │   ├── brand/                 # icon, logo, dark and @2x variants
 │   └── frontend/              # built panel bundle (produced by CI, not committed)
 ├── frontend/                  # panel source: TypeScript, Lit, Vite
-├── tests/                     # pytest, with recorded, anonymized fixtures
+├── tests/                     # pytest, with responses recorded at made-up San Diego spots
 ├── blueprints/automation/sailcast/
-├── scripts/                   # setup, develop, lint, fixture anonymizer, privacy hook
+├── scripts/                   # setup, develop, lint, fixture recorder, privacy hook
 ├── docs/
 ├── hacs.json
 └── .github/workflows/
@@ -377,7 +380,7 @@ This table gives the lowest rating while a warning is in effect, at every skill 
 | Small Craft Advisory, Brisk Wind Advisory | Not recommended | Not recommended | Caution | Caution |
 | Dense Fog, Dense Smoke or Freezing Spray Advisory | Not recommended | Not recommended | Caution | Caution |
 | Gale Warning, Hazardous Seas Warning, Heavy Freezing Spray Warning | Dangerous | Dangerous | Dangerous | Not recommended |
-| Storm, Hurricane Force Wind, Tropical Storm, Hurricane or Storm Surge Warning; Special Marine Warning | Dangerous | Dangerous | Dangerous | Dangerous |
+| Storm, Hurricane Force Wind, Tropical Storm, Hurricane, Storm Surge or Tsunami Warning; Special Marine Warning | Dangerous | Dangerous | Dangerous | Dangerous |
 | Any marine watch | Caution | Caution | Caution | Caution |
 
 For context, a typical East Coast NWS office issues a Small Craft Advisory for sustained winds or frequent gusts of 25–33 kt for more than 2 hours, or seas of 5 ft or more. Its other warning ranges are Gale 34–47 kt, Storm 48–63 kt, and Hurricane Force 64 kt or more.
@@ -627,7 +630,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - the skill limit uses sustained wind only; gusts never trigger it
   - windows stay inside the sailor's sailing days and hours
 - **Test profiles:** a 20 ft small keelboat and a 34 ft cruiser, at the three test spots, at all three skill levels.
-- **Providers:** tests against recorded responses. The November 1 snapshot from the test spots becomes the first fixture set, anonymized as described under [privacy](#privacy), including the buoy's missing values and the subordinate current station.
+- **Providers:** tests against recorded responses. They were recorded on November 2 at three made-up spots in San Diego, chosen to cover the same cases as the home spots: a harmonic and a subordinate tide station, a subordinate current station, a pin that's in its marine zone and one that isn't, and a live Small Craft Advisory. `scripts/record_fixtures.py` records them again.
 - **Config flow, subentries, entities, the WebSocket API and the calendar:** tested with `pytest-homeassistant-custom-component`, version 0.13.375 (matches 2026.10.4). Home Assistant is moving that package into core as `pytest-home-assistant`, which isn't on PyPI yet, so SailCast switches when it's published.
 - **Panel commands:**
   - settings changes are refused for non-administrators and for invalid input, and saved ones show up in the subentries
@@ -672,12 +675,12 @@ The integration follows Home Assistant's quality scale checklist (Bronze, then S
 
 The public repository holds no personal data, so nothing in it shows where the maintainer lives or sails:
 
-- **Test locations are anonymized.** Fixtures are recorded at real spots, then a script replaces spot names, station IDs and marine zones with neutral ones (River, Bay, Harbor; TIDE-1, CURRENT-1, BUOY-1) and moves every coordinate by a fixed offset. The offset and the name mapping stay in a local file that git never sees. Times and values are kept, so the tests still run on real weather.
+- **Tests run on made-up spots.** Fixtures are recorded at three made-up spots in San Diego, far from where the maintainer sails, so they need no anonymizing. Anonymized recordings from the home spots were the first idea, but a week of tide predictions can be matched to its station, so recordings from the home spots stay local.
 - **The real recordings stay local**, in a folder excluded from git, and so does the unredacted copy of this plan.
 - **A pre-commit hook** checks staged files against a local list of private terms (place names, station IDs, coordinates), so a slip can't be committed. The list itself is never committed.
 - **Boats are described by size and length**, never by model.
 - **Commits use the maintainer's GitHub noreply address.**
-- **SailCast's diagnostics redact spot coordinates** along with API keys, so users can share them in issues the same way.
+- **SailCast's diagnostics redact spot coordinates, names, stations and marine zones**, along with API keys and people's names, so users can share them in issues the same way.
 
 ## 15. Milestones
 

@@ -43,16 +43,19 @@ import probatio
 from . import profiles
 from .const import (
     CONF_BOATS,
+    CONF_CURRENT_STATION,
     CONF_DAYS,
     CONF_DEFAULT_BOAT,
     CONF_END,
     CONF_EXPOSED,
     CONF_LENGTH,
+    CONF_MARINE_ZONE,
     CONF_OFFSHORE,
     CONF_OTHER_BOATS,
     CONF_SIZE_CLASS,
     CONF_SKILL,
     CONF_START,
+    CONF_TIDE_STATION,
     CONF_WATER_TYPE,
     DOMAIN,
     NAME,
@@ -60,6 +63,11 @@ from .const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
+from .sources import NEAR_CURRENT_KM, Choice, async_suggest
+
+# The "no source" choice in the sources step.
+NONE = "none"
+SOURCES = (CONF_TIDE_STATION, CONF_CURRENT_STATION, CONF_MARINE_ZONE)
 
 
 class SailCastConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -95,18 +103,17 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         """Add a profile."""
-        return self._async_step_profile("user", user_input, None)
+        return await self._async_step_profile("user", user_input, None)
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         """Edit a profile."""
-        return self._async_step_profile(
+        return await self._async_step_profile(
             "reconfigure", user_input, self._get_reconfigure_subentry()
         )
 
-    @callback
-    def _async_step_profile(
+    async def _async_step_profile(
         self,
         step_id: str,
         user_input: dict[str, Any] | None,
@@ -122,11 +129,7 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
                 errors[CONF_NAME] = error
             errors.update(self._check(data))
             if not errors:
-                if subentry is None:
-                    return self.async_create_entry(title=name, data=data)
-                return self.async_update_and_abort(
-                    self._get_entry(), subentry, title=name, data=data
-                )
+                return await self._async_done(name, data, subentry)
         elif subentry is not None:
             user_input = self._to_form(subentry)
         else:
@@ -135,6 +138,23 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(self._schema(), user_input),
             errors=errors,
+        )
+
+    async def _async_done(
+        self, name: str, data: dict[str, Any], subentry: ConfigSubentry | None
+    ) -> SubentryFlowResult:
+        """Finish once the form is valid. Spots have another step."""
+        return self._save(name, data, subentry)
+
+    @callback
+    def _save(
+        self, name: str, data: dict[str, Any], subentry: ConfigSubentry | None
+    ) -> SubentryFlowResult:
+        """Add the profile, or save the changes to it."""
+        if subentry is None:
+            return self.async_create_entry(title=name, data=data)
+        return self.async_update_and_abort(
+            self._get_entry(), subentry, title=name, data=data
         )
 
     def _subentries(self, subentry_type: str) -> list[ConfigSubentry]:
@@ -178,7 +198,78 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
 
 
 class SpotFlow(ProfileFlow):
-    """Add or edit a spot."""
+    """Add or edit a spot, then pick its data sources."""
+
+    _pending: tuple[str, dict[str, Any], ConfigSubentry | None]
+
+    async def _async_done(
+        self, name: str, data: dict[str, Any], subentry: ConfigSubentry | None
+    ) -> SubentryFlowResult:
+        self._pending = (name, data, subentry)
+        return await self.async_step_sources()
+
+    async def async_step_sources(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Pick the tide station, current station and marine zone.
+
+        SailCast suggests the nearest of each; None is always a choice.
+        """
+        name, data, subentry = self._pending
+        if user_input is not None:
+            sources = {
+                key: None if user_input.get(key, NONE) == NONE else user_input[key]
+                for key in SOURCES
+            }
+            return self._save(name, data | sources, subentry)
+        suggestions = await async_suggest(
+            self.hass, data[CONF_LATITUDE], data[CONF_LONGITUDE]
+        )
+        choices = {
+            CONF_TIDE_STATION: suggestions.tide,
+            CONF_CURRENT_STATION: suggestions.current,
+            CONF_MARINE_ZONE: suggestions.zones,
+        }
+        saved = dict(subentry.data) if subentry else {}
+        schema = {}
+        values = {}
+        for key, found in choices.items():
+            options = [SelectOptionDict(value=NONE, label="None")] + [
+                SelectOptionDict(value=choice.id, label=self._label(key, choice))
+                for choice in found
+            ]
+            chosen = saved.get(key)
+            if chosen and chosen not in {choice.id for choice in found}:
+                options.append(SelectOptionDict(value=chosen, label=chosen))
+            schema[probatio.Required(key)] = SelectSelector(
+                SelectSelectorConfig(
+                    options=options,
+                    translation_key="source",
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            )
+            if key in saved:
+                values[key] = chosen or NONE
+            else:
+                values[key] = _suggested(key, found)
+        return self.async_show_form(
+            step_id="sources",
+            data_schema=self.add_suggested_values_to_schema(
+                probatio.Schema(schema), values
+            ),
+            errors={"base": "suggestions_unavailable"} if suggestions.failed else {},
+        )
+
+    def _label(self, key: str, choice: Choice) -> str:
+        """Label a source with its name, ID and distance."""
+        station = choice.id.partition("_")[0]
+        if key == CONF_MARINE_ZONE and choice.distance_km == 0:
+            return f"{choice.name} ({station})"
+        if self.hass.config.units.length_unit == UnitOfLength.MILES:
+            distance = f"{choice.distance_km / 1.609344:.1f} mi"
+        else:
+            distance = f"{choice.distance_km:.1f} km"
+        return f"{choice.name} ({station}), {distance}"
 
     def _schema(self) -> probatio.Schema:
         return probatio.Schema(
@@ -372,6 +463,15 @@ class SailorFlow(ProfileFlow):
         if CONF_BOATS in errors:
             errors[CONF_DEFAULT_BOAT] = errors.pop(CONF_BOATS)
         return errors
+
+
+def _suggested(key: str, found: list[Choice]) -> str:
+    """Return the source to suggest for a new spot."""
+    if not found:
+        return NONE
+    if key == CONF_CURRENT_STATION and found[0].distance_km > NEAR_CURRENT_KM:
+        return NONE
+    return found[0].id
 
 
 def _select(

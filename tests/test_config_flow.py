@@ -10,6 +10,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import (
     DOMAIN,
@@ -18,13 +19,21 @@ from custom_components.sailcast.const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
+from custom_components.sailcast.providers import noaa_coops
+
+from .conftest import BAY, HARBOR_POINT
 
 SPOT_INPUT = {
     "name": "Marina",
-    "location": {"latitude": 32.71, "longitude": -117.17, "radius": 8000.0},
+    "location": {"latitude": 32.68, "longitude": -117.17, "radius": 8000.0},
     "water_type": "bay",
     "offshore": ["w", "e"],
     "exposed": ["s"],
+}
+SOURCES = {
+    "tide_station": "9410170",
+    "current_station": "PCT0096_1",
+    "marine_zone": "PZZ740",
 }
 
 
@@ -74,6 +83,11 @@ def _suggested(result: dict[str, Any], field: str) -> Any:
     raise KeyError(field)
 
 
+def _options(result: dict[str, Any], field: str) -> list[dict[str, str]]:
+    """Return a select field's options."""
+    return result["data_schema"].schema[field].config["options"]
+
+
 def _only(entry: MockConfigEntry, subentry_type: str) -> Any:
     """Return the one subentry of a type."""
     (subentry,) = (
@@ -118,21 +132,89 @@ async def test_new_spot_starts_at_home(
     }
 
 
-async def test_add_spot(hass: HomeAssistant, entry: MockConfigEntry) -> None:
-    """A spot stores its pin, radius and directions in a fixed order."""
+async def test_add_spot(
+    hass: HomeAssistant, entry: MockConfigEntry, suggestions: AiohttpClientMocker
+) -> None:
+    """A spot stores its pin, radius, directions in a fixed order, and sources."""
     result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
-    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "sources"
+    assert result["errors"] == {}
+    # The nearest of each is suggested.
+    assert {key: _suggested(result, key) for key in SOURCES} == SOURCES
 
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], SOURCES
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
     spot = _only(entry, SUBENTRY_SPOT)
     assert spot.title == "Marina"
     assert dict(spot.data) == {
-        "latitude": 32.71,
+        "latitude": 32.68,
         "longitude": -117.17,
         "radius": 8000.0,
         "water_type": "bay",
         "offshore": ["e", "w"],
         "exposed": ["s"],
+        **SOURCES,
     }
+
+
+async def test_source_choices(
+    hass: HomeAssistant, entry: MockConfigEntry, suggestions: AiohttpClientMocker
+) -> None:
+    """Choices are the nearest first, with None, labeled with their distance."""
+    result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
+    tides = _options(result, "tide_station")
+    assert tides[0] == {"value": "none", "label": "None"}
+    assert tides[1] == {"value": "9410170", "label": "SAN DIEGO (9410170), 4.0 km"}
+    currents = [option["value"] for option in _options(result, "current_station")]
+    # One depth bin per station; weak and variable stations are left out.
+    assert currents[:4] == ["none", "PCT0096_1", "PCT0091_1", "PCT0101_1"]
+    assert "PCT0076_1" not in currents
+    zones = [option["value"] for option in _options(result, "marine_zone")]
+    assert zones == ["none", "PZZ740", "PZZ745"]
+
+
+async def test_no_sources(
+    hass: HomeAssistant, entry: MockConfigEntry, suggestions: AiohttpClientMocker
+) -> None:
+    """None leaves a source out."""
+    result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], dict.fromkeys(SOURCES, "none")
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    spot = _only(entry, SUBENTRY_SPOT)
+    assert {key: spot.data[key] for key in SOURCES} == dict.fromkeys(SOURCES)
+
+
+async def test_sources_in_miles(
+    hass: HomeAssistant, entry: MockConfigEntry, suggestions: AiohttpClientMocker
+) -> None:
+    """With US units, distances are in miles."""
+    hass.config.units = US_CUSTOMARY_SYSTEM
+    result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
+    assert _options(result, "tide_station")[1]["label"] == "SAN DIEGO (9410170), 2.5 mi"
+
+
+async def test_sources_unavailable(
+    hass: HomeAssistant, entry: MockConfigEntry, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """If the lookups fail, the spot can still be saved without sources."""
+    aioclient_mock.get(f"{noaa_coops.STATIONS_URL}/tidepredstations.json", status=503)
+    aioclient_mock.get(f"{noaa_coops.STATIONS_URL}/stations.json", status=503)
+    aioclient_mock.get("https://api.weather.gov/zones", status=503)
+    result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
+    assert result["step_id"] == "sources"
+    assert result["errors"] == {"base": "suggestions_unavailable"}
+    assert {key: _suggested(result, key) for key in SOURCES} == dict.fromkeys(
+        SOURCES, "none"
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], dict.fromkeys(SOURCES, "none")
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
 @pytest.mark.parametrize(
@@ -161,8 +243,10 @@ async def test_spot_errors(
     assert result["errors"] == {field: error}
 
 
-async def test_edit_spot(hass: HomeAssistant, full_entry: MockConfigEntry) -> None:
-    """Editing a spot shows its values and saves the changes."""
+async def test_edit_spot(
+    hass: HomeAssistant, full_entry: MockConfigEntry, suggestions: AiohttpClientMocker
+) -> None:
+    """Editing a spot shows its values, keeps its sources, and saves changes."""
     result = await _edit(hass, full_entry, "spot_harbor")
     assert _suggested(result, "name") == "Harbor"
     assert _suggested(result, "location") == {
@@ -171,14 +255,26 @@ async def test_edit_spot(hass: HomeAssistant, full_entry: MockConfigEntry) -> No
         "radius": 10_000.0,
     }
 
+    harbor = {"latitude": HARBOR_POINT[0], "longitude": HARBOR_POINT[1]}
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"], SPOT_INPUT | {"name": "Harbor"}
+        result["flow_id"],
+        SPOT_INPUT | {"name": "Harbor", "location": harbor | {"radius": 8000.0}},
+    )
+    assert result["step_id"] == "sources"
+    # The saved sources are kept, including "none".
+    assert _suggested(result, "tide_station") == "9410170"
+    assert _suggested(result, "current_station") == "none"
+    assert _suggested(result, "marine_zone") == "PZZ740"
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {"tide_station": "9410170", "current_station": "none", "marine_zone": "PZZ740"},
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     spot = full_entry.subentries["spot_harbor"]
     assert spot.title == "Harbor"
     assert spot.data["radius"] == 8000.0
+    assert spot.data["marine_zone"] == "PZZ740"
 
 
 async def test_add_boat_in_feet(hass: HomeAssistant, entry: MockConfigEntry) -> None:
@@ -362,3 +458,18 @@ async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> 
         "start": None,
         "end": None,
     }
+
+
+async def test_spot_from_before_sources(
+    hass: HomeAssistant, suggestions: AiohttpClientMocker
+) -> None:
+    """Editing a spot saved before sources existed suggests the nearest ones."""
+    old = BAY | {"data": {k: v for k, v in BAY["data"].items() if k not in SOURCES}}
+    entry = MockConfigEntry(domain=DOMAIN, title=NAME, data={}, subentries_data=[old])
+    entry.add_to_hass(hass)
+    result = await _edit(hass, entry, "spot_bay")
+    location = {"latitude": 32.68, "longitude": -117.17, "radius": 10_000.0}
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], SPOT_INPUT | {"name": "Bay", "location": location}
+    )
+    assert {key: _suggested(result, key) for key in SOURCES} == SOURCES

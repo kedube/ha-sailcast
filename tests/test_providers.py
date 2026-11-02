@@ -17,7 +17,7 @@ from custom_components.sailcast.providers import (
     open_meteo,
 )
 
-from .conftest import BAY_POINT, HARBOR_POINT, fixture
+from .conftest import BAY_POINT, HARBOR_POINT, fixture, mock_suggestions
 
 BEGIN = date(2026, 11, 2)
 
@@ -166,34 +166,11 @@ def test_alerts_skip_cancellations_and_tests() -> None:
     assert nws.parse_alerts(payload, {"PZZ745"}) == []
 
 
-def mock_zones(aioclient_mock: AiohttpClientMocker) -> None:
-    """Answer the NWS zone lookups for the test spots."""
-    aioclient_mock.get(
-        f"{nws.API}/zones",
-        params={"point": f"{HARBOR_POINT[0]:.4f},{HARBOR_POINT[1]:.4f}"},
-        json=fixture("nws_zones_harbor"),
-    )
-    aioclient_mock.get(
-        f"{nws.API}/zones",
-        params={"point": f"{BAY_POINT[0]:.4f},{BAY_POINT[1]:.4f}"},
-        json=fixture("nws_zones_bay"),
-    )
-    aioclient_mock.get(
-        f"{nws.API}/points/{BAY_POINT[0]:.4f},{BAY_POINT[1]:.4f}",
-        json=fixture("nws_points_bay"),
-    )
-    aioclient_mock.get(f"{nws.API}/zones", json=fixture("nws_zones_coastal"))
-    for zone in ("PZZ740", "PZZ745"):
-        aioclient_mock.get(
-            f"{nws.API}/zones/coastal/{zone}", json=fixture(f"nws_zone_{zone}")
-        )
-
-
 async def test_zone_containing_the_spot(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
     """A pin on open water is in its marine zone."""
-    mock_zones(aioclient_mock)
+    mock_suggestions(aioclient_mock)
     zones = await nws.async_marine_zones(async_get_clientsession(hass), *HARBOR_POINT)
     assert [(zone.id, zone.distance_km) for zone in zones] == [("PZZ740", 0.0)]
 
@@ -202,7 +179,7 @@ async def test_nearest_zone(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
     """A pin in the bay gets the forecast office's zones, nearest first."""
-    mock_zones(aioclient_mock)
+    mock_suggestions(aioclient_mock)
     zones = await nws.async_marine_zones(async_get_clientsession(hass), *BAY_POINT)
     assert [zone.id for zone in zones] == ["PZZ740", "PZZ745"]
     assert 0 < zones[0].distance_km < 10
