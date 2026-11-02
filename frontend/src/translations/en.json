@@ -1,0 +1,39 @@
+{
+  "hero": {
+    "title": "SailCast is ready",
+    "body": "Safety ratings, sailing windows and the week calendar are on the way. For now, this page shows the spots, boats and sailors SailCast knows about."
+  },
+  "profiles": {
+    "spots": "Spots",
+    "boats": "Boats",
+    "sailors": "Sailors",
+    "none": "None yet"
+  },
+  "start": "Add a spot, a boat and a sailor to get started.",
+  "manage": "Add or edit spots, boats and sailors",
+  "manage_admin_only": "An administrator can add spots, boats and sailors in Settings.",
+  "loading": "Loading…",
+  "error": "SailCast couldn't load its settings: {message}",
+  "advisory": "SailCast is advisory. Official forecasts and warnings come first, and the skipper decides.",
+  "water_type": {
+    "open_coast": "Open coast",
+    "bay": "Bay",
+    "river": "Estuary or river",
+    "lake": "Lake"
+  },
+  "size_class": {
+    "dinghy": "Dinghy or beach cat",
+    "small_keelboat": "Small keelboat",
+    "cruiser": "Cruiser",
+    "large_cruiser": "Large cruiser"
+  },
+  "skill": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "length": {
+    "feet": "{value} ft",
+    "meters": "{value} m"
+  }
+}
