@@ -2,7 +2,7 @@
 
 Approved November 2, 2026 · Maintainer: [@kedube](https://github.com/kedube)
 
-A private panel mockup, built from a real week of forecast data for the test spots, shows the design in SailCast's Under the Wave look. It stays private because it contains real location data.
+A private panel mockup, built from a real week of forecast data for the test spots, shows the design. It stays private because it contains real location data.
 
 SailCast is a Home Assistant integration that turns wind, gust, wave, tide, current and weather forecasts into four things:
 
@@ -54,7 +54,7 @@ This is the plan SailCast is built from. The [milestones](#15-milestones) sectio
 | Confidence | Compare three forecast models and show how closely they agree. |
 | Advice | Written by rules. An optional AI summary uses the AI provider already set up in Home Assistant. |
 | Panel | A sidebar panel only, with no dashboard card for now. Its week view is a calendar, its Settings tab edits sailors, boats and spots, and it has day and night themes. Its layout borrows from Windy and PredictWind. |
-| Look | SailCast's own: Paper Heart Design's "Under the Wave" palette (#00022b, #010e54, #0855b1, #4fa5d8, #daeaf7) in day and night versions, instead of the Home Assistant theme's colors. Safety ratings keep their green, amber, orange and red. |
+| Look | Follows the Home Assistant theme and its light and dark modes, like the rest of Home Assistant. Deep sea blue marks sailing windows, and safety ratings keep their green, amber, orange and red. |
 | Calendar | Each sailor's windows show in a read-only SailCast calendar in Home Assistant. You can also add or remove single windows in a calendar of your own, such as Google Calendar, or have SailCast add each day's best window automatically on the days you pick. SailCast warns you if a planned sail's forecast gets worse. |
 | Map | OpenStreetMap base map with the OpenSeaMap seamark overlay, and animated wind like Windy. |
 | Languages | English plus the 11 languages with the most Home Assistant installs (see [Languages](#13-languages)). |
@@ -538,14 +538,14 @@ Diagnostics include each provider's last fetch status and the budget use, with A
 
 ## 11. The sidebar panel
 
-The panel is a single JavaScript module that ships inside the integration and is registered with `panel_custom.async_register_panel`. The module is served from a static path (`StaticPathConfig`) with a version query string, so updates aren't cached. Since 2026.3, admins can rename it, change its icon or hide it from the sidebar. It is visible to all users. It sets `handle_safe_area` (new in 2026.9) so it sits correctly in the phone app. Following the 2026.11 frontend change, it leaves its host element's background to Home Assistant and paints its own colors inside.
+The panel is a single JavaScript module that ships inside the integration and is registered with `panel_custom.async_register_panel`. The module is served from a static path (`StaticPathConfig`) with a version query string, so updates aren't cached. Since 2026.3, admins can rename it, change its icon or hide it from the sidebar. It is visible to all users. It sets `handle_safe_area` (new in 2026.9) so it sits correctly in the phone app. Following the 2026.11 frontend change, it doesn't paint its own host background, except when the Day or Night theme overrides Home Assistant's mode.
 
 | Part | Choice |
 | --- | --- |
 | Framework | TypeScript with Lit 3, which is what Home Assistant's own frontend uses. Built with Vite into one ES module. |
 | Pickers | Spot, sailor and boat. The sailor picker shows each sailor's skill, and the boat starts as the sailor's default. A pencil next to each picker opens that spot, sailor or boat for editing. |
-| Look | SailCast's own "Under the Wave" palette, in a day and a night version (decided November 2). It doesn't take colors from the Home Assistant theme. Ocean blue marks sailing windows; green, amber, orange and red only ever mean safety ratings. Roboto and Material Design Icons match the rest of Home Assistant. |
-| Day and night | A switch in the toolbar. Auto, the default, uses the night version when Home Assistant is in dark mode. Day and Night pick one, like a chart plotter's day and night palettes. The choice is saved per user, and Home Assistant's own sidebar keeps its theme. |
+| Look | Home Assistant theme variables (`--primary-background-color`, `--card-background-color`, `--primary-text-color` and so on), so it follows the user's theme and dark mode, and Roboto and Material Design Icons like the rest of Home Assistant. SailCast's own day and night palettes fill in anything a theme doesn't set. Deep sea blue marks sailing windows; green, amber, orange and red only ever mean safety ratings. |
+| Day and night | A switch in the toolbar. Auto, the default, follows Home Assistant's light or dark mode. Day and Night override it for SailCast only, like a chart plotter's day and night palettes. The choice is saved per user, and Home Assistant's own sidebar keeps its theme. |
 | Charts | Small hand-written SVG charts, as in the mockup, rather than a large charting library. |
 | Data | WebSocket commands: `sailcast/config`, `sailcast/forecast` (week and hours for a spot and sailor), `sailcast/subscribe` (pushes updates after each refresh), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/get`, `save` and `delete` (saving and deleting are for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list`, and `sailcast/ai_summary`. |
 | Per-user settings | The default spot, sailor and last view are stored server-side, keyed by Home Assistant user, in SailCast's own store. They follow you across devices, and the backend can use them for notifications. |
@@ -687,7 +687,7 @@ Each milestone ends with something you can install and try.
 | --- | --- | --- | --- |
 | 0 | Foundations | Repo scaffold, dev setup, CI, the privacy hook, and the icon and logo (already drawn). Config flow with spot, boat and sailor subentries. An empty panel registered in the sidebar. | It installs from GitHub on Home Assistant 2026.11, the panel shows up, and CI is green. |
 | 1 | Forecast and safety core | Open-Meteo forecast (three models) and marine data. NOAA tides and currents. NWS warnings. The timeline, the limits table, the rating, the score, windows and confidence. Entities, calendar and `get_forecast`. | The test fixtures give the same ratings as hand-checked cases. A Small Craft Advisory fixture holds dinghies and small keelboats at "not recommended" for every skill level. |
-| 2 | Panel: week, day and settings | WebSocket API with subscriptions, per-user settings, the week calendar and day views from the mockup, the Settings tab with the spot map (the base map the wind map builds on), the day and night themes, Add to calendar, automatic adding and planned sails, rule-based advice, English strings. | It matches the mockup with live data, in the browser and the phone app, in its day and night versions. A window added from the panel shows up in a Google and a Local calendar, and an automatic event in a Local calendar moves when its window does. |
+| 2 | Panel: week, day and settings | WebSocket API with subscriptions, per-user settings, the week calendar and day views from the mockup, the Settings tab with the spot map (the base map the wind map builds on), the day and night themes, Add to calendar, automatic adding and planned sails, rule-based advice, English strings. | It matches the mockup with live data, in the browser and the phone app, in light and dark themes. A window added from the panel shows up in a Google and a Local calendar, and an automatic event in a Local calendar moves when its window does. |
 | 3 | Wind map | Grid fetch with the budget guard, seamarks, color field, particles and time slider, on the base map from milestone 2. | It animates smoothly on a phone, and the budget stays under the limit with three spots. |
 | 4 | Local accuracy | Buoys, airport reports and your own sensors, with nowcast blending. Exposure and fetch, with fetch worked out from shoreline data. Repairs (pin on land, failed sources). | "Now" readings show at all three test spots, and the river spot's waves come from the sheltered-water estimate. |
 | 5 | Worldwide | Tide providers that need a key, free regional sources, and warning services outside the US. | A spot in the UK, the Netherlands and a lake each produce a complete week. |
@@ -714,7 +714,7 @@ Each milestone ends with something you can install and try.
 
 ## 17. Review history
 
-On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and chose "Under the Wave" as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day.
+On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme.
 
 ## 18. Sources
 
@@ -779,7 +779,7 @@ Checked November 1, 2026. Home Assistant details were checked against the 2026.1
 
 **Design**
 
-- "Under the Wave" palette (Paper Heart Design): <https://paperheartdesign.com/blog/color-palette-peaceful-palettes>
+- "Under the Wave" palette (Paper Heart Design), used for the icon and logo: <https://paperheartdesign.com/blog/color-palette-peaceful-palettes>
 
 **Safety limits**
 
