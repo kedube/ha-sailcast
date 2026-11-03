@@ -134,6 +134,7 @@ ha-sailcast/
 │   ├── advice.py              # rule-based advice as translation keys
 │   ├── week.py                # the week the panel shows, from now on
 │   ├── planner.py             # windows in your own calendars: added, moved, watched
+│   ├── wind.py                # the wind map's grid, shared by nearby spots, within the budget
 │   ├── services.py            # the get_forecast action
 │   ├── ai.py                  # optional AI summary through AI Task
 │   ├── sensor.py, binary_sensor.py, calendar.py
@@ -591,13 +592,14 @@ The four views follow the mockup:
 
 | Part | Choice |
 | --- | --- |
-| Wind data | When the map opens, SailCast asks Open-Meteo for wind speed, direction and gusts on a grid of about 15 × 15 points, roughly 2 km apart, covering the spot's radius, for 7 days hourly. One test request of this kind returned 1.1 MB in about 1 second. Results are cached for 3 hours. Nearby spots share one grid. |
+| Wind data | When the map opens, SailCast asks Open-Meteo for wind speed, direction and gusts on a grid covering the spot's radius, for 7 days hourly: points 2 km apart, at most 15 × 15, spreading out for a bigger radius. One request of this kind returns about 1 MB (73 KB compressed) in under a second. Grids are kept for 3 hours. Spots whose circles overlap share one grid, as long as its points stay within 3 km of each other. |
+| Budget | Each point counts as one of Open-Meteo's 10,000 daily calls, so a full grid costs 225. SailCast stops fetching grids at 7,000 calls in a day, leaving the rest for the forecast, and shows the last grid it has, for up to a day, with a note of when it's from. Three spots far enough apart to need a grid each, with the map open all day, use 5,400. |
 | Base map | Home Assistant 2026.10's new map uses MapLibre with OpenStreetMap vector tiles, proxied and cached by Home Assistant itself (the `map_tiles` integration). The panel can use the same tiles: it fetches a short-lived token with the `map_tiles/access_token` WebSocket command, which another custom card already does. That interface is internal and undocumented, so if it changes the panel falls back to OpenFreeMap: free vector tiles with no key, attribution required, and no service guarantee. CARTO, which Home Assistant used before, now needs a key per user, so it's out. The spot editor uses the same base map for placing pins. |
 | Seamarks | The OpenSeaMap seamark layer on top (`tiles.openseamap.org/seamark/{z}/{x}/{y}.png`): buoys, lights and channels. Its data is CC BY-SA 2.0. I found no published tile usage policy, so SailCast requests only what's on screen and uses the browser's cache. |
-| Optional layers | **Nautical chart (US):** NOAA's Chart Display Service draws official ENC data in the paper-chart style. NOAA's raster charts were retired at the end of 2024, so this is the replacement. **Depth shading:** EMODnet or GEBCO bathymetry. Both are marked as not for navigation. |
-| Wind layers | A color field for wind or gusts (bilinear interpolation of the grid), and moving particles that follow the wind, drawn on a canvas that tracks the map as you pan and zoom. Later layers: waves, and the model spread. |
+| Optional layers | Not built yet. **Nautical chart (US):** NOAA's Chart Display Service draws official ENC data in the paper-chart style. NOAA's raster charts were retired at the end of 2024, so this is the replacement. **Depth shading:** EMODnet or GEBCO bathymetry. Both are marked as not for navigation. |
+| Wind layers | A color field for wind or gusts (bilinear interpolation of the grid) on a canvas pinned to the grid's corners, under the seamarks, and moving particles that follow the wind on a canvas over the map, at the same pace on screen at any zoom. Each spot the grid covers shows its wind. With reduced motion, still arrows replace the particles. Nothing animates while the map is out of sight. Later layers: waves, and the model spread. |
 | Controls | A time slider with play and pause, buttons that jump to a day, a readout of the wind under the pointer, and a legend in knots. |
-| Credits | "© OpenStreetMap contributors", OpenSeaMap, and "Open-Meteo (CC BY 4.0)", always visible. |
+| Credits | "© OpenStreetMap contributors", OpenSeaMap, and "Open-Meteo (CC BY 4.0)" on the map, and always in the line under it, since the map folds its own credits away once it's moved. |
 
 The mockup draws only the coastline instead of a base map, in 3-hour steps, because published mockups can't load map tiles. The panel uses the base map and hourly steps.
 
