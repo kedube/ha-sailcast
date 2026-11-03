@@ -6,7 +6,11 @@ from types import MappingProxyType
 from unittest.mock import MagicMock
 
 from homeassistant.components.frontend import DATA_PANELS
-from homeassistant.config_entries import ConfigEntryState, ConfigSubentry
+from homeassistant.config_entries import (
+    ConfigEntryDisabler,
+    ConfigEntryState,
+    ConfigSubentry,
+)
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
@@ -20,7 +24,10 @@ async def test_panel_added_and_removed(
     mock_http: MagicMock,
     sources: AiohttpClientMocker,
 ) -> None:
-    """Loading adds the panel to the sidebar, and unloading removes it."""
+    """Loading adds the panel to the sidebar, and turning SailCast off removes it.
+
+    A reload keeps it, so a settings change doesn't send anyone elsewhere.
+    """
     assert await hass.config_entries.async_setup(full_entry.entry_id)
     await hass.async_block_till_done()
     assert full_entry.state is ConfigEntryState.LOADED
@@ -35,7 +42,24 @@ async def test_panel_added_and_removed(
     assert custom["embed_iframe"] is False
     mock_http.async_register_static_paths.assert_awaited_once()
 
-    assert await hass.config_entries.async_unload(full_entry.entry_id)
+    assert await hass.config_entries.async_reload(full_entry.entry_id)
+    assert hass.data[DATA_PANELS]["sailcast"] is panel
+
+    await hass.config_entries.async_set_disabled_by(
+        full_entry.entry_id, ConfigEntryDisabler.USER
+    )
+    await hass.async_block_till_done()
+    assert "sailcast" not in hass.data[DATA_PANELS]
+
+
+async def test_panel_removed_with_entry(
+    hass: HomeAssistant, full_entry: MockConfigEntry, sources: AiohttpClientMocker
+) -> None:
+    """Deleting SailCast removes its panel."""
+    assert await hass.config_entries.async_setup(full_entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.config_entries.async_remove(full_entry.entry_id)
     assert "sailcast" not in hass.data[DATA_PANELS]
 
 

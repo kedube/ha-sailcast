@@ -1,0 +1,165 @@
+/**
+ * Sentences from the backend's translation keys: why an hour got its rating,
+ * and the day's advice. Values arrive in knots, meters and °C, and come out
+ * in the user's units and language.
+ */
+import { compassKey, METERS_PER_NAUTICAL_MILE, type Formatter } from "./format";
+import type { Advice, Reason } from "./types";
+
+export type Translate = (key: string, values?: Record<string, string | number>) => string;
+
+const LEVELS = ["good", "caution", "not_recommended", "dangerous"];
+
+function num(value: unknown): number {
+  return typeof value === "number" ? value : Number(value);
+}
+
+/** A height with its unit, such as "1.4 ft". */
+export function heightText(fmt: Formatter, t: Translate, meters: number): string {
+  return t(fmt.feet ? "unit.feet" : "unit.meters", { value: fmt.number(fmt.height(meters), 1) });
+}
+
+/** A range of heights with its unit, such as "0.8–1.4 ft". */
+export function heightRange(fmt: Formatter, t: Translate, low: number, high: number): string {
+  return t(fmt.feet ? "unit.feet" : "unit.meters", {
+    value: fmt.range(fmt.height(low), fmt.height(high), 1),
+  });
+}
+
+/** A temperature with its unit, such as "55 °F". */
+export function temperatureText(fmt: Formatter, t: Translate, celsius: number): string {
+  return t(fmt.fahrenheit ? "unit.fahrenheit" : "unit.celsius", {
+    value: fmt.number(fmt.temperature(celsius)),
+  });
+}
+
+/** A compass point, such as "WSW". */
+export function compass(t: Translate, degrees: number): string {
+  return t(`compass.${compassKey(degrees)}`);
+}
+
+/** One reason for a rating, such as "gusts 23 kt". */
+export function reasonText(fmt: Formatter, t: Translate, reason: Reason): string {
+  const values = reason.values;
+  switch (reason.key) {
+    case "wind_over_limit": {
+      // Show a decimal when rounding would make it look within the limit.
+      const wind = num(values.wind);
+      const limit = num(values.limit);
+      return t("reason.wind_over_limit", {
+        wind: Math.round(wind) <= limit ? fmt.number(wind, 1) : fmt.number(wind),
+        limit: fmt.number(limit),
+      });
+    }
+    case "wind":
+    case "offshore_wind":
+      return t(`reason.${reason.key}`, { wind: fmt.number(num(values.wind)) });
+    case "gusts":
+      return t("reason.gusts", { gust: fmt.number(num(values.gust)) });
+    case "gusty":
+      return t("reason.gusty", { spread: fmt.number(num(values.spread)) });
+    case "waves":
+      return t("reason.waves", { height: heightText(fmt, t, num(values.height)) });
+    case "wind_against_flood":
+    case "wind_against_ebb":
+      return t(`reason.${reason.key}`, { current: fmt.number(num(values.current), 1) });
+    case "wind_chill":
+      return t("reason.wind_chill", {
+        temperature: temperatureText(fmt, t, num(values.temperature)),
+      });
+    case "visibility":
+      return t("reason.visibility", {
+        visibility: fmt.number(num(values.visibility) / METERS_PER_NAUTICAL_MILE, 1),
+      });
+    case "warning":
+      return String(values.event);
+    default:
+      return t(`reason.${reason.key}`);
+  }
+}
+
+/**
+ * The reasons worth saying, as in the mockup: those that set the rating, then
+ * the ones that made it worse, at most three.
+ */
+export function reasonsText(fmt: Formatter, t: Translate, reasons: Reason[]): string {
+  if (!reasons.length) return "";
+  const worst = Math.max(...reasons.map((reason) => LEVELS.indexOf(reason.level)));
+  const top = reasons.filter(
+    (reason) => !reason.modifier && worst > 0 && LEVELS.indexOf(reason.level) === worst,
+  );
+  const modifiers = reasons.filter((reason) => reason.modifier);
+  return [...top, ...modifiers]
+    .slice(0, 3)
+    .map((reason) => reasonText(fmt, t, reason))
+    .join(", ");
+}
+
+/** One piece of advice as a sentence. */
+export function adviceText(fmt: Formatter, t: Translate, advice: Advice): string {
+  const values = advice.values;
+  switch (advice.key) {
+    case "warning":
+    case "warning_dangerous":
+    case "warning_caution":
+      return t(`advice.${advice.key}`, { event: String(values.event) });
+    case "warning_not_recommended":
+      return t("advice.warning_not_recommended", {
+        event: String(values.event),
+        size: t(`size_noun.${String(values.size)}`),
+      });
+    case "wind": {
+      const trend = values.trend ? t(`advice.trend_${String(values.trend)}`) : "";
+      return t("advice.wind", {
+        direction: compass(t, num(values.direction)),
+        range: fmt.range(num(values.low), num(values.high)),
+        trend,
+        gust: fmt.number(num(values.gust)),
+      });
+    }
+    case "over_limit_hour":
+      return t("advice.over_limit_hour", {
+        limit: fmt.number(num(values.limit)),
+        time: fmt.clock(String(values.time)),
+      });
+    case "over_limit":
+      return t("advice.over_limit", {
+        limit: fmt.number(num(values.limit)),
+        start: fmt.clock(String(values.start)),
+        end: fmt.clock(String(values.end)),
+      });
+    case "near_limit":
+      return t("advice.near_limit", { limit: fmt.number(num(values.limit)) });
+    case "waves":
+      return t("advice.waves", { range: heightRange(fmt, t, num(values.low), num(values.high)) });
+    case "against_current":
+      return t(`advice.against_${String(values.flow)}`, {
+        span: fmt.span(String(values.start), String(values.end)),
+      });
+    case "water":
+      return t("advice.water", { temperature: temperatureText(fmt, t, num(values.temperature)) });
+    case "rain":
+      return t("advice.rain", { chance: fmt.number(num(values.chance)) });
+    case "rain_visibility":
+      return t("advice.rain_visibility", {
+        chance: fmt.number(num(values.chance)),
+        visibility: fmt.number(num(values.visibility) / METERS_PER_NAUTICAL_MILE, 1),
+      });
+    case "tides": {
+      const events = values.events as { time: string; height: number; high: boolean }[];
+      const text = events
+        .map((event) =>
+          t(event.high ? "advice.high_tide" : "advice.low_tide", {
+            time: fmt.clock(event.time),
+            height: heightText(fmt, t, event.height),
+          }),
+        )
+        .join(t("advice.list_separator"));
+      return t("advice.tides", { tides: text.charAt(0).toUpperCase() + text.slice(1) });
+    }
+    case "sunset":
+      return t("advice.sunset", { time: fmt.clock(String(values.time)) });
+    default:
+      return t(`advice.${advice.key}`);
+  }
+}

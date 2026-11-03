@@ -2,5 +2,8 @@
 # pytest-homeassistant-custom-component pins Home Assistant 2026.10.4. Move to
 # the release that pins 2026.11 once it's published.
 pytest-homeassistant-custom-component==0.13.375
+# Home Assistant's Local Calendar needs it; the planned-sail tests add events
+# to a real Local Calendar.
+ical==14.3.0
 ruff==0.17.3
 mypy==2.4.1

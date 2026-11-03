@@ -121,14 +121,49 @@
             "other_boats": "Other boats",
             "days": "Sailing days",
             "start": "Earliest start",
-            "end": "Latest finish"
+            "end": "Latest finish",
+            "user": "Home Assistant user"
           },
           "data_description": {
             "skill": "Each sailor rates their own skill. It sets their limit for sustained wind; gusts don't count toward it.",
             "default_boat": "SailCast rates this boat unless the sailor picks another.",
             "other_boats": "Other boats this sailor takes out.",
             "start": "Leave empty to start at sunrise.",
-            "end": "Leave empty to finish at sunset."
+            "end": "Leave empty to finish at sunset.",
+            "user": "The panel opens on this sailor for them."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Comfort",
+              "description": "What this sailor enjoys. These change scores, never a safety rating.",
+              "data": {
+                "ideal_low": "Ideal wind from",
+                "ideal_high": "Ideal wind up to",
+                "coldest": "Coldest air they enjoy",
+                "rain": "Rain"
+              },
+              "data_description": {
+                "ideal_low": "Narrows the ideal wind for each of their boats. Leave empty to use the boat's range.",
+                "ideal_high": "Leave empty to use the boat's range, up to the skill limit.",
+                "coldest": "Scores drop in colder air. Leave empty for 50 °F (10 °C)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatic calendar",
+              "description": "Add this sailor's best window each chosen day to a calendar, at most one event a day. SailCast keeps the event in step with the forecast until 6 PM the evening before, then warns instead of moving it.",
+              "data": {
+                "calendar": "Calendar",
+                "auto_days": "Days",
+                "min_score": "Only windows scoring",
+                "ahead": "How far ahead",
+                "auto_spots": "Spots"
+              },
+              "data_description": {
+                "calendar": "Leave empty to turn automatic adding off. Local Calendar, Google Calendar and CalDAV calendars accept new events.",
+                "ahead": "Forecasts change most beyond three days.",
+                "auto_spots": "When windows at different spots overlap, SailCast adds only the best one."
+              }
+            }
           }
         },
         "reconfigure": {
@@ -140,14 +175,49 @@
             "other_boats": "Other boats",
             "days": "Sailing days",
             "start": "Earliest start",
-            "end": "Latest finish"
+            "end": "Latest finish",
+            "user": "Home Assistant user"
           },
           "data_description": {
             "skill": "Each sailor rates their own skill. It sets their limit for sustained wind; gusts don't count toward it.",
             "default_boat": "SailCast rates this boat unless the sailor picks another.",
             "other_boats": "Other boats this sailor takes out.",
             "start": "Leave empty to start at sunrise.",
-            "end": "Leave empty to finish at sunset."
+            "end": "Leave empty to finish at sunset.",
+            "user": "The panel opens on this sailor for them."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Comfort",
+              "description": "What this sailor enjoys. These change scores, never a safety rating.",
+              "data": {
+                "ideal_low": "Ideal wind from",
+                "ideal_high": "Ideal wind up to",
+                "coldest": "Coldest air they enjoy",
+                "rain": "Rain"
+              },
+              "data_description": {
+                "ideal_low": "Narrows the ideal wind for each of their boats. Leave empty to use the boat's range.",
+                "ideal_high": "Leave empty to use the boat's range, up to the skill limit.",
+                "coldest": "Scores drop in colder air. Leave empty for 50 °F (10 °C)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatic calendar",
+              "description": "Add this sailor's best window each chosen day to a calendar, at most one event a day. SailCast keeps the event in step with the forecast until 6 PM the evening before, then warns instead of moving it.",
+              "data": {
+                "calendar": "Calendar",
+                "auto_days": "Days",
+                "min_score": "Only windows scoring",
+                "ahead": "How far ahead",
+                "auto_spots": "Spots"
+              },
+              "data_description": {
+                "calendar": "Leave empty to turn automatic adding off. Local Calendar, Google Calendar and CalDAV calendars accept new events.",
+                "ahead": "Forecasts change most beyond three days.",
+                "auto_spots": "When windows at different spots overlap, SailCast adds only the best one."
+              }
+            }
           }
         }
       },
@@ -157,7 +227,14 @@
         "name_taken": "Another sailor already has this name.",
         "unknown_boat": "That boat has been removed. Pick another.",
         "no_days": "Pick at least one day.",
-        "end_before_start": "The latest finish has to be after the earliest start."
+        "end_before_start": "The latest finish has to be after the earliest start.",
+        "ideal_out_of_range": "Use 0 to 40 kt.",
+        "ideal_high_below_low": "The top of the range has to be above the bottom.",
+        "coldest_out_of_range": "Use −20 to 35 °C (−4 to 95 °F).",
+        "calendar_read_only": "That calendar can't take new events. Pick a Local Calendar, Google Calendar or CalDAV calendar.",
+        "no_spots": "Pick at least one spot.",
+        "invalid_min_score": "Pick one of the choices.",
+        "invalid_ahead": "Pick one of the choices."
       },
       "abort": {
         "no_boats": "Add a boat first. Every sailor needs at least one."
@@ -209,6 +286,27 @@
         "fri": "Friday",
         "sat": "Saturday",
         "sun": "Sunday"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "Avoid rain",
+        "some": "A little rain is fine",
+        "any": "Rain doesn't bother them"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "Good or better: 60 and up",
+        "80": "Great: 80 and up"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "Today and tomorrow",
+        "2": "The next 3 days",
+        "4": "The next 5 days",
+        "6": "The whole week"
       }
     },
     "source": {
@@ -305,6 +403,9 @@
     },
     "no_forecast": {
       "message": "There's no forecast for {spot} yet."
+    },
+    "calendar_read_only": {
+      "message": "{calendar} can't take new events."
     }
   }
 }

@@ -8,13 +8,13 @@ describe("localize", () => {
   });
 
   it("fills placeholders", () => {
-    expect(localize("en", "length.feet", { value: 20 })).toBe("20 ft");
+    expect(localize("en", "unit.feet", { value: 20 })).toBe("20 ft");
   });
 
   it("falls back to English for other languages", () => {
-    expect(localize("de", "profiles.boats")).toBe("Boats");
-    expect(localize("pt-BR", "profiles.boats")).toBe("Boats");
-    expect(localize(undefined, "profiles.boats")).toBe("Boats");
+    expect(localize("de", "settings.boats")).toBe("Boats");
+    expect(localize("pt-BR", "settings.boats")).toBe("Boats");
+    expect(localize(undefined, "settings.boats")).toBe("Boats");
   });
 
   it("shows the key when a string is missing", () => {

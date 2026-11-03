@@ -17,7 +17,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DOMAIN
+from .const import CONF_CURRENT_STATION, DOMAIN
 from .geo import distance_km
 from .providers import ProviderError, noaa_coops, nws
 from .providers.noaa_coops import Station
@@ -135,3 +135,16 @@ def _one_per_station(choices: list[Choice]) -> list[Choice]:
 
 def _bin(choice: Choice) -> int:
     return int(choice.id.partition("_")[2] or 0)
+
+
+def suggested(key: str, found: list[Choice]) -> str | None:
+    """Return the source to suggest for a new spot, nearest first.
+
+    A current station is suggested only if it's close, because currents
+    change a lot over short distances.
+    """
+    if not found:
+        return None
+    if key == CONF_CURRENT_STATION and found[0].distance_km > NEAR_CURRENT_KM:
+        return None
+    return found[0].id

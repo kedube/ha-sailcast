@@ -143,7 +143,7 @@ def build(
             "daylight": bool(sun_day and sun_day.covers(when)),
             "wind": wind,
             "gust": _middle(forecast.at("wind_gusts_10m", index)) or wind,
-            "wind_direction": _mean_direction(forecast.at("wind_direction_10m", index)),
+            "wind_direction": mean_direction(forecast.at("wind_direction_10m", index)),
             "wind_models": winds,
             "temperature": _middle(forecast.at("temperature_2m", index)),
             "rain_chance": _most(forecast.at("precipitation_probability", index)),
@@ -233,7 +233,7 @@ def _least(values: Sequence[float | None]) -> float | None:
     return min(known) if known else None
 
 
-def _mean_direction(values: Sequence[float | None]) -> float:
+def mean_direction(values: Sequence[float | None]) -> float:
     """Return the average of compass directions, so 350° and 10° make 0°."""
     known = [math.radians(value) for value in values if value is not None]
     if not known:

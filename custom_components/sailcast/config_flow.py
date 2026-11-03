@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from typing import Any
 
+from homeassistant.components.calendar import CalendarEntityFeature
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -22,9 +23,15 @@ from homeassistant.const import (
     CONF_RADIUS,
     WEEKDAYS,
     UnitOfLength,
+    UnitOfSpeed,
+    UnitOfTemperature,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
+    EntitySelector,
+    EntitySelectorConfig,
+    EntityWithDeviceFilterSelectorConfig,
     LocationSelector,
     LocationSelectorConfig,
     NumberSelector,
@@ -37,25 +44,39 @@ from homeassistant.helpers.selector import (
     TextSelector,
     TimeSelector,
 )
-from homeassistant.util.unit_conversion import DistanceConverter
+from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
 import probatio
 
 from . import profiles
 from .const import (
+    CONF_AHEAD,
+    CONF_AUTO_CALENDAR,
+    CONF_AUTO_DAYS,
+    CONF_AUTO_SPOTS,
     CONF_BOATS,
+    CONF_CALENDAR,
+    CONF_COLDEST,
+    CONF_COMFORT,
     CONF_CURRENT_STATION,
     CONF_DAYS,
     CONF_DEFAULT_BOAT,
     CONF_END,
     CONF_EXPOSED,
+    CONF_IDEAL_HIGH,
+    CONF_IDEAL_LOW,
     CONF_LENGTH,
     CONF_MARINE_ZONE,
+    CONF_MIN_SCORE,
     CONF_OFFSHORE,
     CONF_OTHER_BOATS,
+    CONF_RAIN,
     CONF_SIZE_CLASS,
     CONF_SKILL,
+    CONF_SOURCE_NAMES,
+    CONF_SPOTS,
     CONF_START,
     CONF_TIDE_STATION,
+    CONF_USER,
     CONF_WATER_TYPE,
     DOMAIN,
     NAME,
@@ -63,7 +84,8 @@ from .const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
-from .sources import NEAR_CURRENT_KM, Choice, async_suggest
+from .planner import calendar_entity, supports
+from .sources import Choice, async_suggest, suggested
 
 # The "no source" choice in the sources step.
 NONE = "none"
@@ -121,6 +143,7 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
     ) -> SubentryFlowResult:
         if reason := self._abort_reason():
             return self.async_abort(reason=reason)
+        await self._async_prepare()
         errors: dict[str, str] = {}
         if user_input is not None:
             name = user_input[CONF_NAME].strip()
@@ -176,6 +199,9 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
         """Return why the form can't be shown, if it can't."""
         return None
 
+    async def _async_prepare(self) -> None:
+        """Look up anything the form needs."""
+
     def _defaults(self) -> dict[str, Any]:
         """Return suggested values for a new profile."""
         return {}
@@ -201,11 +227,14 @@ class SpotFlow(ProfileFlow):
     """Add or edit a spot, then pick its data sources."""
 
     _pending: tuple[str, dict[str, Any], ConfigSubentry | None]
+    # The names of the sources shown, by source and ID.
+    _names: dict[str, dict[str, str]]
 
     async def _async_done(
         self, name: str, data: dict[str, Any], subentry: ConfigSubentry | None
     ) -> SubentryFlowResult:
         self._pending = (name, data, subentry)
+        self._names = {}
         return await self.async_step_sources()
 
     async def async_step_sources(
@@ -216,12 +245,24 @@ class SpotFlow(ProfileFlow):
         SailCast suggests the nearest of each; None is always a choice.
         """
         name, data, subentry = self._pending
+        saved = dict(subentry.data) if subentry else {}
         if user_input is not None:
             sources = {
                 key: None if user_input.get(key, NONE) == NONE else user_input[key]
                 for key in SOURCES
             }
-            return self._save(name, data | sources, subentry)
+            # Keep each chosen source's name, or the one saved with it.
+            known = dict(saved.get(CONF_SOURCE_NAMES) or {})
+            names = {}
+            for key, value in sources.items():
+                source_name = self._names.get(key, {}).get(value or "")
+                if value and value == saved.get(key):
+                    source_name = source_name or known.get(key)
+                if source_name:
+                    names[key] = source_name
+            return self._save(
+                name, data | sources | {CONF_SOURCE_NAMES: names}, subentry
+            )
         suggestions = await async_suggest(
             self.hass, data[CONF_LATITUDE], data[CONF_LONGITUDE]
         )
@@ -230,7 +271,10 @@ class SpotFlow(ProfileFlow):
             CONF_CURRENT_STATION: suggestions.current,
             CONF_MARINE_ZONE: suggestions.zones,
         }
-        saved = dict(subentry.data) if subentry else {}
+        self._names = {
+            key: {choice.id: choice.name for choice in found}
+            for key, found in choices.items()
+        }
         schema = {}
         values = {}
         for key, found in choices.items():
@@ -251,7 +295,7 @@ class SpotFlow(ProfileFlow):
             if key in saved:
                 values[key] = chosen or NONE
             else:
-                values[key] = _suggested(key, found)
+                values[key] = suggested(key, found) or NONE
         return self.async_show_form(
             step_id="sources",
             data_schema=self.add_suggested_values_to_schema(
@@ -306,10 +350,10 @@ class SpotFlow(ProfileFlow):
             CONF_LONGITUDE: location[CONF_LONGITUDE],
             CONF_RADIUS: location.get(CONF_RADIUS, profiles.DEFAULT_RADIUS),
             CONF_WATER_TYPE: user_input[CONF_WATER_TYPE],
-            CONF_OFFSHORE: _in_order(
+            CONF_OFFSHORE: profiles.in_order(
                 user_input.get(CONF_OFFSHORE, ()), profiles.DIRECTIONS
             ),
-            CONF_EXPOSED: _in_order(
+            CONF_EXPOSED: profiles.in_order(
                 user_input.get(CONF_EXPOSED, ()), profiles.DIRECTIONS
             ),
         }
@@ -386,7 +430,22 @@ class BoatFlow(ProfileFlow):
 
 
 class SailorFlow(ProfileFlow):
-    """Add or edit a sailor. Every sailor needs at least one boat."""
+    """Add or edit a sailor. Every sailor needs at least one boat.
+
+    Comfort settings and automatic calendar adding are in sections that start
+    folded away.
+    """
+
+    _users: list[SelectOptionDict]
+
+    async def _async_prepare(self) -> None:
+        """Look up the people who can be linked to a sailor."""
+        users = await self.hass.auth.async_get_users()
+        self._users = [
+            SelectOptionDict(value=user.id, label=user.name or user.id)
+            for user in sorted(users, key=lambda user: (user.name or "").casefold())
+            if not user.system_generated and user.is_active
+        ]
 
     def _boat_options(self) -> list[SelectOptionDict]:
         boats = sorted(
@@ -396,11 +455,30 @@ class SailorFlow(ProfileFlow):
             SelectOptionDict(value=boat.subentry_id, label=boat.title) for boat in boats
         ]
 
+    def _spot_options(self) -> list[SelectOptionDict]:
+        spots = sorted(
+            self._subentries(SUBENTRY_SPOT), key=lambda spot: spot.title.casefold()
+        )
+        return [
+            SelectOptionDict(value=spot.subentry_id, label=spot.title) for spot in spots
+        ]
+
+    @property
+    def _temperature_unit(self) -> str:
+        return self.hass.config.units.temperature_unit
+
     def _abort_reason(self) -> str | None:
         return None if self._subentries(SUBENTRY_BOAT) else "no_boats"
 
     def _schema(self) -> probatio.Schema:
         boats = self._boat_options()
+        wind = NumberSelectorConfig(
+            min=0,
+            max=profiles.MAX_IDEAL_WIND,
+            step=1,
+            mode=NumberSelectorMode.BOX,
+            unit_of_measurement=UnitOfSpeed.KNOTS,
+        )
         return probatio.Schema(
             {
                 probatio.Required(CONF_NAME): TextSelector(),
@@ -420,58 +498,183 @@ class SailorFlow(ProfileFlow):
                 ),
                 probatio.Optional(CONF_START): TimeSelector(),
                 probatio.Optional(CONF_END): TimeSelector(),
+                probatio.Optional(CONF_USER): SelectSelector(
+                    SelectSelectorConfig(
+                        options=self._users, mode=SelectSelectorMode.DROPDOWN
+                    )
+                ),
+                probatio.Required(CONF_COMFORT): section(
+                    probatio.Schema(
+                        {
+                            probatio.Optional(CONF_IDEAL_LOW): NumberSelector(wind),
+                            probatio.Optional(CONF_IDEAL_HIGH): NumberSelector(wind),
+                            probatio.Optional(CONF_COLDEST): NumberSelector(
+                                NumberSelectorConfig(
+                                    step=1,
+                                    mode=NumberSelectorMode.BOX,
+                                    unit_of_measurement=self._temperature_unit,
+                                )
+                            ),
+                            probatio.Required(CONF_RAIN): _select(
+                                profiles.RainTolerance, CONF_RAIN
+                            ),
+                        }
+                    ),
+                    {"collapsed": True},
+                ),
+                probatio.Required(CONF_AUTO_CALENDAR): section(
+                    probatio.Schema(
+                        {
+                            probatio.Optional(CONF_CALENDAR): EntitySelector(
+                                EntitySelectorConfig(
+                                    filter=EntityWithDeviceFilterSelectorConfig(
+                                        domain="calendar",
+                                        supported_features=[
+                                            "calendar.CalendarEntityFeature.CREATE_EVENT"
+                                        ],
+                                    )
+                                )
+                            ),
+                            probatio.Optional(CONF_AUTO_DAYS): _select(
+                                WEEKDAYS, CONF_DAYS, multiple=True
+                            ),
+                            probatio.Optional(CONF_MIN_SCORE): _select(
+                                map(str, profiles.MIN_SCORES), CONF_MIN_SCORE
+                            ),
+                            probatio.Optional(CONF_AHEAD): _select(
+                                map(str, profiles.AHEAD_DAYS),
+                                CONF_AHEAD,
+                                mode=SelectSelectorMode.DROPDOWN,
+                            ),
+                            probatio.Optional(CONF_AUTO_SPOTS): SelectSelector(
+                                SelectSelectorConfig(
+                                    options=self._spot_options(),
+                                    multiple=True,
+                                    mode=SelectSelectorMode.DROPDOWN,
+                                )
+                            ),
+                        }
+                    ),
+                    {"collapsed": True},
+                ),
             }
         )
 
     def _defaults(self) -> dict[str, Any]:
-        defaults: dict[str, Any] = {CONF_DAYS: list(WEEKDAYS)}
+        defaults: dict[str, Any] = {
+            CONF_DAYS: list(WEEKDAYS),
+            CONF_COMFORT: {CONF_RAIN: profiles.RainTolerance.SOME.value},
+            CONF_AUTO_CALENDAR: _auto_defaults(self._spot_options()),
+        }
         if len(boats := self._boat_options()) == 1:
             defaults[CONF_DEFAULT_BOAT] = boats[0]["value"]
         return defaults
 
     def _to_data(self, user_input: Mapping[str, Any]) -> dict[str, Any]:
         default = user_input[CONF_DEFAULT_BOAT]
+        comfort = user_input.get(CONF_COMFORT, {})
+        coldest = comfort.get(CONF_COLDEST)
+        if coldest is not None:
+            coldest = round(
+                TemperatureConverter.convert(
+                    coldest, self._temperature_unit, UnitOfTemperature.CELSIUS
+                ),
+                1,
+            )
+        auto = user_input.get(CONF_AUTO_CALENDAR, {})
         return {
             CONF_SKILL: user_input[CONF_SKILL],
             CONF_BOATS: list(
                 dict.fromkeys([default, *user_input.get(CONF_OTHER_BOATS, ())])
             ),
-            CONF_DAYS: _in_order(user_input[CONF_DAYS], WEEKDAYS),
+            CONF_DAYS: profiles.in_order(user_input[CONF_DAYS], WEEKDAYS),
             CONF_START: user_input.get(CONF_START),
             CONF_END: user_input.get(CONF_END),
+            CONF_USER: user_input.get(CONF_USER) or None,
+            CONF_COMFORT: {
+                CONF_IDEAL_LOW: comfort.get(CONF_IDEAL_LOW),
+                CONF_IDEAL_HIGH: comfort.get(CONF_IDEAL_HIGH),
+                CONF_COLDEST: coldest,
+                CONF_RAIN: comfort.get(CONF_RAIN, profiles.RainTolerance.SOME.value),
+            },
+            CONF_AUTO_CALENDAR: {
+                CONF_CALENDAR: auto[CONF_CALENDAR],
+                CONF_DAYS: profiles.in_order(auto.get(CONF_AUTO_DAYS, ()), WEEKDAYS),
+                CONF_MIN_SCORE: int(auto.get(CONF_MIN_SCORE, profiles.MIN_SCORES[0])),
+                CONF_AHEAD: int(auto.get(CONF_AHEAD, profiles.AHEAD_DAYS[1])),
+                CONF_SPOTS: list(auto.get(CONF_AUTO_SPOTS, ())),
+            }
+            if auto.get(CONF_CALENDAR)
+            else None,
         }
 
     def _to_form(self, subentry: ConfigSubentry) -> dict[str, Any]:
         data = subentry.data
         existing = {option["value"] for option in self._boat_options()}
         boats = [boat for boat in data[CONF_BOATS] if boat in existing]
+        comfort = dict(data.get(CONF_COMFORT) or {})
+        if comfort.get(CONF_COLDEST) is not None:
+            comfort[CONF_COLDEST] = round(
+                TemperatureConverter.convert(
+                    comfort[CONF_COLDEST],
+                    UnitOfTemperature.CELSIUS,
+                    self._temperature_unit,
+                )
+            )
+        auto = data.get(CONF_AUTO_CALENDAR)
         form: dict[str, Any] = {
             CONF_NAME: subentry.title,
             CONF_SKILL: data[CONF_SKILL],
             CONF_DAYS: list(data[CONF_DAYS]),
+            CONF_COMFORT: {
+                CONF_RAIN: profiles.RainTolerance.SOME.value,
+                **{key: value for key, value in comfort.items() if value is not None},
+            },
+            CONF_AUTO_CALENDAR: {
+                CONF_CALENDAR: auto[CONF_CALENDAR],
+                CONF_AUTO_DAYS: list(auto[CONF_DAYS]),
+                CONF_MIN_SCORE: str(auto[CONF_MIN_SCORE]),
+                CONF_AHEAD: str(auto[CONF_AHEAD]),
+                CONF_AUTO_SPOTS: list(auto[CONF_SPOTS]),
+            }
+            if auto
+            else _auto_defaults(self._spot_options()),
         }
         if boats:
             form[CONF_DEFAULT_BOAT] = boats[0]
             form[CONF_OTHER_BOATS] = boats[1:]
-        form.update({key: data[key] for key in (CONF_START, CONF_END) if data[key]})
+        form.update(
+            {
+                key: data[key]
+                for key in (CONF_START, CONF_END, CONF_USER)
+                if data.get(key)
+            }
+        )
         return form
 
     def _check(self, data: Mapping[str, Any]) -> dict[str, str]:
         boats = {option["value"] for option in self._boat_options()}
-        errors = profiles.check_sailor(data, boats)
+        spots = {option["value"] for option in self._spot_options()}
+        errors = profiles.check_sailor(data, boats, spots)
         # Boat problems show on the usual boat, the one field that's required.
         if CONF_BOATS in errors:
             errors[CONF_DEFAULT_BOAT] = errors.pop(CONF_BOATS)
+        if (auto := data[CONF_AUTO_CALENDAR]) and not (
+            (entity := calendar_entity(self.hass, auto[CONF_CALENDAR]))
+            and supports(entity, CalendarEntityFeature.CREATE_EVENT)
+        ):
+            errors[CONF_CALENDAR] = "calendar_read_only"
         return errors
 
 
-def _suggested(key: str, found: list[Choice]) -> str:
-    """Return the source to suggest for a new spot."""
-    if not found:
-        return NONE
-    if key == CONF_CURRENT_STATION and found[0].distance_km > NEAR_CURRENT_KM:
-        return NONE
-    return found[0].id
+def _auto_defaults(spots: list[SelectOptionDict]) -> dict[str, Any]:
+    """Return automatic adding's suggestions: weekends, good, three days."""
+    return {
+        CONF_AUTO_DAYS: ["sat", "sun"],
+        CONF_MIN_SCORE: str(profiles.MIN_SCORES[0]),
+        CONF_AHEAD: str(profiles.AHEAD_DAYS[1]),
+        CONF_AUTO_SPOTS: [spot["value"] for spot in spots],
+    }
 
 
 def _select(
@@ -492,9 +695,3 @@ def _select(
             mode=mode,
         )
     )
-
-
-def _in_order(values: Iterable[str], order: Iterable[str]) -> list[str]:
-    """Return the chosen values in a fixed order, such as Monday to Sunday."""
-    chosen = set(values)
-    return [value for value in order if value in chosen]

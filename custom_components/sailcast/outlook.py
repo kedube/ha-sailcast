@@ -1,8 +1,8 @@
 """Ratings, scores and sailing windows for each sailor at each spot.
 
 Everything here is computed from the spots' timelines, with no I/O, so it can
-run in a worker thread. Entities, the calendar and the get_forecast action
-read the results; the panel will too.
+run in a worker thread. Entities, the calendar, the get_forecast action and
+the panel read the results.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from .profiles import Boat, Profiles, Sailor, SizeClass, Spot
-from .providers.noaa_coops import TideEvent
+from .providers.noaa_coops import CurrentEvent, TideEvent
 from .rating import Rating, rate
 from .scoring import (
     Confidence,
@@ -36,6 +36,7 @@ class SpotConditions:
     hours: tuple[Hour, ...]
     days: tuple[Daylight, ...]
     tide_events: tuple[TideEvent, ...] = ()
+    current_events: tuple[CurrentEvent, ...] = ()
     alerts: tuple[Alert, ...] = ()
 
     def index_at(self, when: datetime) -> int | None:
@@ -161,7 +162,7 @@ def _boat_outlook(
         HourOutlook(
             hour=hour,
             rating=rating,
-            score=score(hour, boat.size_class, sailor.skill, rating)
+            score=score(hour, boat.size_class, sailor.skill, rating, sailor.comfort)
             if hour.daylight
             else None,
             available=free,

@@ -3,8 +3,10 @@
 The score (0-100) says how good an hour is for a sailor in a boat. It starts
 from how well the wind fits the sailor's ideal range, takes off points for
 gusts, waves, rain, cold and poor visibility, and is capped by the safety
-rating. A sailing window is two or more hours in a row, in daylight and in the
-sailor's time, scoring 60 or more.
+rating. A sailor's comfort settings change the ideal range, the rain penalty
+and where cold starts to count, but never the rating. A sailing window is two
+or more hours in a row, in daylight and in the sailor's time, scoring 60 or
+more.
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from typing import Final
 from homeassistant.const import WEEKDAYS
 
 from .limits import BOAT_LIMITS, FOOT, SKILL_WIND_LIMITS, Level
-from .profiles import SizeClass, Skill
+from .profiles import Comfort, RainTolerance, SizeClass, Skill
 from .rating import Rating
 from .timeline import Hour
 
@@ -62,6 +64,14 @@ class Confidence(StrEnum):
 # Typical spread between the models' wind (kt) for high and medium.
 CONFIDENCE_SPREADS: Final = (3.0, 6.0)
 
+# Points off for each percent chance of rain, by the sailor's tolerance.
+RAIN_PENALTIES: Final = MappingProxyType(
+    {RainTolerance.AVOID: 0.5, RainTolerance.SOME: 0.35, RainTolerance.ANY: 0.15}
+)
+# Cold costs 1.2 points for each °F below this (°C), unless a sailor sets
+# their own coldest comfortable air.
+COLD_START: Final = 10.0
+
 
 def band(score: int) -> Band:
     """Return the band a score falls in."""
@@ -74,22 +84,40 @@ def band(score: int) -> Band:
     return Band.POOR
 
 
-def ideal_wind(size: SizeClass, skill: Skill) -> tuple[float, float]:
+def ideal_wind(
+    size: SizeClass, skill: Skill, comfort: Comfort | None = None
+) -> tuple[float, float]:
     """Return a sailor's ideal wind range (kt) for a boat size.
 
     The range tops out at the boat's ideal top or the skill's wind limit,
-    whichever is lower, so a higher skill level never lowers a score.
+    whichever is lower, so a higher skill level never lowers a score. A
+    sailor's own ideal range can narrow it; one that doesn't overlap it is
+    ignored.
     """
     low, top = BOAT_LIMITS[size].ideal_wind
     limit = SKILL_WIND_LIMITS[skill]
-    return low, top if limit is None else min(top, limit)
+    high = top if limit is None else min(top, limit)
+    if comfort is None:
+        return low, high
+    narrowed = (
+        low if comfort.ideal_low is None else max(low, comfort.ideal_low),
+        high if comfort.ideal_high is None else min(high, comfort.ideal_high),
+    )
+    return narrowed if narrowed[0] < narrowed[1] else (low, high)
 
 
-def score(hour: Hour, size: SizeClass, skill: Skill, rating: Rating) -> int:
+def score(
+    hour: Hour,
+    size: SizeClass,
+    skill: Skill,
+    rating: Rating,
+    comfort: Comfort | None = None,
+) -> int:
     """Score an hour for a boat size and skill level, given its rating."""
+    comfort = comfort or Comfort()
     limits = BOAT_LIMITS[size]
     limit = SKILL_WIND_LIMITS[skill]
-    low, high = ideal_wind(size, skill)
+    low, high = ideal_wind(size, skill, comfort)
     if hour.wind < low:
         value = 100 - (low - hour.wind) * 16
     elif hour.wind <= high:
@@ -102,10 +130,11 @@ def score(hour: Hour, size: SizeClass, skill: Skill, rating: Rating) -> int:
     if hour.wave_height is not None and hour.wave_height > limits.wave[0]:
         value -= (hour.wave_height - limits.wave[0]) / FOOT * 15
     if hour.rain_chance is not None:
-        value -= hour.rain_chance * 0.35
-    if hour.temperature is not None and hour.temperature < 10:
-        # 1.2 points for each °F below 50 °F.
-        value -= (10 - hour.temperature) * 9 / 5 * 1.2
+        value -= hour.rain_chance * RAIN_PENALTIES[comfort.rain]
+    cold = COLD_START if comfort.coldest is None else comfort.coldest
+    if hour.temperature is not None and hour.temperature < cold:
+        # 1.2 points for each °F below.
+        value -= (cold - hour.temperature) * 9 / 5 * 1.2
     if hour.visibility is not None:
         if hour.visibility < 2000:
             value -= 30
