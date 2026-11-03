@@ -11,6 +11,7 @@ import { arrow, icon, ring, type IconName } from "./glyphs";
 import { adviceText, compass, heightText, reasonsText } from "./text";
 import type { Day, Hour, Level } from "./types";
 import { addIcon, addText, chip, hoursOf, isPast, SIZES, smoothPath } from "./week";
+import { windColor } from "./wind-field";
 
 const ADVICE_ICONS: Record<string, IconName> = {
   alert: "alert",
@@ -25,37 +26,6 @@ const ADVICE_ICONS: Record<string, IconName> = {
   waves: "waves",
   windy: "windy",
 };
-
-/** Wind colors, as on the wind map: blue in light air to purple in a gale. */
-const WIND_STOPS: [number, [number, number, number]][] = [
-  [0, [91, 107, 184]],
-  [4, [61, 143, 196]],
-  [8, [43, 179, 164]],
-  [12, [87, 194, 79]],
-  [16, [227, 196, 58]],
-  [20, [240, 138, 44]],
-  [25, [224, 69, 58]],
-  [30, [184, 50, 122]],
-  [35, [123, 63, 160]],
-];
-
-/** The color of a wind speed, blended between the stops. */
-export function windColor(knots: number): [number, number, number] {
-  if (knots <= 0) return WIND_STOPS[0][1];
-  for (let i = 1; i < WIND_STOPS.length; i++) {
-    const [k1, c1] = WIND_STOPS[i];
-    if (knots <= k1) {
-      const [k0, c0] = WIND_STOPS[i - 1];
-      const f = (knots - k0) / (k1 - k0);
-      return [0, 1, 2].map((j) => Math.round(c0[j] + (c1[j] - c0[j]) * f)) as [
-        number,
-        number,
-        number,
-      ];
-    }
-  }
-  return WIND_STOPS[WIND_STOPS.length - 1][1];
-}
 
 function windCell(knots: number): string {
   const [r, g, b] = windColor(knots);

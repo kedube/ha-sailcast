@@ -221,7 +221,9 @@ def mock_sources(
     Without predictions, tide and current requests are left unanswered.
     """
     aioclient_mock.get(
-        open_meteo.FORECAST_URL, side_effect=by_point("open_meteo_forecast", POINTS)
+        open_meteo.FORECAST_URL,
+        params={"models": ",".join(open_meteo.MODELS)},
+        side_effect=by_point("open_meteo_forecast", POINTS),
     )
     aioclient_mock.get(
         open_meteo.MARINE_URL, side_effect=by_point("open_meteo_marine", POINTS[:2])
@@ -240,6 +242,55 @@ def mock_sources(
         noaa_coops.DATA_URL,
         params={"station": "PCT0056", "product": "currents_predictions"},
         json=fixture("noaa_currents_PCT0056_1"),
+    )
+
+
+def wind_response(start: datetime = RECORDED) -> Any:
+    """Answer a wind grid request with made-up wind for each point.
+
+    Every point has the same week from the start's midnight (UTC): wind
+    building from 5 kt by a knot an hour and starting again each day, from
+    the west, with gusts 6 kt over it. Points further north get a knot more
+    for each row.
+    """
+    midnight = int(start.replace(hour=0, minute=0, second=0).timestamp())
+
+    async def respond(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
+        lats = [float(value) for value in url.query["latitude"].split(",")]
+        lons = [float(value) for value in url.query["longitude"].split(",")]
+        south = min(lats)
+        places = [
+            {
+                "latitude": lat,
+                "longitude": lon,
+                "hourly": {
+                    "time": [midnight + hour * 3600 for hour in range(168)],
+                    "wind_speed_10m": [
+                        5.0 + hour % 24 + round((lat - south) * 50)
+                        for hour in range(168)
+                    ],
+                    "wind_direction_10m": [270] * 168,
+                    "wind_gusts_10m": [
+                        11.0 + hour % 24 + round((lat - south) * 50)
+                        for hour in range(168)
+                    ],
+                },
+            }
+            for lat, lon in zip(lats, lons, strict=True)
+        ]
+        return AiohttpClientMockResponse(
+            method, url, json=places if len(places) > 1 else places[0]
+        )
+
+    return respond
+
+
+def mock_wind(aioclient_mock: AiohttpClientMocker) -> None:
+    """Answer wind grid requests with made-up wind."""
+    aioclient_mock.get(
+        open_meteo.FORECAST_URL,
+        params={"hourly": ",".join(open_meteo.WIND_VARIABLES)},
+        side_effect=wind_response(),
     )
 
 

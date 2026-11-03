@@ -9,6 +9,7 @@ import type {
   SailCastConfig,
   SaveResult,
   SourceSuggestions,
+  WindGrid,
 } from "./types";
 
 export type ProfileKind = "spot" | "boat" | "sailor";
@@ -76,6 +77,10 @@ export class Api {
 
   removeFromCalendar(planned: string): Promise<{ deleted: boolean }> {
     return this.send("calendar/remove", { planned });
+  }
+
+  windGrid(spot: string): Promise<WindGrid> {
+    return this.send("wind_grid", { spot });
   }
 
   planned(): Promise<PlannedList> {

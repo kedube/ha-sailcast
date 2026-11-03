@@ -1,8 +1,9 @@
-"""Open-Meteo: the forecast from three models, and marine data.
+"""Open-Meteo: the forecast from three models, marine data and the wind map's grid.
 
 One request covers every spot. Times are requested as Unix seconds in UTC,
 with a day of past hours so the timeline can start at local midnight
-anywhere.
+anywhere. The wind map's grid is one request for all its points, from
+Open-Meteo's best model for the place, with no past hours.
 """
 
 from __future__ import annotations
@@ -37,6 +38,7 @@ MARINE_VARIABLES: Final = (
     "wave_direction",
     "sea_surface_temperature",
 )
+WIND_VARIABLES: Final = ("wind_speed_10m", "wind_direction_10m", "wind_gusts_10m")
 PAST_DAYS: Final = 1
 FORECAST_DAYS: Final = 7
 
@@ -66,6 +68,19 @@ class Marine:
     values: Mapping[str, Values]
 
 
+@dataclass(frozen=True, slots=True)
+class WindPoints:
+    """Hourly wind at many points: one series per point for each variable.
+
+    Speeds are in knots, and directions in degrees the wind comes from.
+    """
+
+    times: tuple[datetime, ...]
+    speed: tuple[Values, ...]
+    direction: tuple[Values, ...]
+    gust: tuple[Values, ...]
+
+
 def calls(variables: int, points: int, days: int = PAST_DAYS + FORECAST_DAYS) -> float:
     """Return how many calls Open-Meteo counts for a request.
 
@@ -83,6 +98,11 @@ def forecast_calls(points: int) -> float:
 def marine_calls(points: int) -> float:
     """Return the calls counted for one marine request."""
     return calls(len(MARINE_VARIABLES), points)
+
+
+def wind_calls(points: int) -> float:
+    """Return the calls counted for one wind grid request."""
+    return calls(len(WIND_VARIABLES), points, FORECAST_DAYS)
 
 
 async def async_get_forecast(
@@ -108,6 +128,18 @@ async def async_get_marine(
         _params(points, MARINE_VARIABLES) | {"cell_selection": "sea"},
     )
     return parse_marine(payload, len(points))
+
+
+async def async_get_wind(
+    session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
+) -> WindPoints:
+    """Return the hourly wind at each point, from now for a week."""
+    payload = await fetch_json(
+        session,
+        FORECAST_URL,
+        _params(points, WIND_VARIABLES) | {"past_days": 0, "wind_speed_unit": "kn"},
+    )
+    return parse_wind(payload, len(points))
 
 
 def parse_forecast(payload: Any, count: int) -> list[Forecast]:
@@ -141,6 +173,22 @@ def parse_marine(payload: Any, count: int) -> list[Marine]:
         )
         for place in _places(payload, count)
     ]
+
+
+def parse_wind(payload: Any, count: int) -> WindPoints:
+    """Read a wind response for `count` points."""
+    places = _places(payload, count)
+    times = _times(places[0]["hourly"])
+    if any(len(place["hourly"]["time"]) != len(times) for place in places):
+        raise ProviderError("Open-Meteo returned points with different hours")
+    return WindPoints(
+        times=times,
+        speed=tuple(_series(place["hourly"], "wind_speed_10m") for place in places),
+        direction=tuple(
+            _series(place["hourly"], "wind_direction_10m") for place in places
+        ),
+        gust=tuple(_series(place["hourly"], "wind_gusts_10m") for place in places),
+    )
 
 
 def _params(

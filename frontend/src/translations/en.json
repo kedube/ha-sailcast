@@ -5,6 +5,7 @@
     "label": "SailCast views",
     "week": "Week",
     "day": "Day",
+    "map": "Wind map",
     "settings": "Settings"
   },
   "pickers": {
@@ -243,6 +244,27 @@
     "hours": "Hour by hour",
     "hours_sub": "Daylight hours"
   },
+  "map": {
+    "label": "Animated wind map around {spot}",
+    "layer_label": "Map layer",
+    "wind": "Wind",
+    "gust": "Gusts",
+    "legend": "Wind speed scale, 0 to 35 knots",
+    "point": "Point at the map to read the wind",
+    "tap": "Tap the map to read the wind",
+    "readout": "{direction} {speed} kt · gusts {gust} kt",
+    "spot": "{spot} · {speed} kt",
+    "time": "Forecast time",
+    "play": "Play",
+    "pause": "Pause",
+    "jump": "Jump to a day",
+    "loading": "Loading the wind map…",
+    "failed": "The map couldn't load.",
+    "budget": "The wind map rests until tomorrow, so SailCast stays within Open-Meteo's free daily calls. The forecast itself keeps going.",
+    "unavailable": "The wind map couldn't load: {message}",
+    "stale": "This is the wind as forecast on {time}; SailCast couldn't fetch a newer one.",
+    "credits": "Wind © Open-Meteo (CC BY 4.0), from its best model for the area, about every 2 km and hourly. Map © OpenStreetMap contributors, seamarks © OpenSeaMap. Not for navigation."
+  },
   "table": {
     "direction": "Direction",
     "wind": "Wind kt",
@@ -377,7 +399,7 @@
     "add_submit": "Add spot",
     "pin": "Pin on the water",
     "map_label": "Map of the spot. Select the water to move the pin.",
-    "pin_hint": "{position}. Select the water to move the pin, or drag it; arrow keys move it too. The circle is the area the wind map will show.",
+    "pin_hint": "{position}. Select the water to move the pin, or drag it; arrow keys move it too. The circle is the area the wind map will show. ▲ tide and ◆ current stations nearby.",
     "radius_km": "Wind map area: {value} km around the pin",
     "radius_miles": "Wind map area: {value} mi around the pin",
     "water": "Water",
@@ -394,7 +416,9 @@
     "none": "None",
     "nearest": "nearest",
     "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides and currents come from NOAA and warnings from the National Weather Service, so for now they cover US waters only.",
-    "sources_failed": "Couldn't look up nearby sources. You can save without them and add them later."
+    "sources_failed": "Couldn't look up nearby sources. You can save without them and add them later.",
+    "tide_mark": "Tide station: {name} ({id})",
+    "current_mark": "Current station: {name} ({id})"
   },
   "error": {
     "load": "SailCast couldn't load: {message}",

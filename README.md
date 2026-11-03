@@ -19,7 +19,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 
 ## Status
 
-SailCast is in early development. Milestones 0 to 2 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. The sidebar panel shows the week as a calendar, each day hour by hour, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. The wind map comes in milestone 3. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
+SailCast is in early development. Milestones 0 to 3 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. Local accuracy (buoys, airports, your own sensors, and waves in sheltered water) comes in milestone 4. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
 
 ## Install
 
@@ -36,6 +36,10 @@ SailCast needs Home Assistant 2026.11 or newer. It isn't in the Marketplace's de
 Only administrators can change settings. Everyone can pick their own spot, sailor and boat at the top of the panel, and SailCast remembers the choice on every device.
 
 Each sailor rates their own skill, which sets their limit for sustained wind: up to 10 kt for Beginner, 16 kt for Intermediate, and no limit for Advanced. Gusts don't count toward it.
+
+## The wind map
+
+The **Wind map** tab shows the wind or the gusts around a spot as colors, with particles that follow the wind. Play through the week, jump to a day, or point at the map to read the wind there. A grid of points about 2 km apart is fetched only when you open the map and kept for three hours, and nearby spots share it. Each point counts toward Open-Meteo's free daily allowance, so SailCast stops fetching grids well before the limit and shows the last one instead.
 
 ## Your own calendar
 

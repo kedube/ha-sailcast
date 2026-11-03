@@ -22,8 +22,9 @@ from pytest_homeassistant_custom_component.typing import (
 
 from custom_components.sailcast.const import DOMAIN, SIGNAL_UPDATED, SUBENTRY_SAILOR
 from custom_components.sailcast.storage import DATA_STORE
+from custom_components.sailcast.wind import STOP_AT
 
-from .conftest import HARBOR_POINT, RECORDED, mock_suggestions
+from .conftest import HARBOR_POINT, RECORDED, mock_suggestions, mock_wind
 
 type Send = Callable[..., Awaitable[dict[str, Any]]]
 
@@ -364,6 +365,11 @@ async def test_sources(
     assert result["suggested"]["tide_station"] == result["tide_station"][0]["id"]
     assert result["tide_station"][0]["distance"] < result["tide_station"][1]["distance"]
     assert result["failed"] is False
+    # Stations come with their positions, for the spot map; zones don't.
+    station = result["tide_station"][0]
+    assert isinstance(station["latitude"], float)
+    assert isinstance(station["longitude"], float)
+    assert result["marine_zone"][0]["latitude"] is None
 
 
 async def test_calendar_add_and_remove(
@@ -438,3 +444,40 @@ async def test_skipped_days(
     result = await send("planned/skipped", sailor="sailor_alex", days=["2026-11-08"])
     assert result["result"] == ["2026-11-08"]
     assert store.skipped("sailor_alex") == {datetime(2026, 11, 8, tzinfo=UTC).date()}
+
+
+async def test_wind_grid(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The test spots' circles overlap, so they share one grid, fetched once."""
+    mock_wind(aioclient_mock)
+    before = aioclient_mock.call_count
+    grid = (await send("wind_grid", spot="spot_river"))["result"]
+    assert grid["spots"] == ["spot_bay", "spot_harbor", "spot_river"]
+    assert (grid["rows"], grid["cols"]) == (15, 15)
+    assert len(grid["speed"][0]) == len(grid["gust"][0]) == 225
+    assert grid["times"][0] == "2026-11-02T22:00:00+00:00"
+    assert grid["stale"] is False
+    shared = (await send("wind_grid", spot="spot_harbor"))["result"]
+    assert shared["fetched"] == grid["fetched"]
+    assert aioclient_mock.call_count == before + 1
+    assert loaded.runtime_data.budget.today >= 225
+
+    response = await send("wind_grid", spot="spot_gone")
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_wind_grid_budget(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Near the day's limit, a grid that was never fetched can't be shown."""
+    mock_wind(aioclient_mock)
+    loaded.runtime_data.budget.add(STOP_AT)
+    response = await send("wind_grid", spot="spot_river")
+    assert response["error"]["code"] == "budget"

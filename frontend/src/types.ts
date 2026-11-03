@@ -31,7 +31,7 @@ export type SizeClass = "dinghy" | "small_keelboat" | "cruiser" | "large_cruiser
 export type Skill = "beginner" | "intermediate" | "advanced";
 export type WaterType = "open_coast" | "bay" | "river" | "lake";
 export type Theme = "auto" | "day" | "night";
-export type View = "week" | "day" | "settings";
+export type View = "week" | "day" | "map" | "settings";
 export type SourceKey = "tide_station" | "current_station" | "marine_zone";
 
 export interface Spot {
@@ -275,6 +275,9 @@ export interface SourceChoice {
   name: string;
   /** Kilometers. */
   distance: number;
+  /** Where a station is; zones have none. */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface SourceSuggestions {
@@ -283,6 +286,30 @@ export interface SourceSuggestions {
   marine_zone: SourceChoice[];
   suggested: Record<SourceKey, string | null>;
   failed: boolean;
+}
+
+/**
+ * The reply to `sailcast/wind_grid`: the wind on a grid, hour by hour from
+ * the hour under way. Each hour has a value per point, a row at a time from
+ * the south-west corner: speeds and gusts in knots, and directions in
+ * degrees the wind comes from.
+ */
+export interface WindGrid {
+  fetched: string;
+  /** Whether it's older than SailCast would like, because it couldn't fetch another. */
+  stale: boolean;
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+  rows: number;
+  cols: number;
+  /** The spots it covers. */
+  spots: string[];
+  times: string[];
+  speed: (number | null)[][];
+  gust: (number | null)[][];
+  direction: (number | null)[][];
 }
 
 /** A settings change's result: the profile's ID, or what's wrong. */

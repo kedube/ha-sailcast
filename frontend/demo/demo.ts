@@ -3,7 +3,7 @@
  * stand-in for Home Assistant. Write its data first with
  * `.venv/bin/python scripts/demo_data.py` from the repository.
  *
- * Options: ?mode=night, ?units=metric, ?admin=0, ?empty, ?view=day.
+ * Options: ?mode=night, ?units=metric, ?admin=0, ?empty, ?view=day or map.
  */
 import "../src/sailcast-panel";
 import type {
@@ -12,6 +12,7 @@ import type {
   PlannedList,
   PlannedSail,
   SailCastConfig,
+  WindGrid,
 } from "../src/types";
 
 interface DemoData {
@@ -20,6 +21,7 @@ interface DemoData {
   config: SailCastConfig;
   forecasts: Record<string, Forecast>;
   planned: PlannedList;
+  wind_grid: WindGrid;
 }
 
 const params = new URLSearchParams(location.search);
@@ -88,9 +90,40 @@ async function start(): Promise<void> {
         return { deleted: true };
       case "settings/sources":
         return {
-          tide_station: [{ id: "9410170", name: "SAN DIEGO", distance: 2.4 }],
-          current_station: [{ id: "PCT0056_1", name: "North Island", distance: 6.1 }],
-          marine_zone: [{ id: "PZZ740", name: "Coastal waters to 10 nm", distance: 0 }],
+          tide_station: [
+            {
+              id: "9410170",
+              name: "SAN DIEGO",
+              distance: 2.4,
+              latitude: 32.7142,
+              longitude: -117.1736,
+            },
+            {
+              id: "9410196",
+              name: "MISSION BAY",
+              distance: 4.0,
+              latitude: 32.7633,
+              longitude: -117.2267,
+            },
+          ],
+          current_station: [
+            {
+              id: "PCT0056_1",
+              name: "North Island",
+              distance: 6.1,
+              latitude: 32.7034,
+              longitude: -117.2196,
+            },
+          ],
+          marine_zone: [
+            {
+              id: "PZZ740",
+              name: "Coastal waters to 10 nm",
+              distance: 0,
+              latitude: null,
+              longitude: null,
+            },
+          ],
           suggested: { tide_station: "9410170", current_station: null, marine_zone: "PZZ740" },
           failed: false,
         };
@@ -100,6 +133,11 @@ async function start(): Promise<void> {
         return { profile: message.profile };
       case "planned/skipped":
         return message.days;
+      case "wind_grid":
+        if (!data.wind_grid.spots.includes(String(message.spot))) {
+          throw { code: "not_found", message: "Unknown spot" };
+        }
+        return data.wind_grid;
       default:
         throw { code: "unknown_command", message: `The demo doesn't answer ${type}` };
     }
