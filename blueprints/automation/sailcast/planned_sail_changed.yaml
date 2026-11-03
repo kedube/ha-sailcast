@@ -1,0 +1,53 @@
+blueprint:
+  name: "SailCast: a planned sail got worse"
+  description: >-
+    Sends a notification when the forecast for a sailing window in your
+    calendar gets worse: an hour drops below good, or the score below 60. The
+    message is SailCast's own, in Home Assistant's language. SailCast also
+    shows it in Home Assistant's notifications. Sails whose forecast warnings
+    you turned off don't send it.
+  domain: automation
+  author: SailCast
+  source_url: https://github.com/kedube/ha-sailcast/blob/main/blueprints/automation/sailcast/planned_sail_changed.yaml
+  homeassistant:
+    min_version: "2026.11.0"
+  input:
+    notify_device:
+      name: Phone
+      description: The Home Assistant app to send the notification to.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    sailor:
+      name: Sailor
+      description: Only this sailor's sails, by name. Leave empty for everyone's.
+      default: ""
+      selector:
+        text: {}
+    title:
+      name: Title
+      default: "SailCast: forecast changed"
+      selector:
+        text: {}
+
+mode: queued
+
+variables:
+  sailor: !input sailor
+
+triggers:
+  - trigger: event
+    event_type: sailcast_planned_sail_changed
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ not sailor or (trigger.event.data.sailor | lower) == (sailor | lower) }}
+
+actions:
+  - domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    title: !input title
+    message: "{{ trigger.event.data.message }}"
