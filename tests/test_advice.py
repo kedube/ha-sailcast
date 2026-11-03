@@ -10,7 +10,7 @@ import pytest
 
 from custom_components.sailcast.advice import Advice, advise
 from custom_components.sailcast.profiles import SizeClass, Skill, Spot, WaterType
-from custom_components.sailcast.providers.noaa_coops import TideEvent
+from custom_components.sailcast.providers import TideEvent
 from custom_components.sailcast.summary import Trend, summarize
 from custom_components.sailcast.timeline import Alert, Daylight, Hour
 

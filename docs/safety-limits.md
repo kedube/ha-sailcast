@@ -68,11 +68,11 @@ The lowest rating while a warning is in effect, at every skill level.
 
 | Warning | Dinghy and beach cat | Small keelboat 16–25 ft | Cruiser 25–35 ft | Large cruiser 35 ft+ |
 | --- | --- | --- | --- | --- |
-| Small Craft Advisory; Brisk Wind Advisory | Not recommended | Not recommended | Caution | Caution |
-| Dense Fog Advisory; Dense Smoke Advisory; Freezing Spray Advisory | Not recommended | Not recommended | Caution | Caution |
-| Gale Warning; Hazardous Seas Warning; Heavy Freezing Spray Warning | Dangerous | Dangerous | Dangerous | Not recommended |
-| Storm Warning; Hurricane Force Wind Warning; Tropical Storm Warning; Hurricane Warning; Storm Surge Warning; Special Marine Warning; Tsunami Warning | Dangerous | Dangerous | Dangerous | Dangerous |
-| Any marine watch | Caution | Caution | Caution | Caution |
+| Small Craft Advisory; Brisk Wind Advisory; Lake Wind Advisory; Wind Advisory; Strong wind warning; MeteoAlarm yellow wind, yellow thunderstorm, yellow coastal event warning | Not recommended | Not recommended | Caution | Caution |
+| Dense Fog Advisory; Dense Smoke Advisory; Freezing Spray Advisory; Freezing Fog Advisory; MeteoAlarm yellow fog, orange fog, red fog warning | Not recommended | Not recommended | Caution | Caution |
+| Gale Warning; Hazardous Seas Warning; Heavy Freezing Spray Warning; High Wind Warning; Freezing spray warning; MeteoAlarm orange wind, orange coastal event warning | Dangerous | Dangerous | Dangerous | Not recommended |
+| Storm Warning; Hurricane Force Wind Warning; Tropical Storm Warning; Hurricane Warning; Storm Surge Warning; Special Marine Warning; Tsunami Warning; Extreme Wind Warning; Severe Thunderstorm Warning; Tornado Warning; Snow Squall Warning; Squall warning; Waterspout warning; MeteoAlarm red wind, orange thunderstorm, red thunderstorm, red coastal event warning | Dangerous | Dangerous | Dangerous | Dangerous |
+| Any watch for wind, storms, squalls, waves, spray, surge or tsunamis | Caution | Caution | Caution | Caution |
 
 ## Where the numbers come from
 

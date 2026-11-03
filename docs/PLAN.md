@@ -124,7 +124,8 @@ ha-sailcast/
 │   ├── profiles.py            # spot, boat and sailor schemas and checks, shared by setup and the panel
 │   ├── sources.py             # nearest tide station, current station and marine zone for a spot
 │   ├── coordinator.py         # one coordinator per source, and one for the results
-│   ├── providers/             # open_meteo, noaa_coops, ndbc, nws, metar, ha_entity, openfreemap, keyed tide providers
+│   ├── providers/             # open_meteo, noaa_coops, ndbc, nws, metar, ha_entity, openfreemap,
+│   │                          #   chs, rws, kartverket, worldtides, eccc, meteoalarm
 │   ├── timeline.py            # the normalized hourly conditions model
 │   ├── limits.py              # the safety limits table (versioned)
 │   ├── rating.py              # safety rating rules
@@ -138,6 +139,9 @@ ha-sailcast/
 │   ├── nowcast.py             # readings nudge the next hours
 │   ├── waves.py               # wind waves over a fetch, and shelter from model waves
 │   ├── shoreline.py           # fetch and exposure, measured once per pin from map tiles
+│   ├── tides.py               # where a spot's tides come from, by station or pin
+│   ├── alerts.py              # where a spot's official warnings come from
+│   ├── regions.py             # MeteoAlarm's warning regions, downloaded when needed
 │   ├── services.py            # the get_forecast action
 │   ├── ai.py                  # optional AI summary through AI Task
 │   ├── sensor.py, binary_sensor.py, calendar.py
@@ -196,7 +200,7 @@ Home Assistant specifics, checked against the 2026.11 beta:
 
 ## 5. Data sources
 
-The free sources work everywhere. Regional free sources and optional keyed providers add accuracy where they exist. Everything in this section was checked against the live services on November 1, 2026.
+The free sources work everywhere. Regional free sources and optional keyed providers add accuracy where they exist. Everything in this section was checked against the live services on November 1, 2026, and the sources outside the US again on November 3.
 
 ### Worldwide, free, no key
 
@@ -210,6 +214,7 @@ The free sources work everywhere. Regional free sources and optional keyed provi
 | Airport weather reports | aviationweather.gov Data API (METAR) | Worldwide, JSON, wind in knots. Stations are found by bounding box. Limit 100 requests a minute, custom User-Agent required. At the test spots, the nearest airport is about 21 km away. A report leaves gusts out unless they're well over the mean wind, gives `VRB` for variable wind, and gives visibility as text such as `10+` (miles). |
 | Shoreline | OpenFreeMap's map tiles (OpenMapTiles schema) | The `water` layer holds OpenStreetMap's sea, lakes, rivers and ponds as polygons. Zoom 12, about 36 tiles for 20 km around a pin, read with a small decoder of SailCast's own. Free with no key; attribution required, no service guarantee. The address changes with each weekly build, so it's read from the TileJSON first. |
 | Your own sensors | Any Home Assistant sensor | A Tempest or Ecowitt station, or a boat's instruments through NMEA 2000 or Signal K integrations. |
+| Rough tide | Open-Meteo Marine API, `sea_level_height_msl` | The 8 km SMOC ocean model's sea level, above mean sea level. At the test spots in milestone 5 its lows came 45–80 minutes early in the Solent, where it also missed the double high water, and its highs and lows 1.5–3 hours early off Harlingen. So it's offered for spots with nothing better, never suggested, shown as a curve without highs and lows, and kept out of advice and sensors. |
 
 ### Regional, free
 
@@ -218,16 +223,20 @@ The free sources work everywhere. Regional free sources and optional keyed provi
 | US tides and currents | NOAA CO-OPS | High/low and hourly predictions from harmonic stations. Subordinate current stations give only slack and peak events, whatever interval you ask for. Requests send an `application` name. CO-OPS throttles heavy users, so predictions are fetched once a day for 10 days and cached on disk. Near the test spots, one current station peaks around 3 kn and another around 1–1.4 kn, each with its own flood and ebb directions. |
 | Buoys (US and partner networks) | NDBC realtime files | Each file holds 45 days, newest first (about 600 KB for one buoy). NDBC supports HTTP range requests, so SailCast reads only the first 8 KB, about the last 11 hours. `MM` means missing. Wind is an 8-minute average in m/s. Fields arrive on different schedules. Of the three buoys near the test spots, one reports everything, one is patchy, and one has waves but no wind. Buoys are suggested from NDBC's list of active stations, those with standard readings, fetched at most once a day. |
 | US marine warnings | National Weather Service API | Alerts are fetched by marine zone (`/alerts/active?zone=<zone>`). A point query only matches zones that contain the point. When a spot is added, SailCast finds the nearest marine zone: the forecast office from `/points`, then that office's coastal zones, then the closest zone polygon (0.67 km away for a test point on land). A User-Agent is required (HTTP 403 without one). Event names include Small Craft Advisory; Gale, Storm and Hurricane Force Wind Warning; Hazardous Seas Warning; Special Marine Warning; Dense Fog Advisory; and Brisk Wind Advisory. |
-| Canadian tides | CHS IWLS API | Free and no key. Limits are 3 requests a second and 30 a minute per IP. The licence requires a CHS notice and rules out commercial derivative products and navigation use. |
-| UK tides | UKHO Admiralty Tidal API (Discovery tier) | A free 1-year key covers 607 UK stations for 7 days. Caching is forbidden and the redistribution terms are unclear, so this waits until UKHO confirms (milestone 5). |
-| European warnings | MeteoAlarm | To research in milestone 5, along with Environment Canada and others. |
+| Canadian tides | CHS IWLS API | Free and no key. Stations come from one list (about 750 KB), kept for a day: there's no search by position. High and low (`wlp-hilo`) and hourly (`wlp`) predictions, in meters above chart datum, in UTC; highs and lows aren't labeled, so each is compared with its neighbors. Great Lakes stations have no predictions. Limits are 3 requests a second and 30 a minute per IP. The licence rules out commercial derivative products and navigation use, forbids passing the data on (so tests use made-up predictions), and asks for its notice with the data, which the panel shows word for word. |
+| Dutch tides | Rijkswaterstaat's water data (DD-API 2.0) | Free and no key, CC0. The service moved to `ddapi20-waterwebservices.rijkswaterstaat.nl` in December 2025. Stations come from its catalogue (about 2 MB, no search by position), kept for a day: 101 stations have the astronomical tide's high and low waters, in centimeters above NAP, with a second request saying which is which. Rijkswaterstaat doesn't publish chart datum (LAT) there, so heights stay above NAP, which is close to mean sea level. |
+| Norwegian tides | Kartverket's tide API | Free and no key, CC BY 4.0, credited "©Kartverket". Asked by position, it answers from the nearest reference station corrected for the pin, flagging highs and lows, in centimeters above chart datum. |
+| UK tides | UKHO Admiralty Tidal API (Discovery tier) | Still out. A free 1-year key covers 607 UK stations for 7 days, but the terms forbid caching on that tier and require a written agreement with each end user, and highs and lows alone can't draw the Solent's double high water. |
+| US lake warnings | National Weather Service API | A lake with no marine zone gets the alerts for the pin itself (`/alerts/active?point=`), which also catches storm warnings drawn around it: Lake Wind Advisory, Wind Advisory, High Wind Warning, Severe Thunderstorm Warning, Dense Fog Advisory and others. The nearest-zone fallback is only suggested within 5 km, since inland it could pick a harbor zone tens of kilometers away. |
+| Canadian marine warnings | ECCC's MSC GeoMet API (`marineweather-realtime`) | Free and no key, Data Source: Environment and Climate Change Canada. A pin's marine area comes from a search around it; areas such as Lake Ontario split into parts, which a spot can pick. Warnings (strong wind 20–33 kt, gale, storm, squall, freezing spray) say only that they're in effect, so SailCast applies one from its issue to the end of the next day, the span of the forecast it comes with. The collection is marked experimental. |
+| European warnings | MeteoAlarm's Atom feeds | Free and no key, one small feed per country (39), under terms equivalent to CC BY 4.0 with extra conditions: show the national service's name, the issue time and a link to meteoalarm.org, publish its note on delays, keep within ten minutes, and show the warning as written alongside anything derived from it. Warnings name regions by code, or in the UK, Norway, Sweden, Switzerland and a few others draw their own outline. The Netherlands' include KNMI's warnings for its coastal waters and the IJsselmeer. Region outlines come from a 33 MB file MeteoAlarm publishes without an open licence, so Home Assistant downloads it when a spot in Europe needs it and keeps a 1 MB copy. The UK's strong wind and gale warnings for coastal waters have no open feed; the Met Office's old marine data addresses are gone and its site terms forbid scraping. |
 
 ### Optional, with your own key
 
 | Data | Source | Notes |
 | --- | --- | --- |
-| Tides anywhere | WorldTides | 1 credit per 7 days of predictions. 100 free credits for a month, then $3.99 a year for 1,000 credits. 23 datums. The terms (one end user per prediction, show the copyright line, don't share keys) fit each user bringing their own key. |
-| Tides anywhere | Marea | Global tide models plus 5,000 stations. 100 free requests, then $4 per 10,000. The terms don't address this use. |
+| Tides anywhere | WorldTides | Built in milestone 5. Highs and lows cost 1 credit per 7 days and hourly heights 1 per 14 days, so two weeks of both cost 3; SailCast fetches them for each pin when fewer than 8 days are left, about every five days. 100 free credits for a month, then $3.99 a year for 1,000 credits. Chart datum where WorldTides has it. The terms (one end user per prediction, which may be kept and shown to that user; show the copyright line; don't share keys; not the only source for anything safety-critical) fit each user bringing their own key, and tides never change a rating. |
+| Tides anywhere | Marea | Not built. Global tide models plus 5,000 stations. 100 free requests, then $4 per 10,000. The terms still don't address apps whose users bring their own key, so it waits until Marea says it may be used this way. |
 
 Two providers are deliberately left out. **Stormglass's** free plan is "solely for evaluation". **TideCheck's** terms ban apps "where inaccurate tide data could endanger life or property", which arguably covers a sailing go/no-go rating.
 
@@ -243,6 +252,7 @@ Open-Meteo counts each location as `max(1, V/10 × max(1, D/14))` calls. V is th
 | Wind grid, about 225 points | On demand, cached 3 hours | up to 1,800 per map area |
 | Forecast at each buoy and airport: 3 models × 4 variables, 2 days | Every hour | about 29 per station |
 | Marine data at each buoy | Every 3 hours | about 8 per buoy |
+| The ocean model's rough tide, for spots that use it | Once a day | 1 per spot |
 | **Worst case** | | **about 2,300** |
 
 SailCast counts its own calls. It stops refreshing the map at 6,000 in a day and slows the forecast before 8,000, leaving room for anything else on the same IP address, such as Home Assistant's own Open-Meteo weather.
@@ -251,12 +261,15 @@ The other sources are polled on these schedules:
 
 | Source | How often |
 | --- | --- |
-| Tide and current predictions | Once a day per station |
+| Tide and current predictions | Once a day per station; WorldTides when fewer than 8 days are left |
 | Buoys | Every 20 minutes |
 | Airport reports | Every 30 minutes, one request for all |
 | Your own sensors | Whenever the results are worked out, and live when the panel asks |
 | Shoreline | Once per pin, kept on disk; a pin that fails is tried again after 6 hours |
-| NWS warnings | Every 5 minutes, one request for all zones |
+| NWS warnings | Every 5 minutes, one request for all zones and one for each lake's pin |
+| Canadian marine warnings | Every 5 minutes, one request per marine area |
+| MeteoAlarm warnings | Every 5 minutes, one feed per country; each warning's full text once |
+| MeteoAlarm's region outlines | When a spot in Europe first needs them, then a check for a newer file each month |
 
 ## 6. Conditions timeline and local corrections
 
@@ -280,7 +293,7 @@ Local corrections are applied once, while the timeline is built:
 | **Sheltered water and lakes** | Waves are estimated from wind speed and fetch with the standard fetch-limited growth formula used in coastal engineering (SMB, deep water, which leans toward bigger waves). Fetch is worked out per direction from OpenStreetMap's water when a spot is added: rays every 3° out to 20 km, each stopping where the water does, and the fetch for a wind is the average of the rays within 15° of it, as coastal engineers measure it, so a narrow channel opening onto the sea doesn't count as open sea. Along a ray, each stretch between polygon edges is checked by whether its middle is in any water, because tiles cut polygons at their edges and river and sea polygons overlap. A distance set by hand overrides it for every direction. |
 | **Currents** | Values between NOAA's slack and peak times are interpolated with a cosine curve. The flood and ebb directions come from the station. |
 | **Observations ("nowcast")** | When a buoy, airport or your own sensor has a fresh reading, SailCast compares it with the forecast for the same place and nudges the next few hours by that difference, fading to nothing over about 6 hours. Readings expire field by field: wind, gusts, direction and air after 2 hours, waves after 3, water after 6. Each field comes from the best source that has it: your sensors, which are taken to be at the spot, then the buoy, then the airport. Buoys and airports get a lighter forecast of their own (3 models, 4 variables, today), and buoys the marine model's waves and water temperature there. Without a gust reading, gusts move with the wind; direction isn't nudged in air under 3 kt. A measured visibility replaces the forecast's for the hour under way. |
-| **Tide datum** | Heights are shown above the station's chart datum (MLLW in the US), never above mean sea level. |
+| **Tide datum** | Heights are shown above the station's chart datum (MLLW in the US, chart datum in Canada and Norway, and with WorldTides where it has one). Rijkswaterstaat publishes only NAP, close to mean sea level, and the ocean model's rough tide is above mean sea level; the panel names the datum each time. No rule uses tide heights yet. |
 
 ## 7. Safety rating
 
@@ -385,7 +398,12 @@ Notes:
 
 ### Official warnings
 
-This table gives the lowest rating while a warning is in effect, at every skill level. The rows use NWS event names. Other countries' warnings map to the closest row as they're added.
+This table gives the lowest rating while a warning is in effect, at every skill level. The rows use NWS event names. Other countries' warnings map to the closest row (milestone 5), as listed in [docs/safety-limits.md](safety-limits.md):
+
+- NWS warnings for lakes: Lake Wind Advisory and Wind Advisory as an advisory, Freezing Fog Advisory as fog, High Wind Warning as a gale, and Extreme Wind, Severe Thunderstorm, Tornado and Snow Squall Warnings as a storm.
+- Canada: strong wind warning as an advisory, freezing spray warning as a gale, and squall and waterspout warnings as a storm. Gale, storm and hurricane force wind warnings share the US names.
+- MeteoAlarm in Europe, by level: yellow wind, thunderstorm or coastal event as an advisory, fog at any level as fog, orange wind or coastal event as a gale, and red wind or coastal event, or orange or red thunderstorm, as a storm. Rain, heat, snow and the like show without changing the rating.
+- A watch counts only when it's about wind, storms, squalls, waves, spray, surge or tsunamis, so a flood or fire weather watch on a lake doesn't.
 
 | Warning | Dinghy | Small keelboat | Cruiser | Large cruiser |
 | --- | --- | --- | --- | --- |
@@ -554,7 +572,7 @@ Repair issues cover the following. Repairs are Home Assistant's built-in way to 
 - a buoy, airport or one of your sensors that has sent nothing for 12 hours
 - a tide or current station that has failed for a day
 - the Open-Meteo daily budget running low, from 8,000 calls
-- a rejected API key (milestone 5, with the keyed providers)
+- WorldTides' key missing, or refused by WorldTides, which also covers an account out of credits
 
 Diagnostics include each provider's last fetch status and the budget use, with API keys and spot coordinates redacted, so you can share them in an issue without showing where you sail.
 
@@ -650,7 +668,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - the skill limit uses sustained wind only; gusts never trigger it
   - windows stay inside the sailor's sailing days and hours
 - **Test profiles:** a 20 ft small keelboat and a 34 ft cruiser, at the three test spots, at all three skill levels.
-- **Providers:** tests against recorded responses. They were recorded on November 2 at three made-up spots in San Diego, chosen to cover the same cases as the home spots: a harmonic and a subordinate tide station, a subordinate current station, a pin that's in its marine zone and one that isn't, and a live Small Craft Advisory. `scripts/record_fixtures.py` records them again.
+- **Providers:** tests against recorded responses. They were recorded on November 2 at three made-up spots in San Diego, chosen to cover the same cases as the home spots: a harmonic and a subordinate tide station, a subordinate current station, a pin that's in its marine zone and one that isn't, and a live Small Craft Advisory. Sources abroad were recorded on November 3 in the Solent, the Wadden Sea and on Lake Garda, with Lake Tahoe's Lake Wind Advisory, a Canadian marine area and a KNMI coastal warning. CHS's predictions, WorldTides' and MeteoAlarm's region outlines are made up for the tests, since they can't be passed on or need a key. `scripts/record_fixtures.py` records them again.
 - **Config flow, subentries, entities, the WebSocket API and the calendar:** tested with `pytest-homeassistant-custom-component`, version 0.13.375 (matches 2026.10.4). Home Assistant is moving that package into core as `pytest-home-assistant`, which isn't on PyPI yet, so SailCast switches when it's published.
 - **Panel commands:**
   - settings changes are refused for non-administrators and for invalid input, and saved ones show up in the subentries
@@ -713,7 +731,7 @@ Each milestone ends with something you can install and try.
 | 2 | Panel: week, day and settings | WebSocket API with subscriptions, per-user settings, the week calendar and day views from the mockup, the Settings tab with the spot map (the base map the wind map builds on), the day and night themes, Add to calendar, automatic adding and planned sails, rule-based advice, English strings. | It matches the mockup with live data, in the browser and the phone app, in light and dark themes. A window added from the panel shows up in a Google and a Local calendar, and an automatic event in a Local calendar moves when its window does. |
 | 3 | Wind map | Grid fetch with the budget guard, seamarks, color field, particles and time slider, on the base map from milestone 2. | It animates smoothly on a phone, and the budget stays under the limit with three spots. |
 | 4 | Local accuracy | Buoys, airport reports and your own sensors, with nowcast blending. Exposure and fetch, with fetch worked out from shoreline data. Repairs (pin on land, failed sources). | "Now" readings show at all three test spots, and the river spot's waves come from the sheltered-water estimate. |
-| 5 | Worldwide | Tide providers that need a key, free regional sources, and warning services outside the US. | A spot in the UK, the Netherlands and a lake each produce a complete week. |
+| 5 | Worldwide | Tide providers that need a key, free regional sources, and warning services outside the US. Built: WorldTides; CHS, Rijkswaterstaat and Kartverket tides; the ocean model's rough tide; NWS alerts for lakes; ECCC and MeteoAlarm warnings. | A spot in the UK, the Netherlands and a lake each produce a complete week. |
 | 6 | Languages, AI and notifications | The 11 translations, the AI summary option, and the two notification blueprints. | All 12 languages pass the completeness check. The AI summary appears only when it's turned on. |
 | 7 | Release | Docs, beta through a custom repository, then the default catalog pull request. Version 1.0. | Marketplace validation passes, and the catalog pull request is open. |
 
@@ -789,6 +807,17 @@ Checked November 1, 2026. Home Assistant details were checked against the 2026.1
 - Marea pricing: <https://api.marea.ooo/pricing>
 - UKHO Admiralty API FAQ: <https://developer.admiralty.co.uk/faqs>
 - Canadian Hydrographic Service licence: <https://www.tides.gc.ca/en/licence-agreement>
+- CHS IWLS API: <https://api-iwls.dfo-mpo.gc.ca/swagger-ui/index.html>
+- Rijkswaterstaat water data (DD-API 2.0) and its CC0 licence: <https://ddapi20-waterwebservices.rijkswaterstaat.nl/webservices-api-docs>, <https://rijkswaterstaatdata.nl/waterdata/>
+- Kartverket's tide API and terms: <https://vannstand.kartverket.no/tideapi_en.html>, <https://www.kartverket.no/en/api-and-data/terms-of-use>
+- WorldTides API: <https://www.worldtides.info/apidocs>
+- Marea terms: <https://api.marea.ooo/terms-and-privacy>
+- UKHO Admiralty API terms: <https://developer.admiralty.co.uk/TandC>
+- Open-Meteo marine sea level: <https://open-meteo.com/en/docs/marine-weather-api>
+- NWS Lake Wind Advisory (directive 10-515): <https://www.weather.gov/media/directives/010_pdfs/pd01005015curr.pdf>
+- ECCC marine forecasts and warnings: <https://api.weather.gc.ca/collections/marineweather-realtime>, its licence <https://eccc-msc.github.io/open-data/licence/readme_en/>, and the warning thresholds <https://www.canada.ca/en/environment-climate-change/services/general-marine-weather-information/publications/guide-forecasts.html>
+- MeteoAlarm terms, feeds and redistribution hub: <https://meteoalarm.org/en/live/page/terms-and-conditions>, <https://feeds.meteoalarm.org>, <https://meteoalarm.org/en/live/page/redistribution-hub>
+- Met Office site terms: <https://www.metoffice.gov.uk/policies/tandc>
 
 **Maps**
 

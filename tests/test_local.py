@@ -190,7 +190,11 @@ async def test_failing_tide_station(
     await hass.async_block_till_done()
     issue = ir.async_get(hass).async_get_issue(DOMAIN, "failing_tide_9410196")
     assert issue is not None
-    assert issue.translation_placeholders == {"station": "9410196", "spots": "River"}
+    assert issue.translation_placeholders == {
+        "station": "9410196",
+        "spots": "River",
+        "provider": "NOAA",
+    }
 
 
 async def test_budget_low(hass: HomeAssistant, observed: MockConfigEntry) -> None:

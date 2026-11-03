@@ -8,9 +8,18 @@ import { html, nothing, svg, type SVGTemplateResult, type TemplateResult } from 
 import { isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime } from "./format";
 import { arrow, icon, ring, type IconName } from "./glyphs";
-import { adviceText, ageText, compass, heightText, reasonsText, sourceText } from "./text";
+import {
+  adviceText,
+  ageText,
+  compass,
+  datumText,
+  heightText,
+  reasonsText,
+  savedSourceText,
+  sourceText,
+} from "./text";
 import type { Day, Hour, Level } from "./types";
-import { addIcon, addText, chip, hoursOf, isPast, SIZES, smoothPath } from "./week";
+import { addIcon, addText, chip, hoursOf, isPast, SIZES, smoothPath, warningSource } from "./week";
 import { windColor } from "./wind-field";
 
 const ADVICE_ICONS: Record<string, IconName> = {
@@ -484,7 +493,11 @@ function tideChart(ctx: Ctx, day: Day, hours: Hour[], width: number): TemplateRe
     <div class="card-head">
       <h2>${t(currents.length ? "day.tide_and_current" : "day.tide")}</h2>
       <div class="key">
-        <span>${t(fmt.feet ? "day.tide_datum_feet" : "day.tide_datum_meters")}</span>
+        <span
+          >${t(fmt.feet ? "day.tide_datum_feet" : "day.tide_datum_meters", {
+            datum: datumText(t, forecast.tide?.datum),
+          })}</span
+        >
         ${
           currents.length
             ? html`<span><i style="background:var(--sc-flood)"></i>${t("day.key_flood")}</span>
@@ -620,6 +633,29 @@ function hourTable(ctx: Ctx, hours: Hour[]): TemplateResult {
   </table>`;
 }
 
+/** Where the tides come from, what they're measured from, and the provider's notice. */
+function tideSource(ctx: Ctx): TemplateResult | string {
+  const { t } = ctx;
+  const forecast = ctx.forecast!;
+  const saved = forecast.sources.tide_station;
+  const tide = forecast.tide;
+  if (!saved || !tide) return t("sources.none");
+  return html`${t(`sources.tide_by.${tide.provider}`, {
+    station: savedSourceText(saved.id, saved.name),
+    gauge: tide.station ?? "",
+    datum: datumText(t, tide.datum),
+  })}
+  ${tide.provider === "worldtides" && tide.station ? t("sources.tide_gauge", { gauge: tide.station }) : nothing}
+  ${tide.notice ? html`<small class="notice">${tide.notice}</small>` : nothing}
+  ${
+    tide.provider === "worldtides"
+      ? html`<a href="https://www.worldtides.info/copyright" target="_blank" rel="noreferrer"
+          >${t("sources.worldtides_credit")}</a
+        >`
+      : nothing
+  }`;
+}
+
 function sourcesCard(ctx: Ctx): TemplateResult {
   const { t, fmt } = ctx;
   const forecast = ctx.forecast!;
@@ -692,13 +728,7 @@ function sourcesCard(ctx: Ctx): TemplateResult {
       <dt>${t("sources.readings")}</dt>
       <dd>${readings.length ? readings : t("sources.no_readings")}</dd>
       <dt>${t("sources.tide")}</dt>
-      <dd>
-        ${
-          sources.tide_station
-            ? t("sources.tide_text", { station: name(sources.tide_station) })
-            : t("sources.none")
-        }
-      </dd>
+      <dd>${tideSource(ctx)}</dd>
       ${
         sources.current_station
           ? html`<dt>${t("sources.current")}</dt>
@@ -706,13 +736,7 @@ function sourcesCard(ctx: Ctx): TemplateResult {
           : nothing
       }
       <dt>${t("sources.warnings")}</dt>
-      <dd>
-        ${
-          sources.marine_zone
-            ? t("sources.warnings_text", { zone: name(sources.marine_zone) })
-            : t("sources.none")
-        }
-      </dd>
+      <dd>${warningSource(ctx) ?? t("sources.none")}</dd>
       ${
         ctx.forecast!.fetched
           ? html`<dt>${t("sources.updated")}</dt>

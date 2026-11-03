@@ -45,6 +45,10 @@ export type SensorKey = "wind" | "gust" | "wind_direction" | "temperature" | "wa
 export type ReadingKind = "sensors" | "buoy" | "airport";
 /** Where an hour's waves come from: the ocean model, the model from a sheltered direction, or worked out from the fetch. */
 export type WaveSource = "model" | "sheltered" | "estimate";
+/** Who a spot's tides come from. "model" is the ocean model's rough sea level. */
+export type TideProvider = "noaa" | "chs" | "rws" | "kartverket" | "worldtides" | "model";
+/** Who a spot's official warnings come from. */
+export type WarningProvider = "nws" | "eccc" | "meteoalarm";
 
 export interface Spot {
   id: string;
@@ -286,11 +290,32 @@ export interface Forecast {
   days: Day[];
   hours: Hour[];
   current_events: { time: string; speed: number }[];
-  alerts: { event: string; start: string; end: string; headline: string | null }[];
+  /** Official warnings; `issued`, `issuer` and `details` are shown where the provider asks for them. */
+  alerts: {
+    event: string;
+    start: string;
+    end: string;
+    headline: string | null;
+    issued: string | null;
+    issuer: string | null;
+    details: string | null;
+  }[];
   planned: PlannedSail[];
   sources: Record<SourceKey, { id: string; name: string | null } | null> & {
     sensors: Partial<Record<SensorKey, string>>;
   };
+  /** Who the tides come from: the datum heights are above, the station a provider chose, and any notice it asks to show. */
+  tide: {
+    provider: TideProvider;
+    datum: string | null;
+    station: string | null;
+    notice: string | null;
+  } | null;
+  /**
+   * Who the warnings come from; `at_pin` for alerts at the pin rather than a
+   * zone, and `services` the national weather services MeteoAlarm's come from.
+   */
+  warnings: { provider: WarningProvider; at_pin: boolean; services: string[] } | null;
   readings: Readings;
   adjustments: Adjustment[];
   shoreline: { on_water: boolean; measured: string } | null;
@@ -338,8 +363,10 @@ export interface PlannedList {
 export interface SourceChoice {
   id: string;
   name: string;
-  /** Kilometers. */
-  distance: number;
+  /** What a station or zone is known by, shown with its name. */
+  code: string | null;
+  /** Kilometers; none for sources asked about the pin itself. */
+  distance: number | null;
   /** Where a station is; zones have none. */
   latitude: number | null;
   longitude: number | null;

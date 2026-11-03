@@ -88,17 +88,20 @@
     "visibility_value": "{value} nm",
     "note_no_sources": "No buoy, airport or sensor reads this spot, so this is the forecast for the hour now under way.",
     "note_no_sources_admin": "No buoy, airport or sensor reads this spot, so this is the forecast for the hour now under way. Edit the spot in Settings to pick the nearest.",
-    "visibility_good": "Over 8 nm"
+    "visibility_good": "Over 8 nm",
+    "tide_rough": "rough, above mean sea level"
   },
   "warnings": {
-    "title": "Official marine warnings",
+    "title": "Official warnings",
     "none": "None in effect",
-    "no_zone": "No warning zone set",
+    "no_zone": "No warning source set",
     "until": "In effect until {end}",
     "from": "From {start} to {end}",
     "meaning": "Dinghies and small keelboats are rated not recommended or worse at every skill level while an advisory is in effect. Cruisers get at least caution.",
-    "source": "National Weather Service · {zone}",
-    "no_zone_hint": "Edit the spot to pick its marine warning zone."
+    "no_zone_hint": "Edit the spot to pick where its official warnings come from.",
+    "no_end": "Canada's marine warnings don't say when they end, so SailCast counts each one until the end of the day after it was issued, or until it's lifted.",
+    "issued": "issued {time} by {issuer}",
+    "meteoalarm_note": "Time delays between this website and the www.meteoalarm.org website are possible. For the most up-to-date awareness information as published by the participating National Meteorological and Hydrological Services, please refer to"
   },
   "legend": {
     "window": "Sailing window",
@@ -236,8 +239,8 @@
     "tide_and_current": "Tide and current",
     "tide_label": "Tide through the day",
     "tide_current_label": "Tide and current through the day",
-    "tide_datum_feet": "ft above mean lower low water",
-    "tide_datum_meters": "m above mean lower low water",
+    "tide_datum_feet": "ft above {datum}",
+    "tide_datum_meters": "m above {datum}",
     "key_flood": "Flood",
     "key_ebb": "Ebb",
     "tide_high": "High {height} · {time}",
@@ -298,11 +301,9 @@
     "waves_open": "The Open-Meteo marine model's nearest cell. Inside an enclosed bay it can read high.",
     "waves_sheltered": "From directions this spot is sheltered from, SailCast uses the larger of the local estimate and half the model's height.",
     "tide": "Tide",
-    "tide_text": "NOAA {station}, in heights above mean lower low water",
     "current": "Current",
     "current_text": "NOAA {station}. NOAA gives slack and peak times; the hours in between are filled in.",
     "warnings": "Warnings",
-    "warnings_text": "National Weather Service, marine zone {zone}",
     "updated": "Forecast fetched",
     "none": "None set for this spot",
     "nudged": "{source} read {difference} {direction} the forecast there at {time}, so the next hours move with it, fading over six hours.",
@@ -317,7 +318,23 @@
     "no_readings": "None set for this spot",
     "buoy_text": "NDBC buoy {station}",
     "airport_text": "Airport {station}",
-    "newest": "newest {age}"
+    "newest": "newest {age}",
+    "tide_by": {
+      "noaa": "NOAA station {station}, in heights above {datum}.",
+      "chs": "Canadian Hydrographic Service station {station}, in heights above {datum}.",
+      "rws": "Rijkswaterstaat station {station}: the astronomical tide, in heights above {datum}.",
+      "kartverket": "Kartverket, worked out for the pin from {gauge}, in heights above {datum}.",
+      "worldtides": "WorldTides, for the pin, in heights above {datum}.",
+      "model": "Rough: the ocean model's sea level at the pin, in heights above {datum}. Near the coast its times can be an hour or more off, so SailCast shows the curve but no highs and lows from it. Plan with proper tide tables."
+    },
+    "tide_gauge": "From the tide gauge at {gauge}.",
+    "worldtides_credit": "Tide data copyright and licences",
+    "warnings_by": {
+      "nws": "National Weather Service, marine zone {zone}",
+      "nws_pin": "National Weather Service alerts for the pin",
+      "eccc": "Data Source: Environment and Climate Change Canada, {zone}",
+      "meteoalarm": "MeteoAlarm, for the pin, from {services}"
+    }
   },
   "settings": {
     "admin_note": "These are the same settings as Settings → Devices & services → SailCast, so a change in either place shows up in both. Only administrators can change them.",
@@ -430,13 +447,13 @@
     "exposed_hint": "Directions with open water, where waves can build.",
     "tide_station": "Tide station",
     "current_station": "Current station",
-    "marine_zone": "Marine warning zone",
+    "marine_zone": "Official warnings",
     "tide_station_short": "Tide",
     "current_station_short": "Current",
     "marine_zone_short": "Warnings",
     "none": "None",
     "nearest": "nearest",
-    "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides, currents, buoys and warnings come from NOAA and the National Weather Service, so for now they cover US waters only. Airport reports come from anywhere.",
+    "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides come from NOAA, the Canadian Hydrographic Service, Rijkswaterstaat or Kartverket, and anywhere from WorldTides with a key in SailCast's options. Warnings come from the National Weather Service and Environment and Climate Change Canada. Buoys come from NDBC, and airport reports from anywhere.",
     "sources_failed": "Couldn't look up nearby sources. You can save without them and add them later.",
     "tide_mark": "Tide station: {name} ({id})",
     "current_mark": "Current station: {name} ({id})",
@@ -646,5 +663,12 @@
     "sensors": "Your sensors",
     "buoy": "Buoy {id}",
     "airport": "Airport {id}"
+  },
+  "datum": {
+    "MLLW": "mean lower low water",
+    "CD": "chart datum",
+    "LAT": "lowest astronomical tide",
+    "MSL": "mean sea level",
+    "NAP": "NAP, close to mean sea level"
   }
 }

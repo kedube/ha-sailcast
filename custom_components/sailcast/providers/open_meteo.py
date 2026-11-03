@@ -6,7 +6,8 @@ anywhere. Buoys and airports get a lighter forecast of their own, so their
 readings can be compared with the forecast for the same place. The ECMWF
 ensemble's spread comes from its ensemble mean, which costs one variable. The
 wind map's grid is one request for all its points, from Open-Meteo's best
-model for the place, with no past hours.
+model for the place, with no past hours. The ocean model's sea level, which
+includes the tide, stands in for tide predictions where a spot has none.
 """
 
 from __future__ import annotations
@@ -53,6 +54,8 @@ NEARBY_VARIABLES: Final = (
 )
 BUOY_VARIABLES: Final = ("wave_height", "sea_surface_temperature")
 SPREAD_VARIABLE: Final = "wind_speed_10m_spread"
+# Above mean sea level, from an 8 km ocean model: rough near the coast.
+SEA_LEVEL_VARIABLE: Final = "sea_level_height_msl"
 PAST_DAYS: Final = 1
 FORECAST_DAYS: Final = 7
 NEARBY_DAYS: Final = 1
@@ -146,6 +149,11 @@ def spread_calls(points: int) -> float:
     return calls(1, points)
 
 
+def sea_level_calls(points: int) -> float:
+    """Return the calls counted for one sea level request."""
+    return calls(1, points)
+
+
 async def async_get_forecast(
     session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
 ) -> list[Forecast]:
@@ -213,6 +221,29 @@ async def async_get_spread(
     )
     return [
         Spread(_times(place["hourly"]), _series(place["hourly"], SPREAD_VARIABLE))
+        for place in _places(payload, len(points))
+    ]
+
+
+async def async_get_sea_level(
+    session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
+) -> list[tuple[tuple[datetime, float], ...]]:
+    """Return the hourly sea level at each point, from the nearest sea, in meters."""
+    payload = await fetch_json(
+        session,
+        MARINE_URL,
+        _params(points, (SEA_LEVEL_VARIABLE,)) | {"cell_selection": "sea"},
+    )
+    return [
+        tuple(
+            (when, value)
+            for when, value in zip(
+                _times(place["hourly"]),
+                _series(place["hourly"], SEA_LEVEL_VARIABLE),
+                strict=True,
+            )
+            if value is not None
+        )
         for place in _places(payload, len(points))
     ]
 

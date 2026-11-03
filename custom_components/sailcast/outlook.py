@@ -13,7 +13,8 @@ from datetime import datetime
 
 from .nowcast import Adjustment, Observation
 from .profiles import Boat, Profiles, Sailor, SizeClass, Spot
-from .providers.noaa_coops import CurrentEvent, TideEvent
+from .providers import TideEvent, Tides
+from .providers.noaa_coops import CurrentEvent
 from .rating import Rating, rate
 from .scoring import (
     Confidence,
@@ -34,13 +35,15 @@ from .timeline import HOUR, Alert, Daylight, Hour
 class SpotConditions:
     """A spot's hourly timeline, its days and the extra details shown with it.
 
-    `observations` are the readings it was built with, `adjustments` how they
-    moved the forecast, and `shoreline` what its waves were worked out from.
+    `tides` are the predictions its tide comes from, `observations` the
+    readings it was built with, `adjustments` how they moved the forecast,
+    and `shoreline` what its waves were worked out from.
     """
 
     spot: Spot
     hours: tuple[Hour, ...]
     days: tuple[Daylight, ...]
+    tides: Tides | None = None
     tide_events: tuple[TideEvent, ...] = ()
     current_events: tuple[CurrentEvent, ...] = ()
     alerts: tuple[Alert, ...] = ()

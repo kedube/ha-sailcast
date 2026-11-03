@@ -1,0 +1,1802 @@
+{
+ "Succesvol": true,
+ "AquoMetadataLijst": [
+  {
+   "AquoMetadata_MessageID": 283,
+   "Compartiment": {
+    "Code": "OW",
+    "Omschrijving": "Oppervlaktewater"
+   },
+   "Groepering": {
+    "Code": "",
+    "Omschrijving": ""
+   },
+   "Grootheid": {
+    "Code": "WATHTE",
+    "Omschrijving": "Waterhoogte"
+   },
+   "Hoedanigheid": {
+    "Code": "MSL",
+    "Omschrijving": "t.o.v. Mean Sea Level"
+   },
+   "Parameter_Wat_Omschrijving": "Waterhoogte astronomisch in Oppervlaktewater t.o.v. Mean Sea Level in cm",
+   "ProcesType": "astronomisch"
+  },
+  {
+   "AquoMetadata_MessageID": 285,
+   "Compartiment": {
+    "Code": "OW",
+    "Omschrijving": "Oppervlaktewater"
+   },
+   "Groepering": {
+    "Code": "GETETBRKDMSL2",
+    "Omschrijving": "Getijextreem berekend t.o.v. MSL"
+   },
+   "Grootheid": {
+    "Code": "WATHTE",
+    "Omschrijving": "Waterhoogte"
+   },
+   "Hoedanigheid": {
+    "Code": "MSL",
+    "Omschrijving": "t.o.v. Mean Sea Level"
+   },
+   "Parameter_Wat_Omschrijving": "Waterhoogte astronomisch in Oppervlaktewater t.o.v. Mean Sea Level in cm",
+   "ProcesType": "astronomisch"
+  },
+  {
+   "AquoMetadata_MessageID": 287,
+   "Compartiment": {
+    "Code": "OW",
+    "Omschrijving": "Oppervlaktewater"
+   },
+   "Groepering": {
+    "Code": "",
+    "Omschrijving": ""
+   },
+   "Grootheid": {
+    "Code": "WATHTE",
+    "Omschrijving": "Waterhoogte"
+   },
+   "Hoedanigheid": {
+    "Code": "NAP",
+    "Omschrijving": "t.o.v. Normaal Amsterdams Peil"
+   },
+   "Parameter_Wat_Omschrijving": "Waterhoogte astronomisch in Oppervlaktewater t.o.v. Normaal Amsterdams Peil in cm",
+   "ProcesType": "astronomisch"
+  },
+  {
+   "AquoMetadata_MessageID": 291,
+   "Compartiment": {
+    "Code": "OW",
+    "Omschrijving": "Oppervlaktewater"
+   },
+   "Groepering": {
+    "Code": "GETETBRKD2",
+    "Omschrijving": "Getijextreem berekend"
+   },
+   "Grootheid": {
+    "Code": "WATHTE",
+    "Omschrijving": "Waterhoogte"
+   },
+   "Hoedanigheid": {
+    "Code": "NAP",
+    "Omschrijving": "t.o.v. Normaal Amsterdams Peil"
+   },
+   "Parameter_Wat_Omschrijving": "Waterhoogte astronomisch in Oppervlaktewater t.o.v. Normaal Amsterdams Peil in cm",
+   "ProcesType": "astronomisch"
+  }
+ ],
+ "AquoMetadataLocatieLijst": [
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 129
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 326
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 499
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 639
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 857
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 926
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 1319
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 1425
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 1481
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 1903
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 2145
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 2297
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 2671
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 2965
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3003
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3190
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3215
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3232
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3248
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3352
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3499
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3509
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 3832
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 4050
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 4267
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 4498
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 4532
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 4882
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 5289
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 5399
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 5634
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 5811
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 5876
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 5986
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6080
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6094
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6102
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6122
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6200
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6320
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6534
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6682
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6708
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 6848
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 7192
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 7196
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 7721
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 8030
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 8138
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 8199
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 8248
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 8744
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 8760
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 9615
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 9627
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 9806
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 9820
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 10077
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 10722
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 10957
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 11095
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 11329
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 11500
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 11506
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 11597
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12365
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12385
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12491
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12670
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12772
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12845
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 12898
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13025
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13179
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13189
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13288
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13634
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13729
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13763
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13798
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 13876
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 14256
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 14709
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 15318
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 15502
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16064
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16251
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16304
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16368
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16534
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16749
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 16991
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 17039
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 17202
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 17489
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 17887
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 18539
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 18560
+  },
+  {
+   "AquoMetaData_MessageID": 287,
+   "Locatie_MessageID": 18780
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 129
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 326
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 499
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 557
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 639
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 857
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 926
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 1319
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 1425
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 1481
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 1903
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 2145
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 2297
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 2671
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 2965
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3003
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3190
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3215
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3232
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3248
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3352
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3499
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3509
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 3832
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 4050
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 4267
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 4498
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 4532
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 4882
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 5289
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 5399
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 5634
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 5811
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 5876
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 5986
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6080
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6094
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6102
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6122
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6200
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6320
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6534
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6682
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6708
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 6848
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 7192
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 7196
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 7721
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 8030
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 8138
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 8199
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 8248
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 8744
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 8760
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 9615
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 9627
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 9806
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 9820
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 10077
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 10722
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 10957
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 11095
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 11329
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 11500
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 11506
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 11597
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12365
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12385
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12491
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12670
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12772
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12845
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 12898
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13025
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13179
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13189
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13288
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13634
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13729
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13763
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13798
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 13876
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 14256
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 14709
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 15318
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 15502
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16064
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16251
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16304
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16368
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16534
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16749
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16976
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 16991
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 17039
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 17202
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 17489
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 17887
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 18539
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 18560
+  },
+  {
+   "AquoMetaData_MessageID": 291,
+   "Locatie_MessageID": 18780
+  }
+ ],
+ "LocatieLijst": [
+  {
+   "Locatie_MessageID": 6200,
+   "Code": "ameland.nes",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.429766,
+   "Lon": 5.759448,
+   "Naam": "Ameland, Nes",
+   "Omschrijving": "Ameland, Nes"
+  },
+  {
+   "Locatie_MessageID": 6102,
+   "Code": "antwerpen.prosperpolder",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.342082,
+   "Lon": 4.247633,
+   "Naam": "Antwerpen, Prosperpolder",
+   "Omschrijving": "Antwerpen, Prosperpolder"
+  },
+  {
+   "Locatie_MessageID": 499,
+   "Code": "beerkanaal",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.971117,
+   "Lon": 4.097315,
+   "Naam": "Beerkanaal",
+   "Omschrijving": "Beerkanaal"
+  },
+  {
+   "Locatie_MessageID": 16304,
+   "Code": "beneluxhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.943169,
+   "Lon": 4.127935,
+   "Naam": "Beneluxhaven",
+   "Omschrijving": "Beneluxhaven"
+  },
+  {
+   "Locatie_MessageID": 4882,
+   "Code": "botlek.geulhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.891814,
+   "Lon": 4.312531,
+   "Naam": "Botlek Geulhaven",
+   "Omschrijving": "Radarpost 10"
+  },
+  {
+   "Locatie_MessageID": 18539,
+   "Code": "breskens.veerhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.403661,
+   "Lon": 3.550427,
+   "Naam": "Breskens, Veerhaven",
+   "Omschrijving": "Breskens, Veerhaven"
+  },
+  {
+   "Locatie_MessageID": 2671,
+   "Code": "brouwersdam.brouwershavensegat.2",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.766527,
+   "Lon": 3.621747,
+   "Naam": "Brouwersdam Brouwershavense Gat 2",
+   "Omschrijving": "Brouwersdam Brouwershavense Gat 2"
+  },
+  {
+   "Locatie_MessageID": 12385,
+   "Code": "brouwersdam.brouwershavensegat.8",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.74644,
+   "Lon": 3.81472,
+   "Naam": "Brouwersdam Brouwershavense Gat 8",
+   "Omschrijving": "Brouwersdam Brouwershavense Gat 8"
+  },
+  {
+   "Locatie_MessageID": 13189,
+   "Code": "cadzand.2",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.379298,
+   "Lon": 3.376275,
+   "Naam": "Cadzand, 2",
+   "Omschrijving": "Cadzand, 2"
+  },
+  {
+   "Locatie_MessageID": 17039,
+   "Code": "dalem",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.822,
+   "Lon": 5.016527,
+   "Naam": "Dalem",
+   "Omschrijving": "voorheen Vuren"
+  },
+  {
+   "Locatie_MessageID": 16534,
+   "Code": "delfzijl",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.328,
+   "Lon": 6.931,
+   "Naam": "Delfzijl",
+   "Omschrijving": "Delfzijl"
+  },
+  {
+   "Locatie_MessageID": 11500,
+   "Code": "denhelder.marsdiep",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.964359,
+   "Lon": 4.74499,
+   "Naam": "Den Helder, Marsdiep",
+   "Omschrijving": "Den Helder, Marsdiep"
+  },
+  {
+   "Locatie_MessageID": 6708,
+   "Code": "denoever.waddenzee.voorhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.931538,
+   "Lon": 5.045596,
+   "Naam": "Den Oever, Waddenzee voorhaven",
+   "Omschrijving": "Den Oever, Waddenzee voorhaven"
+  },
+  {
+   "Locatie_MessageID": 17887,
+   "Code": "dordrecht.oudemaas.benedenmerwede",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.82,
+   "Lon": 4.671,
+   "Naam": "Dordrecht Oude Maas, Beneden Merwede",
+   "Omschrijving": "Dordrecht Oude Maas, Beneden Merwede"
+  },
+  {
+   "Locatie_MessageID": 3248,
+   "Code": "dukegat",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.433611,
+   "Lon": 6.926111,
+   "Naam": "Dukegat",
+   "Omschrijving": "Dukegat"
+  },
+  {
+   "Locatie_MessageID": 5399,
+   "Code": "eemhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.889213,
+   "Lon": 4.417595,
+   "Naam": "Eemhaven",
+   "Omschrijving": "Eemhaven"
+  },
+  {
+   "Locatie_MessageID": 1481,
+   "Code": "eemshaven.haven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.448702,
+   "Lon": 6.828392,
+   "Naam": "Eemshaven, haven",
+   "Omschrijving": "Eemshaven, haven"
+  },
+  {
+   "Locatie_MessageID": 16991,
+   "Code": "eemshaven.waddenzee",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.474392,
+   "Lon": 6.821731,
+   "Naam": "Eemshaven, Waddenzee",
+   "Omschrijving": "stroommeetpaal"
+  },
+  {
+   "Locatie_MessageID": 13876,
+   "Code": "europahaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.962179,
+   "Lon": 4.029151,
+   "Naam": "Europahaven",
+   "Omschrijving": "Europahaven"
+  },
+  {
+   "Locatie_MessageID": 4267,
+   "Code": "europoort.harmsenbrug",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.901771,
+   "Lon": 4.210879,
+   "Naam": "Europoort, Harmsenbrug",
+   "Omschrijving": "Europoort, Harmsenbrug"
+  },
+  {
+   "Locatie_MessageID": 1425,
+   "Code": "europoort.hartelbrug",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.86635,
+   "Lon": 4.307781,
+   "Naam": "Europoort, Hartelbrug",
+   "Omschrijving": "Europoort, Hartelbrug"
+  },
+  {
+   "Locatie_MessageID": 15318,
+   "Code": "gatvanborssele",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.411393,
+   "Lon": 3.757884,
+   "Naam": "Gat van Borssele",
+   "Omschrijving": "Gat van Borssele"
+  },
+  {
+   "Locatie_MessageID": 17489,
+   "Code": "gouda.hollandscheijssel",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.00658,
+   "Lon": 4.71972,
+   "Naam": "Gouda Hollandsche IJssel",
+   "Omschrijving": "Gouda Hollandsche IJssel"
+  },
+  {
+   "Locatie_MessageID": 8030,
+   "Code": "hagestein.beneden",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.993,
+   "Lon": 5.1315,
+   "Naam": "Hagestein, beneden",
+   "Omschrijving": "Hagestein, beneden"
+  },
+  {
+   "Locatie_MessageID": 12772,
+   "Code": "hank.bergschemaas",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.7191,
+   "Lon": 4.894,
+   "Naam": "Keizersveer",
+   "Omschrijving": "km 247,60"
+  },
+  {
+   "Locatie_MessageID": 18780,
+   "Code": "hansweert",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.44567,
+   "Lon": 3.99744,
+   "Naam": "Hansweert",
+   "Omschrijving": "Hansweert"
+  },
+  {
+   "Locatie_MessageID": 8138,
+   "Code": "haringvliet.10",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.862779,
+   "Lon": 3.860561,
+   "Naam": "Haringvliet, punt 10",
+   "Omschrijving": "Haringvliet, punt 10"
+  },
+  {
+   "Locatie_MessageID": 3352,
+   "Code": "harlingen.waddenzee",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.175634,
+   "Lon": 5.409342,
+   "Naam": "Harlingen, Waddenzee",
+   "Omschrijving": "Harlingen, Waddenzee"
+  },
+  {
+   "Locatie_MessageID": 4498,
+   "Code": "hartelkanaal.kuwaitpetroleum",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.930255,
+   "Lon": 4.163079,
+   "Naam": "Hartelkanaal, Kuwait Petroleum",
+   "Omschrijving": "Hartelkanaal, Kuwait Petroleum"
+  },
+  {
+   "Locatie_MessageID": 6682,
+   "Code": "heesbeen",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.735848,
+   "Lon": 5.124738,
+   "Naam": "Heesbeen",
+   "Omschrijving": "Heesbeen"
+  },
+  {
+   "Locatie_MessageID": 7721,
+   "Code": "heinenoord.goidschalxoord",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.830298,
+   "Lon": 4.451622,
+   "Naam": "Heinenoord, Goidschalxoord",
+   "Omschrijving": "Heinenoord, Goidschalxoord"
+  },
+  {
+   "Locatie_MessageID": 12491,
+   "Code": "hellevoetsluis",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.819724,
+   "Lon": 4.128239,
+   "Naam": "Hellevoetsluis",
+   "Omschrijving": "Hellevoetsluis"
+  },
+  {
+   "Locatie_MessageID": 1319,
+   "Code": "hoekvanholland",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.976899,
+   "Lon": 4.119827,
+   "Naam": "Hoek van Holland",
+   "Omschrijving": "rechter oever kilometer 1030.1"
+  },
+  {
+   "Locatie_MessageID": 8248,
+   "Code": "hoekvanholland.maeslantkering.beneden.noord",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.958239,
+   "Lon": 4.161443,
+   "Naam": "Hoek van Holland, Maeslantkering, Beneden, noord",
+   "Omschrijving": "zeezijde"
+  },
+  {
+   "Locatie_MessageID": 13288,
+   "Code": "holwerd.veersteiger",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.395656,
+   "Lon": 5.878059,
+   "Naam": "Holwerd, Veersteiger",
+   "Omschrijving": "zie kaart HAVKT.ZIP in DONAR"
+  },
+  {
+   "Locatie_MessageID": 8744,
+   "Code": "huibertgat",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.57375,
+   "Lon": 6.398433,
+   "Naam": "Huibertgat",
+   "Omschrijving": "Huibertgat"
+  },
+  {
+   "Locatie_MessageID": 18560,
+   "Code": "ijgeul.1",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.463943,
+   "Lon": 4.517596,
+   "Naam": "IJGeul, 1",
+   "Omschrijving": "voorheen IJmuiden stroommeetpaal"
+  },
+  {
+   "Locatie_MessageID": 13729,
+   "Code": "ijmuiden.buitenhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.463,
+   "Lon": 4.555,
+   "Naam": "IJmuiden, buitenhaven",
+   "Omschrijving": "IJmuiden, buitenhaven"
+  },
+  {
+   "Locatie_MessageID": 7196,
+   "Code": "ijmuiden.noordersluis.west",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.4678,
+   "Lon": 4.604,
+   "Naam": "IJmuiden, noordersluis, west",
+   "Omschrijving": "IJmuiden, noordersluis, west"
+  },
+  {
+   "Locatie_MessageID": 17202,
+   "Code": "kats.zandkreeksluis",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.543947,
+   "Lon": 3.865418,
+   "Naam": "Kats, Zandkreeksluis",
+   "Omschrijving": "voorheen buiten"
+  },
+  {
+   "Locatie_MessageID": 12365,
+   "Code": "kloosterzande.baalhoek",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.366086,
+   "Lon": 4.10258,
+   "Naam": "Kloosterzande, Baalhoek",
+   "Omschrijving": "Kloosterzande, Baalhoek"
+  },
+  {
+   "Locatie_MessageID": 9627,
+   "Code": "knock",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.327222,
+   "Lon": 7.030556,
+   "Naam": "Knock",
+   "Omschrijving": "Knock"
+  },
+  {
+   "Locatie_MessageID": 129,
+   "Code": "kornwerderzand.waddenzee.buitenhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.07459,
+   "Lon": 5.334757,
+   "Naam": "Kornwerderzand Waddenzee buitenhaven",
+   "Omschrijving": "Kornwerderzand Waddenzee buitenhaven"
+  },
+  {
+   "Locatie_MessageID": 9806,
+   "Code": "krammersluizen.west",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.659345,
+   "Lon": 4.144264,
+   "Naam": "Krammersluizen west",
+   "Omschrijving": "Krammersluizen west"
+  },
+  {
+   "Locatie_MessageID": 12670,
+   "Code": "krimpenaandeijssel.hollandscheijssel",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.9165,
+   "Lon": 4.579,
+   "Naam": "Krimpen aan de IJssel, Hollandsche IJssel",
+   "Omschrijving": "Krimpen aan de IJssel, Hollandsche IJssel"
+  },
+  {
+   "Locatie_MessageID": 6122,
+   "Code": "krimpenaandelek.lek",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.890722,
+   "Lon": 4.628906,
+   "Naam": "Krimpen aan de Lek, Lek",
+   "Omschrijving": "Krimpen aan de Lek, Lek"
+  },
+  {
+   "Locatie_MessageID": 16251,
+   "Code": "lauwersoog.waddenzee",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.408334,
+   "Lon": 6.196046,
+   "Naam": "Lauwersoog, Waddenzee",
+   "Omschrijving": "Lauwersoog, Waddenzee"
+  },
+  {
+   "Locatie_MessageID": 3215,
+   "Code": "lith.beneden",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.810386,
+   "Lon": 5.432911,
+   "Naam": "Lith beneden",
+   "Omschrijving": "vh Lith dorp, km 202,37"
+  },
+  {
+   "Locatie_MessageID": 3232,
+   "Code": "maassluis",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.917507,
+   "Lon": 4.249788,
+   "Naam": "Maassluis",
+   "Omschrijving": "Maassluis"
+  },
+  {
+   "Locatie_MessageID": 13763,
+   "Code": "maasvlakte.amaliahaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.96219,
+   "Lon": 3.99496,
+   "Naam": "Maasvlakte Amaliahaven",
+   "Omschrijving": "Maasvlakte Amaliahaven"
+  },
+  {
+   "Locatie_MessageID": 9615,
+   "Code": "maasvlakte.hartelhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.929692,
+   "Lon": 4.042464,
+   "Naam": "Maasvlakte, Hartelhaven",
+   "Omschrijving": "Maasvlakte, Hartelhaven"
+  },
+  {
+   "Locatie_MessageID": 6080,
+   "Code": "marollegat",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.479747,
+   "Lon": 4.191958,
+   "Naam": "Marollegat",
+   "Omschrijving": "Marollegat"
+  },
+  {
+   "Locatie_MessageID": 4050,
+   "Code": "mississippihaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.934244,
+   "Lon": 4.045135,
+   "Naam": "Mississippihaven",
+   "Omschrijving": "Mississippihaven"
+  },
+  {
+   "Locatie_MessageID": 857,
+   "Code": "moerdijk",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.712,
+   "Lon": 4.615,
+   "Naam": "Moerdijk",
+   "Omschrijving": "Moerdijk"
+  },
+  {
+   "Locatie_MessageID": 6534,
+   "Code": "nieuwestatenzijl.dollard",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.231562,
+   "Lon": 7.207423,
+   "Naam": "Nieuwe Statenzijl, Dollard",
+   "Omschrijving": "Nieuwe Statenzijl, Dollard"
+  },
+  {
+   "Locatie_MessageID": 11506,
+   "Code": "noordwijk.meetpost",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.273107,
+   "Lon": 4.294811,
+   "Naam": "Noordwijk, meetpost",
+   "Omschrijving": "Noordwijk, meetpost"
+  },
+  {
+   "Locatie_MessageID": 9820,
+   "Code": "oosterschelde.11",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.64329,
+   "Lon": 3.480331,
+   "Naam": "Oosterschelde, 11",
+   "Omschrijving": "Oosterschelde, 11"
+  },
+  {
+   "Locatie_MessageID": 4532,
+   "Code": "oosterschelde.13",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.733324,
+   "Lon": 3.554848,
+   "Naam": "Oosterschelde, 13",
+   "Omschrijving": "Oosterschelde, 13"
+  },
+  {
+   "Locatie_MessageID": 11095,
+   "Code": "oosterschelde.14",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.720117,
+   "Lon": 3.676908,
+   "Naam": "Oosterschelde, 14",
+   "Omschrijving": "Oosterschelde, 14"
+  },
+  {
+   "Locatie_MessageID": 326,
+   "Code": "oosterschelde.15",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.582828,
+   "Lon": 3.471022,
+   "Naam": "Oosterschelde, 15",
+   "Omschrijving": "Oosterschelde, 15"
+  },
+  {
+   "Locatie_MessageID": 11597,
+   "Code": "oosterschelde.4",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.65514,
+   "Lon": 3.69342,
+   "Naam": "Oosterschelde, 4",
+   "Omschrijving": "voorheen Schaar"
+  },
+  {
+   "Locatie_MessageID": 15502,
+   "Code": "oosterschelde.roompotsluis.binnen",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.618,
+   "Lon": 3.688,
+   "Naam": "Oosterschelde Roompotsluis binnen",
+   "Omschrijving": "Oosterschelde Roompotsluis binnen"
+  },
+  {
+   "Locatie_MessageID": 13634,
+   "Code": "oosterschelde.roompotsluis.buiten",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.619,
+   "Lon": 3.68,
+   "Naam": "Oosterschelde Roompotsluis buiten",
+   "Omschrijving": "Oosterschelde Roompotsluis buiten"
+  },
+  {
+   "Locatie_MessageID": 16976,
+   "Code": "oostmahorn",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.3798,
+   "Lon": 6.162597,
+   "Naam": "Oostmahorn",
+   "Omschrijving": "Oostmahorn"
+  },
+  {
+   "Locatie_MessageID": 13798,
+   "Code": "ossenisse",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.407884,
+   "Lon": 3.966769,
+   "Naam": "Ossenisse",
+   "Omschrijving": "vh Overloop van Hansweert"
+  },
+  {
+   "Locatie_MessageID": 8199,
+   "Code": "parksluis",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.906535,
+   "Lon": 4.464452,
+   "Naam": "Parksluis",
+   "Omschrijving": "Parksluis"
+  },
+  {
+   "Locatie_MessageID": 16749,
+   "Code": "petten.zuid",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.772659,
+   "Lon": 4.649702,
+   "Naam": "Petten, zuid",
+   "Omschrijving": "Petten, zuid"
+  },
+  {
+   "Locatie_MessageID": 6094,
+   "Code": "pogum",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.321485,
+   "Lon": 7.253999,
+   "Naam": "Pogum",
+   "Omschrijving": "Pogum"
+  },
+  {
+   "Locatie_MessageID": 10722,
+   "Code": "rilland.bath",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.39878,
+   "Lon": 4.21014,
+   "Naam": "Rilland, Bath",
+   "Omschrijving": "Rilland, Bath"
+  },
+  {
+   "Locatie_MessageID": 639,
+   "Code": "rotterdam.dintelhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.954265,
+   "Lon": 4.120655,
+   "Naam": "Rotterdam, Dintelhaven",
+   "Omschrijving": "Rotterdam, Dintelhaven"
+  },
+  {
+   "Locatie_MessageID": 3003,
+   "Code": "rotterdam.nieuwemaas.boerengat",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.9184,
+   "Lon": 4.5003,
+   "Naam": "Rotterdam, Nieuwe Maas, Boerengat",
+   "Omschrijving": "Rotterdam, Nieuwe Maas, Boerengat"
+  },
+  {
+   "Locatie_MessageID": 7192,
+   "Code": "rozenburgsesluis.noordzijde",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.895774,
+   "Lon": 4.228892,
+   "Naam": "Rozenburgsesluis, noordzijde",
+   "Omschrijving": "Rozenburgsesluis, noordzijde"
+  },
+  {
+   "Locatie_MessageID": 5289,
+   "Code": "rozenburgsesluis.zuidzijde",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.891244,
+   "Lon": 4.229823,
+   "Naam": "Rozenburgsesluis, zuidzijde",
+   "Omschrijving": "Rozenburgsesluis, zuidzijde"
+  },
+  {
+   "Locatie_MessageID": 11329,
+   "Code": "schaarvandenoord",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.377868,
+   "Lon": 4.164992,
+   "Naam": "Schaar van de Noord",
+   "Omschrijving": "Schaar van de Noord"
+  },
+  {
+   "Locatie_MessageID": 5986,
+   "Code": "scheurhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.962297,
+   "Lon": 4.138792,
+   "Naam": "Scheurhaven",
+   "Omschrijving": "Scheurhaven"
+  },
+  {
+   "Locatie_MessageID": 13179,
+   "Code": "scheveningen",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 52.099035,
+   "Lon": 4.263563,
+   "Naam": "Scheveningen",
+   "Omschrijving": "Scheveningen"
+  },
+  {
+   "Locatie_MessageID": 2297,
+   "Code": "schiermonnikoog.waddenzee",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.468937,
+   "Lon": 6.202908,
+   "Naam": "Schiermonnikoog, Waddenzee",
+   "Omschrijving": "Schiermonnikoog, Waddenzee"
+  },
+  {
+   "Locatie_MessageID": 926,
+   "Code": "schoonhoven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.942,
+   "Lon": 4.85,
+   "Naam": "Schoonhoven",
+   "Omschrijving": "Schoonhoven"
+  },
+  {
+   "Locatie_MessageID": 10957,
+   "Code": "sintannaland.havensteiger",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.603596,
+   "Lon": 4.109586,
+   "Naam": "Sint Annaland, Haven Steiger",
+   "Omschrijving": "Sint Annaland, Haven Steiger"
+  },
+  {
+   "Locatie_MessageID": 5876,
+   "Code": "spijkenisse.oudemaas",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.861661,
+   "Lon": 4.333954,
+   "Naam": "Spijkenisse, Oude Maas",
+   "Omschrijving": "inlaat voedingskanaal"
+  },
+  {
+   "Locatie_MessageID": 12898,
+   "Code": "stavenisse",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.598,
+   "Lon": 4.004,
+   "Naam": "Stavenisse",
+   "Omschrijving": "Stavenisse"
+  },
+  {
+   "Locatie_MessageID": 2145,
+   "Code": "stellendam.buitenhaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.827028,
+   "Lon": 4.033445,
+   "Naam": "Stellendam, buitenhaven",
+   "Omschrijving": "Stellendam, buitenhaven"
+  },
+  {
+   "Locatie_MessageID": 12845,
+   "Code": "suurhofbrug.noordzijde",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.937687,
+   "Lon": 4.107234,
+   "Naam": "Suurhofbrug, noordzijde",
+   "Omschrijving": "Suurhofbrug, noordzijde"
+  },
+  {
+   "Locatie_MessageID": 3190,
+   "Code": "tennesseehaven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.963507,
+   "Lon": 4.093561,
+   "Naam": "Tennesseehaven",
+   "Omschrijving": "Tennesseehaven"
+  },
+  {
+   "Locatie_MessageID": 3509,
+   "Code": "terneuzen",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.336212,
+   "Lon": 3.819812,
+   "Naam": "Terneuzen",
+   "Omschrijving": "Terneuzen"
+  },
+  {
+   "Locatie_MessageID": 10077,
+   "Code": "terschelling.noordzee",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.442486,
+   "Lon": 5.333033,
+   "Naam": "Terschelling, Noordzee",
+   "Omschrijving": "Terschelling, Noordzee"
+  },
+  {
+   "Locatie_MessageID": 14709,
+   "Code": "terschelling.west",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.363045,
+   "Lon": 5.220026,
+   "Naam": "Terschelling, west",
+   "Omschrijving": "Terschelling, west"
+  },
+  {
+   "Locatie_MessageID": 6320,
+   "Code": "texel.noordzee",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.120612,
+   "Lon": 4.733193,
+   "Naam": "Texel, Noordzee",
+   "Omschrijving": "Texel, Noordzee"
+  },
+  {
+   "Locatie_MessageID": 16064,
+   "Code": "texel.oudeschild",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.038835,
+   "Lon": 4.850192,
+   "Naam": "Texel, Oudeschild",
+   "Omschrijving": "Texel, Oudeschild"
+  },
+  {
+   "Locatie_MessageID": 2965,
+   "Code": "tholen.bergsediepsluis.buiten",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.511335,
+   "Lon": 4.165743,
+   "Naam": "Tholen, Bergse Diepsluis, buiten",
+   "Omschrijving": "west"
+  },
+  {
+   "Locatie_MessageID": 8760,
+   "Code": "vlaardingen",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.899639,
+   "Lon": 4.349048,
+   "Naam": "Vlaardingen",
+   "Omschrijving": "Vlaardingen"
+  },
+  {
+   "Locatie_MessageID": 3499,
+   "Code": "vlaktevanderaan",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.503721,
+   "Lon": 3.242164,
+   "Naam": "Vlakte van de Raan",
+   "Omschrijving": "Vlakte van de Raan"
+  },
+  {
+   "Locatie_MessageID": 5634,
+   "Code": "vlieland.haven",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.296127,
+   "Lon": 5.091456,
+   "Naam": "Vlieland, haven",
+   "Omschrijving": "Vlieland, haven"
+  },
+  {
+   "Locatie_MessageID": 5811,
+   "Code": "vlissingen",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.442,
+   "Lon": 3.6,
+   "Naam": "Vlissingen",
+   "Omschrijving": "Vlissingen"
+  },
+  {
+   "Locatie_MessageID": 16368,
+   "Code": "walsoorden",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.398427,
+   "Lon": 4.026206,
+   "Naam": "Walsoorden",
+   "Omschrijving": "Walsoorden"
+  },
+  {
+   "Locatie_MessageID": 13025,
+   "Code": "werkendam.nieuwemerwede",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.806041,
+   "Lon": 4.876824,
+   "Naam": "Werkendam, Nieuwe Merwede",
+   "Omschrijving": "buiten"
+  },
+  {
+   "Locatie_MessageID": 6848,
+   "Code": "westkapelle",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.521448,
+   "Lon": 3.440031,
+   "Naam": "Westkapelle",
+   "Omschrijving": "Westkapelle"
+  },
+  {
+   "Locatie_MessageID": 1903,
+   "Code": "wierumergronden",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.515827,
+   "Lon": 5.958261,
+   "Naam": "Wierumergronden",
+   "Omschrijving": "Wierumergronden"
+  },
+  {
+   "Locatie_MessageID": 14256,
+   "Code": "willemstad.hollandschdiep",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.696401,
+   "Lon": 4.40689,
+   "Naam": "Willemstad, Hollandsch Diep",
+   "Omschrijving": "Volkeraksluizen spuisluis"
+  },
+  {
+   "Locatie_MessageID": 3832,
+   "Code": "yerseke",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 51.506154,
+   "Lon": 4.07513,
+   "Naam": "Yerseke",
+   "Omschrijving": "Yerseke"
+  },
+  {
+   "Locatie_MessageID": 557,
+   "Code": "zoutkamp",
+   "Coordinatenstelsel": "ETRS89",
+   "Lat": 53.337345,
+   "Lon": 6.297096,
+   "Naam": "Zoutkamp",
+   "Omschrijving": "Zoutkamp"
+  }
+ ]
+}

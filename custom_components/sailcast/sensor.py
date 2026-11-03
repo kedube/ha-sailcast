@@ -24,6 +24,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
+from . import tides
 from .coordinator import ResultsCoordinator, SailCastConfigEntry
 from .entity import SailorEntity, SpotEntity, async_remove_stale
 from .limits import Level
@@ -181,6 +182,11 @@ class SpotSensorDescription(SensorEntityDescription):
     attributes: Callable[[SpotConditions], dict[str, Any] | None] = lambda _: None
 
 
+def _has_tide_times(spot: Spot) -> bool:
+    """Return whether a spot's tides have times, which the ocean model's don't."""
+    return spot.tide_station not in (None, tides.MODEL)
+
+
 def _next_tide(conditions: SpotConditions, high: bool) -> Any:
     now = dt_util.utcnow()
     return next(
@@ -268,7 +274,7 @@ SPOT_SENSORS: tuple[SpotSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_registry_enabled_default=False,
         value=_tide_time(high=True),
-        applies=lambda spot: spot.tide_station is not None,
+        applies=_has_tide_times,
         attributes=_tide_height(high=True),
     ),
     SpotSensorDescription(
@@ -277,7 +283,7 @@ SPOT_SENSORS: tuple[SpotSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_registry_enabled_default=False,
         value=_tide_time(high=False),
-        applies=lambda spot: spot.tide_station is not None,
+        applies=_has_tide_times,
         attributes=_tide_height(high=False),
     ),
 )

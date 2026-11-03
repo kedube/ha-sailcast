@@ -3,6 +3,8 @@
 Alerts are fetched by marine zone, one request for every zone. A point query
 only matches zones that contain the point, so a pin near the shore can miss
 its zone. Then the nearest of the forecast office's coastal zones is used.
+Lakes without a marine zone get the alerts for the pin itself, such as a
+Lake Wind Advisory, which also catches storm warnings drawn around it.
 """
 
 from __future__ import annotations
@@ -47,8 +49,23 @@ async def async_get_alerts(
     return parse_alerts(payload, zones)
 
 
-def parse_alerts(payload: Any, zones: Collection[str]) -> list[Alert]:
-    """Read alerts, one per zone they cover.
+async def async_get_alerts_at(
+    session: aiohttp.ClientSession, latitude: float, longitude: float, zone: str
+) -> list[Alert]:
+    """Return the active alerts for a pin, all under the zone given."""
+    payload = await fetch_json(
+        session,
+        f"{API}/alerts/active",
+        {"point": f"{latitude:.4f},{longitude:.4f}"},
+        headers=HEADERS,
+    )
+    return parse_alerts(payload, None, zone)
+
+
+def parse_alerts(
+    payload: Any, zones: Collection[str] | None, pin: str | None = None
+) -> list[Alert]:
+    """Read alerts, one per zone they cover, or each once for a pin's alerts.
 
     Cancelled alerts, tests and exercises are left out. An alert runs from
     its onset (or when it took effect) to its end (or when it expires).
@@ -61,6 +78,11 @@ def parse_alerts(payload: Any, zones: Collection[str]) -> list[Alert]:
                 continue
             start = _time(props.get("onset") or props["effective"])
             end = _time(props.get("ends") or props["expires"])
+            covered = (
+                [pin]
+                if pin
+                else [zone for zone in props["geocode"]["UGC"] if zone in (zones or ())]
+            )
             alerts.extend(
                 Alert(
                     event=props["event"],
@@ -69,8 +91,7 @@ def parse_alerts(payload: Any, zones: Collection[str]) -> list[Alert]:
                     end=end,
                     headline=props.get("headline"),
                 )
-                for zone in props["geocode"]["UGC"]
-                if zone in zones
+                for zone in covered
             )
     except (KeyError, TypeError, ValueError) as err:
         raise ProviderError(f"Unexpected alerts: {err}") from err
@@ -79,11 +100,13 @@ def parse_alerts(payload: Any, zones: Collection[str]) -> list[Alert]:
 
 async def async_marine_zones(
     session: aiohttp.ClientSession, latitude: float, longitude: float
-) -> list[Zone]:
-    """Return the marine zones for a spot, nearest first.
+) -> tuple[list[Zone], bool]:
+    """Return the marine zones for a spot, nearest first, and whether it's covered.
 
     That's the zone the spot is in, or the forecast office's coastal zones.
-    Outside the area the NWS covers there are none.
+    A spot is covered when the NWS forecasts for it, even with no marine
+    zone, as on a lake inland. Outside the area the NWS covers, there's
+    nothing.
     """
     point = f"{latitude:.4f},{longitude:.4f}"
     containing = await fetch_json(
@@ -93,12 +116,12 @@ async def async_marine_zones(
         Zone(feature["properties"]["id"], feature["properties"]["name"], 0.0)
         for feature in containing.get("features", [])
     ]:
-        return zones
+        return zones, True
     try:
         points = await fetch_json(session, f"{API}/points/{point}", headers=HEADERS)
     except ProviderError:
         # Points outside the US have no forecast office.
-        return []
+        return [], False
     office = points.get("properties", {}).get("cwa")
     listing = await fetch_json(
         session, f"{API}/zones", {"type": "coastal"}, headers=HEADERS
@@ -122,7 +145,7 @@ async def async_marine_zones(
     measured = await asyncio.gather(*(measure(props) for props in candidates))
     return sorted(
         (zone for zone in measured if zone), key=lambda zone: zone.distance_km
-    )
+    ), True
 
 
 def _time(value: str) -> datetime:

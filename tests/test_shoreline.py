@@ -8,12 +8,16 @@ from typing import Any
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 import pytest
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.providers import ProviderError, openfreemap
 from custom_components.sailcast.providers.openfreemap import WaterTile
 from custom_components.sailcast.shoreline import (
+    DATA_SHORELINES,
     REACH_KM,
     RETRY_AFTER,
     STORAGE_KEY,
@@ -29,7 +33,9 @@ from .conftest import (
     RECORDED,
     RIVER_POINT,
     TILE_URL,
+    mock_sources,
     mock_tiles,
+    set_up,
 )
 
 # A tile on the equator, about 9.8 km across; the pin is in its middle.
@@ -261,3 +267,24 @@ async def test_unused_pins_are_forgotten(
     await shorelines.async_measure_pins([HARBOR_POINT])
     assert shorelines.get(*RIVER_POINT) is None
     assert shorelines.get(*HARBOR_POINT) is not None
+
+
+async def test_saved_shorelines_used_from_the_start(
+    hass: HomeAssistant,
+    sailcast_entry: MockConfigEntry,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """After a restart, the first results already use the shorelines saved."""
+    await set_up(hass, sailcast_entry, freezer)
+    assert await hass.config_entries.async_unload(sailcast_entry.entry_id)
+    async_fire_time_changed(hass, RECORDED + timedelta(seconds=15))
+    await hass.async_block_till_done()
+    # A restart starts with nothing in memory, and the tiles can't be fetched.
+    hass.data.pop(DATA_SHORELINES)
+    sources.clear_requests()
+    mock_sources(sources)
+    sources.get(TILE_URL, status=503)
+    assert await hass.config_entries.async_setup(sailcast_entry.entry_id)
+    river = sailcast_entry.runtime_data.results.data.conditions["spot_river"]
+    assert {hour.wave_source for hour in river.hours} == {"estimate"}

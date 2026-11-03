@@ -1,0 +1,635 @@
+{
+ "Succesvol": true,
+ "WaarnemingenLijst": [
+  {
+   "AquoMetadata": {
+    "BemonsteringsApparaat": {
+     "Code": "8000",
+     "Omschrijving": "NVT"
+    },
+    "BemonsteringsMethode": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "BemonsteringsSoort": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "BioTaxon": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "BioTaxonType": {
+     "Code": "",
+     "Omschrijving": ""
+    },
+    "Compartiment": {
+     "Code": "OW",
+     "Omschrijving": "Oppervlaktewater"
+    },
+    "Eenheid": {
+     "Code": "DIMSLS",
+     "Omschrijving": "dimensieloos"
+    },
+    "Groepering": {
+     "Code": "GETETBRKD2",
+     "Omschrijving": "Getijextreem berekend"
+    },
+    "Grootheid": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "Hoedanigheid": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "MeetApparaat": {
+     "Code": "8000",
+     "Omschrijving": "NVT"
+    },
+    "Orgaan": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "Parameter": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "Parameter_Wat_Omschrijving": "Getijextreemtype astronomisch in Oppervlaktewater",
+    "ProcesType": "astronomisch",
+    "Typering": {
+     "Code": "GETETTPE",
+     "Omschrijving": "Getijextreemtype"
+    },
+    "WaardeBepalingsMethode": {
+     "Code": "other:F012",
+     "Omschrijving": "Astronomische waterhoogte mbv harmonische analyse"
+    },
+    "WaardeBepalingsTechniek": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    },
+    "WaardeBewerkingsMethode": {
+     "Code": "NVT",
+     "Omschrijving": "NVT"
+    }
+   },
+   "Locatie": {
+    "Code": "harlingen.waddenzee",
+    "Coordinatenstelsel": "ETRS89",
+    "Lat": 53.175634,
+    "Lon": 5.409342,
+    "Naam": "Harlingen, Waddenzee",
+    "Omschrijving": "Harlingen, Waddenzee"
+   },
+   "MetingenLijst": [
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-02T02:08:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-02T09:38:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-02T15:17:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-02T21:38:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-03T03:24:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-03T10:47:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-03T16:35:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-03T22:50:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-04T04:45:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-04T12:05:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-04T17:48:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-05T00:17:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-05T06:00:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-05T13:21:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-05T18:57:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-06T01:36:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-06T07:06:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-06T14:26:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-06T19:54:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-07T02:42:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-07T08:02:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-07T15:21:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-07T20:39:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-08T03:36:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-08T08:49:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-08T16:06:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-08T21:14:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-09T04:22:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-09T09:30:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-09T16:44:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-09T21:45:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-10T05:02:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-10T10:06:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-10T17:15:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-10T22:17:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-11T05:35:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-11T10:39:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "laagwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-11T17:42:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    },
+    {
+     "Meetwaarde": {
+      "Waarde_Alfanumeriek": "hoogwater",
+      "Waarde_Numeriek": 0.0
+     },
+     "Tijdstip": "2026-11-11T22:51:00.000+01:00",
+     "WaarnemingMetadata": {
+      "Bemonsteringshoogte": "-999999999",
+      "Kwaliteitswaardecode": "00",
+      "OpdrachtgevendeInstantie": "RIKZMON_WAT",
+      "Referentievlak": "NVT",
+      "Statuswaarde": "Ongecontroleerd"
+     }
+    }
+   ]
+  }
+ ]
+}

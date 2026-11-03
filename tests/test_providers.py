@@ -171,8 +171,11 @@ async def test_zone_containing_the_spot(
 ) -> None:
     """A pin on open water is in its marine zone."""
     mock_suggestions(aioclient_mock)
-    zones = await nws.async_marine_zones(async_get_clientsession(hass), *HARBOR_POINT)
+    zones, covered = await nws.async_marine_zones(
+        async_get_clientsession(hass), *HARBOR_POINT
+    )
     assert [(zone.id, zone.distance_km) for zone in zones] == [("PZZ740", 0.0)]
+    assert covered
 
 
 async def test_nearest_zone(
@@ -180,7 +183,10 @@ async def test_nearest_zone(
 ) -> None:
     """A pin in the bay gets the forecast office's zones, nearest first."""
     mock_suggestions(aioclient_mock)
-    zones = await nws.async_marine_zones(async_get_clientsession(hass), *BAY_POINT)
+    zones, covered = await nws.async_marine_zones(
+        async_get_clientsession(hass), *BAY_POINT
+    )
+    assert covered
     assert [zone.id for zone in zones] == ["PZZ740", "PZZ745"]
     assert 0 < zones[0].distance_km < 10
     assert zones[1].distance_km > zones[0].distance_km
@@ -196,7 +202,7 @@ async def test_no_zones_outside_the_us(
     aioclient_mock.get(f"{nws.API}/zones", json={"features": []})
     aioclient_mock.get(f"{nws.API}/points/51.5000,-0.1000", status=404, json={})
     zones = await nws.async_marine_zones(async_get_clientsession(hass), 51.5, -0.1)
-    assert zones == []
+    assert zones == ([], False)
 
 
 @pytest.mark.parametrize(

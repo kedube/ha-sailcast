@@ -14,6 +14,7 @@ import {
   heightRange,
   heightText,
   reasonsText,
+  savedSourceText,
   sourceText,
   temperatureText,
 } from "./text";
@@ -383,7 +384,11 @@ function nowCard(ctx: Ctx): TemplateResult {
               <dd>
                 ${t(hour.tide_rising ? "now.tide_rising" : "now.tide_falling", {
                   height: heightText(fmt, t, hour.tide_height),
-                })}
+                })}${
+                  ctx.forecast?.tide?.provider === "model"
+                    ? html` <span class="src">${t("now.tide_rough")}</span>`
+                    : nothing
+                }
               </dd>`
           : nothing
       }
@@ -394,14 +399,27 @@ function nowCard(ctx: Ctx): TemplateResult {
   </section>`;
 }
 
-/** Official marine warnings this week. */
+/** Who a spot's warnings come from, such as "National Weather Service, marine zone PZZ740". */
+export function warningSource(ctx: Ctx): string | null {
+  const forecast = ctx.forecast;
+  const saved = forecast?.sources.marine_zone;
+  const warnings = forecast?.warnings;
+  if (!saved || !warnings) return null;
+  const key = warnings.provider === "nws" && warnings.at_pin ? "nws_pin" : warnings.provider;
+  return ctx.t(`sources.warnings_by.${key}`, {
+    zone: savedSourceText(saved.id, saved.name),
+    services: warnings.services.join(", "),
+  });
+}
+
+/** Official warnings this week. */
 function warningsCard(ctx: Ctx): TemplateResult {
   const { t, fmt } = ctx;
   const spot = ctx.spot;
   const now = ctx.forecast?.now ?? "";
   // Warnings still in effect or still to come.
   const alerts = (ctx.forecast?.alerts ?? []).filter((alert) => ms(alert.end) > ms(now));
-  const zone = ctx.forecast?.sources.marine_zone;
+  const source = warningSource(ctx);
   return html`<section class="card">
     <div class="eyebrow">${t("warnings.title")}</div>
     ${
@@ -411,7 +429,7 @@ function warningsCard(ctx: Ctx): TemplateResult {
               html`<div class="warn-status on">
                 ${icon("flag")}
                 <span
-                  >${alert.event}
+                  >${alert.event}${alert.issued && alert.headline ? ` · ${alert.headline}` : ""}
                   <small
                     >${
                       ms(alert.start) <= ms(now)
@@ -422,8 +440,15 @@ function warningsCard(ctx: Ctx): TemplateResult {
                             start: `${fmt.weekday(localTime(alert.start, fmt.zone).date)} ${fmt.clock(alert.start)}`,
                             end: `${fmt.weekday(localTime(alert.end, fmt.zone).date)} ${fmt.clock(alert.end)}`,
                           })
+                    }${
+                      alert.issued
+                        ? ` · ${t("warnings.issued", {
+                            time: `${fmt.weekday(localTime(alert.issued, fmt.zone).date)} ${fmt.clock(alert.issued)}`,
+                            issuer: alert.issuer ?? "",
+                          })}`
+                        : ""
                     }</small
-                  ></span
+                  >${alert.details ? html`<small class="warn-text">${alert.details}</small>` : nothing}</span
                 >
               </div>`,
           )
@@ -432,13 +457,22 @@ function warningsCard(ctx: Ctx): TemplateResult {
           </div>`
     }
     ${alerts.length ? html`<p class="small">${t("warnings.meaning")}</p>` : nothing}
-    <p class="small">
-      ${
-        zone
-          ? t("warnings.source", { zone: zone.name ? `${zone.name} (${zone.id})` : zone.id })
-          : t("warnings.no_zone_hint")
-      }
-    </p>
+    ${
+      alerts.length && ctx.forecast?.warnings?.provider === "eccc"
+        ? html`<p class="small">${t("warnings.no_end")}</p>`
+        : nothing
+    }
+    <p class="small">${source ?? t("warnings.no_zone_hint")}</p>
+    ${
+      ctx.forecast?.warnings?.provider === "meteoalarm"
+        ? html`<p class="small">
+            ${t("warnings.meteoalarm_note")}
+            <a href="https://meteoalarm.org/en/live/" target="_blank" rel="noreferrer"
+              >www.meteoalarm.org</a
+            >
+          </p>`
+        : nothing
+    }
   </section>`;
 }
 

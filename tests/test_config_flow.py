@@ -227,7 +227,7 @@ async def test_source_choices(
     assert currents[:4] == ["none", "PCT0096_1", "PCT0091_1", "PCT0101_1"]
     assert "PCT0076_1" not in currents
     zones = [option["value"] for option in _options(result, "marine_zone")]
-    assert zones == ["none", "PZZ740", "PZZ745"]
+    assert zones == ["none", "PZZ740", "PZZ745", "nws"]
 
 
 async def test_no_sources(
@@ -654,3 +654,22 @@ async def test_sailor_comfort_errors(
         | {"comfort": {"rain": "some"} | comfort},
     )
     assert result["errors"] == errors
+
+
+async def test_options_keep_the_worldtides_key(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    """The options set WorldTides' key; an empty field removes it."""
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"worldtides_key": "  a-key  "}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {"worldtides_key": "a-key"}
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"worldtides_key": ""}
+    )
+    assert entry.options == {}

@@ -7,7 +7,7 @@ or warning service doesn't touch it.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Final
@@ -54,20 +54,89 @@ class Readings:
         return max((reading.time for reading in self.fields.values()), default=None)
 
 
+@dataclass(frozen=True, slots=True)
+class Station:
+    """A tide or current station.
+
+    `code` is the number people know a station by, where that isn't its ID.
+    """
+
+    id: str
+    name: str
+    latitude: float
+    longitude: float
+    code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TideEvent:
+    """A high or low tide, in meters above the predictions' datum."""
+
+    time: datetime
+    height: float
+    high: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Tides:
+    """A source's tide predictions. Some stations have no hourly heights.
+
+    `datum` is what heights are measured from: a chart datum such as "MLLW",
+    "CD" or "LAT", or "MSL" for the ocean model's rough curve. `name` is the
+    station a provider chose, for sources found by position, and `notice` is
+    a credit the provider asks to be shown with its data.
+    """
+
+    station: str
+    events: tuple[TideEvent, ...]
+    hourly: tuple[tuple[datetime, float], ...] = ()
+    datum: str = "MLLW"
+    name: str | None = None
+    notice: str | None = None
+
+
+def turning_points(hourly: Sequence[tuple[datetime, float]]) -> tuple[TideEvent, ...]:
+    """Return the highs and lows of hourly heights.
+
+    Each is placed on the parabola through its hour and the hours either
+    side, so its time falls between the hours.
+    """
+    events = []
+    for before, here, after in zip(hourly, hourly[1:], hourly[2:], strict=False):
+        rise, fall = here[1] - before[1], after[1] - here[1]
+        if (rise > 0 >= fall) or (rise < 0 <= fall):
+            curve = before[1] - 2 * here[1] + after[1]
+            shift = (before[1] - after[1]) / (2 * curve) if curve else 0.0
+            events.append(
+                TideEvent(
+                    here[0] + (after[0] - here[0]) * shift,
+                    here[1] - (before[1] - after[1]) * shift / 4,
+                    high=rise > 0,
+                )
+            )
+    return tuple(events)
+
+
 async def fetch_json(
     session: aiohttp.ClientSession,
     url: str,
     params: Mapping[str, str | int | float] | None = None,
     *,
     headers: Mapping[str, str] | None = None,
+    body: Any = None,
 ) -> Any:
-    """Return a URL's JSON. Any failure raises ProviderError."""
+    """Return a URL's JSON, posting `body` as JSON if there is one.
+
+    Any failure raises ProviderError.
+    """
     try:
         async with (
             asyncio.timeout(TIMEOUT),
-            session.get(
+            session.request(
+                "GET" if body is None else "POST",
                 url,
                 params=params,
+                json=body,
                 headers={"User-Agent": USER_AGENT, **(headers or {})},
             ) as response,
         ):
@@ -85,6 +154,7 @@ async def fetch_bytes(
     *,
     headers: Mapping[str, str] | None = None,
     limit: int | None = None,
+    wait: float = TIMEOUT,
 ) -> bytes:
     """Return a URL's body, or its first `limit` bytes. Failures raise ProviderError.
 
@@ -93,7 +163,7 @@ async def fetch_bytes(
     """
     try:
         async with (
-            asyncio.timeout(TIMEOUT),
+            asyncio.timeout(wait),
             session.get(
                 url, headers={"User-Agent": USER_AGENT, **(headers or {})}
             ) as response,

@@ -2,8 +2,9 @@
 
 SailCast raises an issue when a spot's pin is on land, when a buoy, airport or
 one of your sensors has sent nothing for half a day, when a tide or current
-station has failed for a day, and when Open-Meteo's free daily calls run low.
-Each issue clears itself once things are right again.
+source has failed for a day, when WorldTides' key is missing or refused, and
+when Open-Meteo's free daily calls run low. Each issue clears itself once
+things are right again.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 
+from . import tides
 from .const import CONF_CURRENT_STATION, CONF_TIDE_STATION, DOMAIN
 from .coordinator import SLOW_DOWN_AT, Observed, stations
 from .providers import Readings
@@ -28,6 +30,14 @@ if TYPE_CHECKING:
 QUIET: Final = timedelta(hours=12)
 # Tide and current predictions are fetched daily, so a day of failures counts.
 FAILING: Final = timedelta(days=1)
+PROVIDERS: Final = {
+    tides.NOAA: "NOAA",
+    tides.CHS: "The Canadian Hydrographic Service",
+    tides.RWS: "Rijkswaterstaat",
+    tides.KARTVERKET: "Kartverket",
+    tides.WORLDTIDES: "WorldTides",
+    tides.MODEL: "Open-Meteo",
+}
 
 
 type Issues = dict[str, tuple[str, dict[str, str]]]
@@ -40,6 +50,7 @@ def async_update_issues(hass: HomeAssistant, data: SailCastData, now: datetime) 
     _pins_on_land(data, wanted)
     _quiet_stations(data, now, wanted)
     _failing_predictions(data, now, wanted)
+    _worldtides_key(data, wanted)
     _quiet_sensors(hass, data, now, wanted)
     if data.budget.today >= SLOW_DOWN_AT:
         wanted["budget_low"] = ("budget_low", {"calls": f"{data.budget.today:,.0f}"})
@@ -86,12 +97,54 @@ def _failing_predictions(data: SailCastData, now: datetime, wanted: Issues) -> N
     for key, since in data.sources.predictions.failing.items():
         if now - since < FAILING:
             continue
-        kind, _, station_id = key.partition(":")
-        conf = CONF_TIDE_STATION if kind == "tide" else CONF_CURRENT_STATION
-        users = [spot for spot in spots if getattr(spot, conf) == station_id]
-        wanted[f"failing_{kind}_{station_id}"] = (
+        kind, _, source = key.partition(":")
+        if kind == "tide":
+            users = [spot for spot in spots if tides.key(spot) == source]
+            provider = tides.provider(source)
+            if provider == tides.NOAA:
+                station = _label(users, CONF_TIDE_STATION, source)
+            else:
+                # Name the source as it was saved, not by its ID or position.
+                station = next(
+                    (
+                        name
+                        for spot in users
+                        if (name := spot.source_names.get(CONF_TIDE_STATION))
+                    ),
+                    source.partition(":")[2],
+                )
+        else:
+            users = [spot for spot in spots if spot.current_station == source]
+            provider = tides.NOAA
+            station = _label(users, CONF_CURRENT_STATION, source)
+        wanted[f"failing_{kind}_{source}"] = (
             f"failing_{kind}",
-            {"station": _label(users, conf, station_id), "spots": _names(users)},
+            {
+                "station": station,
+                "spots": _names(users),
+                "provider": PROVIDERS[provider],
+            },
+        )
+
+
+def _worldtides_key(data: SailCastData, wanted: Issues) -> None:
+    problem = data.sources.predictions.key_problem
+    users = [
+        spot
+        for spot in data.profiles.spots.values()
+        if spot.tide_station == tides.WORLDTIDES
+    ]
+    if not problem or not users:
+        return
+    if problem == "missing":
+        wanted["worldtides_key_missing"] = (
+            "worldtides_key_missing",
+            {"spots": _names(users)},
+        )
+    else:
+        wanted["worldtides_key_rejected"] = (
+            "worldtides_key_rejected",
+            {"error": problem, "spots": _names(users)},
         )
 
 

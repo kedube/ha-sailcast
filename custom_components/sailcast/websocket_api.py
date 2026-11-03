@@ -30,7 +30,7 @@ from homeassistant.loader import IntegrationNotLoaded, async_get_loaded_integrat
 from homeassistant.util import dt as dt_util
 import probatio
 
-from . import profiles
+from . import alerts as alert_sources, profiles, tides as tide_sources
 from .const import (
     CONF_AHEAD,
     CONF_AIRPORT,
@@ -62,6 +62,7 @@ from .const import (
     CONF_TIDE_STATION,
     CONF_USER,
     CONF_WATER_TYPE,
+    CONF_WORLDTIDES_KEY,
     DOMAIN,
     SIGNAL_UPDATED,
     SUBENTRY_BOAT,
@@ -72,7 +73,8 @@ from .coordinator import SailCastConfigEntry, SailCastData
 from .geo import DIRECTIONS
 from .limits import BOAT_LIMITS, SKILL_WIND_LIMITS
 from .planner import calendar_entity, supports
-from .providers import ProviderError, ha_entity
+from .profiles import Spot
+from .providers import ProviderError, Tides, ha_entity
 from .shoreline import DATA_SHORELINES, Shorelines
 from .sources import async_suggest, suggested
 from .storage import DATA_STORE, PREFERENCES, PlannedSail
@@ -330,6 +332,8 @@ def ws_forecast(
             )
         }
         | {CONF_SENSORS: dict(spot.sensors)},
+        "tide": _tide_source(spot, conditions.tides),
+        "warnings": _warning_source(data, spot),
         "readings": readings_now(data.sources.readings(spot, sensors), now),
         "adjustments": [item.as_dict() for item in conditions.adjustments],
         "shoreline": {
@@ -345,6 +349,31 @@ def ws_forecast(
         ],
     }
     connection.send_result(msg["id"], result)
+
+
+def _warning_source(data: SailCastData, spot: Spot) -> dict[str, Any] | None:
+    """Return who a spot's warnings come from, and for MeteoAlarm, which services."""
+    if not spot.marine_zone:
+        return None
+    kept = alert_sources.key(spot) or ""
+    place = data.sources.alerts.places.get(kept)
+    return {
+        "provider": alert_sources.provider(spot.marine_zone),
+        "at_pin": spot.marine_zone in alert_sources.AT_PIN,
+        "services": list(place.services) if place else [],
+    }
+
+
+def _tide_source(spot: Spot, found: Tides | None) -> dict[str, Any] | None:
+    """Return who a spot's tides come from, their datum, and any notice to show."""
+    if not spot.tide_station:
+        return None
+    return {
+        "provider": tide_sources.provider(spot.tide_station),
+        "datum": found.datum if found else None,
+        "station": found.name if found else None,
+        "notice": found.notice if found else None,
+    }
 
 
 def _planned(
@@ -578,7 +607,13 @@ async def ws_settings_sources(
     msg: dict[str, Any],
 ) -> None:
     """Send the stations, warning zones, buoys and airports near a pin."""
-    found = await async_suggest(hass, msg[CONF_LATITUDE], msg[CONF_LONGITUDE])
+    entry = _entry(hass)
+    found = await async_suggest(
+        hass,
+        msg[CONF_LATITUDE],
+        msg[CONF_LONGITUDE],
+        worldtides=bool(entry and entry.options.get(CONF_WORLDTIDES_KEY)),
+    )
     choices = {
         CONF_TIDE_STATION: found.tide,
         CONF_CURRENT_STATION: found.current,
@@ -593,6 +628,7 @@ async def ws_settings_sources(
                 {
                     "id": choice.id,
                     "name": choice.name,
+                    "code": choice.code,
                     "distance": choice.distance_km,
                     "latitude": choice.latitude,
                     "longitude": choice.longitude,

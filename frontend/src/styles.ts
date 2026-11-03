@@ -1593,6 +1593,18 @@ export const styles = css`
   .sources dd {
     margin: 0;
   }
+  .warn-text {
+    display: block;
+    margin-top: 4px;
+    white-space: pre-line;
+    color: var(--sc-fg2);
+  }
+  .sources .notice {
+    display: block;
+    margin-top: 4px;
+    color: var(--sc-fg2);
+    font-size: 0.85em;
+  }
   @media (max-width: 600px) {
     .sources dl {
       grid-template-columns: minmax(0, 1fr);

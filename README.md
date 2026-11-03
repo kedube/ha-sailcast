@@ -19,7 +19,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 
 ## Status
 
-SailCast is in early development. Milestones 0 to 4 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. Readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. Sources outside the US come in milestone 5. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
+SailCast is in early development. Milestones 0 to 5 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. Readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map. Tides and official warnings come from the US, Canada and Europe, and tides anywhere with a WorldTides key. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
 
 ## Install
 
@@ -29,7 +29,7 @@ SailCast needs Home Assistant 2026.11 or newer. It isn't in the Marketplace's de
 
 1. Go to **Settings → Devices & services → Add integration** and pick **SailCast**.
 2. Open **SailCast** in the sidebar, and add your spots, boats and sailors on its **Settings** tab. SailCast's page under Devices & services edits the same settings.
-   - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station, marine warning zone, buoy and airport. All but the airport come from NOAA and the National Weather Service, so for now they cover US waters only. You can add your own sensors too, such as a weather station on the dock.
+   - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station, source of official warnings, buoy and airport; see [outside the US](#outside-the-us) for what each country has. You can add your own sensors too, such as a weather station on the dock.
    - **Boat:** a name, a size and a length.
    - **Sailor:** their skill, their usual boat and others, and when they can sail. Optionally, what they enjoy (an ideal wind range, the coldest air they like, and how much rain they mind), and the Home Assistant user the panel opens on them for.
 
@@ -45,7 +45,28 @@ The **Wind map** tab shows the wind or the gusts around a spot as colors, with p
 
 When a buoy, an airport or your own sensor has a fresh reading, SailCast compares it with the forecast for the same place and moves the spot's next few hours by the difference, fading out over six hours. The week view shows what's read now, with who read it and how long ago. A visibility measured nearby can make the hour under way dangerous; a forecast one never does.
 
-When you add a spot, SailCast measures how far open water reaches each way from the pin, on OpenStreetMap's map. Rivers and lakes get waves worked out from the wind and that open water upwind. On open water, ocean model waves from a direction the spot is sheltered from are reduced. If the pin is on land, or a buoy, airport, sensor or tide station stops reporting, SailCast says so under **Settings → Repairs**.
+When you add a spot, SailCast measures how far open water reaches each way from the pin, on OpenStreetMap's map. Rivers and lakes get waves worked out from the wind and that open water upwind. On open water, ocean model waves from a direction the spot is sheltered from are reduced. If the pin is on land, a buoy, airport, sensor or tide station stops reporting, or WorldTides' key is missing or refused, SailCast says so under **Settings → Repairs**.
+
+## Outside the US
+
+The forecast, waves and airport reports work anywhere. Tides and official warnings come from each country's own services:
+
+| Where | Tides | Official warnings |
+| --- | --- | --- |
+| US | NOAA's stations | The National Weather Service's marine zones, or its alerts for the pin on a lake, such as a Lake Wind Advisory |
+| Canada | The Canadian Hydrographic Service's stations | Environment and Climate Change Canada's marine areas, whole or in part, such as Western Lake Ontario |
+| Netherlands | Rijkswaterstaat's stations, above NAP | MeteoAlarm, from KNMI, including its warnings for the coastal waters and the IJsselmeer |
+| Norway | Kartverket, worked out for the pin | MeteoAlarm, from MET Norway |
+| Rest of Europe | With a WorldTides key | MeteoAlarm, from each country's weather service |
+| Anywhere else | With a WorldTides key | None yet |
+
+- **WorldTides** has tides almost anywhere, from a tide gauge near the pin or its global model. It needs your own key from [worldtides.info](https://www.worldtides.info): add it under **Settings → Devices & services → SailCast → Configure**. New accounts get 100 credits for a month, then a key costs $3.99 a year for 1,000 credits. A spot uses about 3 credits every five days.
+- **The ocean model's tide** is there for any spot with nothing better, as a rough curve without highs and lows. Near the coast its times can be an hour or more off, so it's never picked for you, and SailCast doesn't use it for times or advice.
+- **MeteoAlarm** warnings follow the regions within a few kilometers of the pin, so a lake shared by regions gets each one's warnings. Their outlines come from the file MeteoAlarm publishes for those who pass its warnings on. It isn't openly licensed, so SailCast doesn't include it: Home Assistant downloads it (about 33 MB) the first time a spot in Europe needs it, keeps a 1 MB copy, and looks for a newer one each month.
+- **Canada's marine warnings** don't say when they end, so SailCast counts one from when it's issued to the end of the next day, or until it's lifted.
+- **The UK's strong wind and gale warnings** for coastal waters have no open feed, so UK spots get the Met Office's warnings for land and coast through MeteoAlarm, and SailCast's own wind limits.
+
+Times show in Home Assistant's time zone, so a spot in another time zone shows its hours in yours.
 
 ## Your own calendar
 
@@ -101,12 +122,15 @@ On macOS, the python.org build of Python ships without SSL certificates. If you 
 
 ### Privacy
 
-The repository holds no personal data. Tests run on responses recorded at made-up spots in San Diego. The git hooks that `scripts/setup` turns on check every commit and commit message against a list of private terms kept outside the repository, in `~/.config/sailcast/private-terms.txt` or the file named by `SAILCAST_PRIVATE_TERMS`. Put one term per line, matched as a whole word. Lines starting with `re:` are regular expressions.
+The repository holds no personal data. Tests run on responses recorded at made-up spots in San Diego, and in the Solent, the Wadden Sea and on Lake Garda for sources abroad. Canada's tide predictions and MeteoAlarm's region outlines can't be passed on, and WorldTides needs a key, so their tests use made-up data. The git hooks that `scripts/setup` turns on check every commit and commit message against a list of private terms kept outside the repository, in `~/.config/sailcast/private-terms.txt` or the file named by `SAILCAST_PRIVATE_TERMS`. Put one term per line, matched as a whole word. Lines starting with `re:` are regular expressions.
 
 ## Credits
 
 - Weather and marine data: [Open-Meteo](https://open-meteo.com), under CC BY 4.0. SailCast stays within its free tier for non-commercial use.
 - Tide and current predictions: [NOAA CO-OPS](https://tidesandcurrents.noaa.gov). Marine warnings: the [National Weather Service](https://www.weather.gov). Neither is for navigation.
+- Canadian tides: the [Canadian Hydrographic Service](https://www.tides.gc.ca), under its [licence](https://www.tides.gc.ca/en/licence-agreement); the panel shows its notice with them. Canadian marine warnings: Data Source: [Environment and Climate Change Canada](https://eccc-msc.github.io/open-data/licence/readme_en/).
+- Dutch tides: [Rijkswaterstaat](https://rijkswaterstaatdata.nl/waterdata/) (CC0). Norwegian tides: ©[Kartverket](https://www.kartverket.no/en/api-and-data/terms-of-use) (CC BY 4.0). Tides with your own key: [WorldTides](https://www.worldtides.info/copyright). The ocean model's sea level: Open-Meteo, with E.U. Copernicus Marine Service information.
+- European warnings: [MeteoAlarm](https://meteoalarm.org) (EUMETNET), from each country's national weather service, under terms equivalent to CC BY 4.0. None of these is for navigation.
 - Buoy readings: NOAA's [National Data Buoy Center](https://www.ndbc.noaa.gov). Airport reports: the [Aviation Weather Center](https://aviationweather.gov).
 - Maps: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through Home Assistant's own map tiles, with [OpenFreeMap](https://openfreemap.org) as a fallback; seamarks from [OpenSeaMap](https://www.openseamap.org) (CC BY-SA 2.0). Drawn with [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause). The shoreline that fetch is measured on is OpenStreetMap's water, from [OpenFreeMap](https://openfreemap.org)'s tiles (© OpenMapTiles).
 - Wordmark: [Outfit](https://github.com/Outfitio/Outfit-Fonts), under the SIL Open Font License 1.1. More in [docs/brand](docs/brand/README.md).
