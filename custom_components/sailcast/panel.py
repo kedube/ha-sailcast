@@ -38,6 +38,10 @@ async def async_register_panel(hass: HomeAssistant) -> None:
             [StaticPathConfig(STATIC_URL, str(FRONTEND_DIR), cache_headers=False)]
         )
         hass.data[DATA_STATIC_REGISTERED] = True
+    # The panel stays while the entry reloads after a settings change, so
+    # whoever is using it isn't sent elsewhere.
+    if PANEL_URL_PATH in hass.data.get(frontend.DATA_PANELS, {}):
+        return
 
     version = await hass.async_add_executor_job(_module_version)
     await panel_custom.async_register_panel(

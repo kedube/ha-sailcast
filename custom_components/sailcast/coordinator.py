@@ -20,12 +20,15 @@ from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
+from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
 from .outlook import Results, SpotConditions, compute
+from .planner import Planner
 from .profiles import Profiles, Spot
 from .providers import ProviderError, noaa_coops, nws, open_meteo
 from .providers.noaa_coops import CurrentEvent, Currents, TideEvent, Tides
+from .storage import SailCastStore
 from .timeline import Alert, build, daylight
 
 LOGGER = logging.getLogger(__package__)
@@ -44,10 +47,16 @@ SLOW_DOWN_AT: Final = 8000
 STORAGE_VERSION: Final = 1
 STORAGE_KEY: Final = f"{DOMAIN}.predictions"
 
+DATA_BUDGET: HassKey[Budget] = HassKey(f"{DOMAIN}_budget")
+
 
 @dataclass
 class Budget:
-    """Open-Meteo calls counted so far today (UTC)."""
+    """Open-Meteo calls counted so far today (UTC).
+
+    It's kept while Home Assistant runs, so reloading the entry after a
+    settings change doesn't start the count again.
+    """
 
     day: date | None = None
     calls: float = 0.0
@@ -102,6 +111,8 @@ class ForecastCoordinator(SourceCoordinator[dict[str, open_meteo.Forecast]]):
         """Set up the forecast."""
         super().__init__(hass, entry, profiles, "forecast", FORECAST_INTERVAL)
         self.budget = budget
+        # When the forecast in use was fetched.
+        self.fetched: datetime | None = None
 
     async def _async_update_data(self) -> dict[str, open_meteo.Forecast]:
         spots = list(self.profiles.spots.values())
@@ -114,6 +125,7 @@ class ForecastCoordinator(SourceCoordinator[dict[str, open_meteo.Forecast]]):
         except ProviderError as err:
             raise UpdateFailed(f"Couldn't get the forecast: {err}") from err
         self.budget.add(open_meteo.forecast_calls(len(spots)))
+        self.fetched = dt_util.utcnow()
         self.update_interval = (
             SLOW_FORECAST_INTERVAL
             if self.budget.today >= SLOW_DOWN_AT
@@ -343,6 +355,7 @@ class Sources:
             return None
         predictions = self.predictions.data or Predictions()
         tides = predictions.tides.get(spot.tide_station or "")
+        currents = predictions.currents.get(spot.current_station or "")
         alerts = tuple(
             alert for alert in self.alerts.data or () if alert.zone == spot.marine_zone
         )
@@ -355,7 +368,7 @@ class Sources:
             days=days,
             marine=(self.marine.data or {}).get(spot.id),
             tides=tides,
-            currents=predictions.currents.get(spot.current_station or ""),
+            currents=currents,
             alerts=alerts,
         )
         return SpotConditions(
@@ -363,6 +376,7 @@ class Sources:
             hours=tuple(hours),
             days=tuple(days),
             tide_events=tides.events if tides else (),
+            current_events=currents.events if currents else (),
             alerts=alerts,
         )
 
@@ -375,24 +389,31 @@ class SailCastData:
     budget: Budget
     sources: Sources
     results: ResultsCoordinator
+    planner: Planner
 
     @classmethod
     def create(
-        cls, hass: HomeAssistant, entry: ConfigEntry, profiles: Profiles
+        cls,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        profiles: Profiles,
+        store: SailCastStore,
     ) -> SailCastData:
-        """Create the coordinators for an entry."""
-        budget = Budget()
+        """Create the coordinators and planner for an entry."""
+        budget = hass.data.setdefault(DATA_BUDGET, Budget())
         sources = Sources(
             forecast=ForecastCoordinator(hass, entry, profiles, budget),
             marine=MarineCoordinator(hass, entry, profiles, budget),
             predictions=PredictionCoordinator(hass, entry, profiles),
             alerts=AlertCoordinator(hass, entry, profiles),
         )
+        results = ResultsCoordinator(hass, entry, profiles, sources)
         return cls(
             profiles=profiles,
             budget=budget,
             sources=sources,
-            results=ResultsCoordinator(hass, entry, profiles, sources),
+            results=results,
+            planner=Planner(hass, store, profiles, results),
         )
 
 

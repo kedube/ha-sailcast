@@ -1,41 +1,440 @@
-"""Tests for the panel's WebSocket commands."""
+"""Tests for the panel's WebSocket commands, through a real WebSocket client."""
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from typing import Any
+from unittest.mock import AsyncMock
 
-from homeassistant.components.websocket_api import ERR_NOT_FOUND
+from freezegun.api import FrozenDateTimeFactory
+from homeassistant.auth.models import User
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.setup import async_setup_component
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant_custom_component.typing import (
+    MockHAClientWebSocket,
+    WebSocketGenerator,
+)
 
-from custom_components.sailcast.websocket_api import ws_config
+from custom_components.sailcast.const import DOMAIN, SIGNAL_UPDATED, SUBENTRY_SAILOR
+from custom_components.sailcast.storage import DATA_STORE
+
+from .conftest import HARBOR_POINT, RECORDED, mock_suggestions
+
+type Send = Callable[..., Awaitable[dict[str, Any]]]
+
+ALEX_RIVER = {"spot": "spot_river", "sailor": "sailor_alex"}
+
+
+@pytest.fixture(autouse=True)
+async def mock_http(hass: HomeAssistant) -> Any:
+    """Serve real HTTP for the WebSocket client.
+
+    The panel's module isn't built for tests, so serving it is skipped, and
+    the frontend's package isn't installed.
+    """
+    hass.config.components.update({"frontend", "panel_custom"})
+    assert await async_setup_component(hass, "http", {})
+    hass.http.async_register_static_paths = AsyncMock()  # type: ignore[method-assign]
+    return hass.http
+
+
+@pytest.fixture
+async def send(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator
+) -> Callable[..., Awaitable[dict[str, Any]]]:
+    """Return a function that sends a command as an administrator."""
+    client = await hass_ws_client(hass)
+    return _sender(client)
+
+
+def _sender(client: MockHAClientWebSocket) -> Send:
+    async def send(type_: str, **values: Any) -> dict[str, Any]:
+        await client.send_json_auto_id({"type": f"sailcast/{type_}", **values})
+        return await client.receive_json()  # type: ignore[no-any-return]
+
+    return send
 
 
 async def test_config(
-    hass: HomeAssistant, full_entry: MockConfigEntry, sources: AiohttpClientMocker
+    hass: HomeAssistant,
+    family: str,
+    loaded: MockConfigEntry,
+    send: Send,
+    hass_admin_user: User,
 ) -> None:
-    """The panel gets every spot, boat and sailor."""
-    assert await hass.config_entries.async_setup(full_entry.entry_id)
-    await hass.async_block_till_done()
-    connection = MagicMock()
+    """The panel gets the profiles, limits, calendars and people to link."""
+    result = (await send("config"))["result"]
+    assert [spot["name"] for spot in result["spots"]] == ["Bay", "Harbor", "River"]
+    assert [sailor["name"] for sailor in result["sailors"]] == ["Alex", "Sam"]
+    assert result["limits"]["small_keelboat"]["wind"] == [18, 25]
+    assert result["skills"] == {"beginner": 10, "intermediate": 16, "advanced": None}
+    # SailCast's own calendars are read-only, so only Family is offered.
+    assert result["calendars"] == [
+        {
+            "entity_id": "calendar.family",
+            "name": "Family",
+            "via": "Local calendar",
+            "update": True,
+            "delete": True,
+        }
+    ]
+    assert {"id": hass_admin_user.id, "name": hass_admin_user.name} in result["users"]
 
-    ws_config(hass, connection, {"id": 7, "type": "sailcast/config"})
 
-    connection.send_result.assert_called_once()
-    msg_id, result = connection.send_result.call_args.args
-    assert msg_id == 7
-    assert [spot["name"] for spot in result["spots"]] == ["Harbor"]
-    assert [boat["name"] for boat in result["boats"]] == ["Cruiser", "Keelboat"]
-    assert [sailor["name"] for sailor in result["sailors"]] == ["Alex"]
+async def test_not_set_up(hass: HomeAssistant, send: Send) -> None:
+    """Without SailCast set up, the panel is told so."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    response = await send("config")
+    assert response["error"] == {
+        "code": "not_found",
+        "message": "SailCast isn't set up",
+    }
 
 
-async def test_config_not_set_up(hass: HomeAssistant) -> None:
-    """Without a loaded entry, the panel gets an error."""
-    connection = MagicMock()
-
-    ws_config(hass, connection, {"id": 8, "type": "sailcast/config"})
-
-    connection.send_error.assert_called_once_with(
-        8, ERR_NOT_FOUND, "SailCast isn't set up"
+async def test_forecast(
+    hass: HomeAssistant, loaded: MockConfigEntry, send: Send
+) -> None:
+    """The week from now on, with windows, ratings, summaries and advice."""
+    result = (await send("forecast", **ALEX_RIVER))["result"]
+    assert (result["spot"], result["sailor"], result["boat"]) == (
+        "spot_river",
+        "sailor_alex",
+        "boat_keelboat",
     )
+    assert result["now"] == RECORDED.isoformat()
+    assert result["fetched"] == RECORDED.isoformat()
+    # The forecast runs to 3 PM on the seventh day.
+    assert len(result["hours"]) == 7 * 24 - 8
+    assert result["sources"]["tide_station"] == {"id": "9410196", "name": None}
+    assert result["sources"]["current_station"] is None
+
+    days = result["days"]
+    assert [day["date"] for day in days][:2] == ["2026-11-02", "2026-11-03"]
+    # Alex sails weekends, so Monday has no score.
+    assert days[0]["available"] is False
+    assert days[0]["score"] is None
+    saturday = days[5]
+    assert saturday["windows"] == [
+        {
+            "start": "2026-11-07T21:00:00+00:00",
+            "end": "2026-11-08T00:53:00+00:00",
+            "score": 80,
+            "hours": 4,
+            # Light air: 5.4 to 6.2 kt costs 13 to 26 points an hour.
+            "wind_low": 5.4,
+            "wind_high": 6.2,
+            "gust": 14.8,
+            "direction": 298,
+        }
+    ]
+    assert saturday["best"] == 0
+    assert saturday["score"] == 80
+    assert set(saturday["sizes"]) == {
+        "dinghy",
+        "small_keelboat",
+        "cruiser",
+        "large_cruiser",
+    }
+    assert saturday["advice"][0]["key"] == "wind"
+    assert saturday["advice"][-1] == {
+        "key": "sunset",
+        "icon": "sunset",
+        "values": {"time": "2026-11-08T00:53:00+00:00"},
+        "hot": False,
+    }
+    hour = result["hours"][14]
+    assert hour["time"] == "2026-11-02T22:00:00+00:00"
+    assert set(hour) >= {"wind", "gust", "models", "rating", "score", "sizes"}
+
+
+async def test_forecast_from_now_on(
+    hass: HomeAssistant, loaded: MockConfigEntry, send: Send
+) -> None:
+    """Today's windows and score count only the hours still to come.
+
+    Sam's river window ran from 11 AM, but at 2:36 PM it's under way from the
+    2 PM hour.
+    """
+    result = (await send("forecast", spot="spot_river", sailor="sailor_sam"))["result"]
+    (window,) = result["days"][0]["windows"]
+    assert window["start"] == "2026-11-02T22:00:00+00:00"
+    assert window["end"] == "2026-11-03T00:57:00+00:00"
+
+
+async def test_forecast_unknown(
+    hass: HomeAssistant, loaded: MockConfigEntry, send: Send
+) -> None:
+    """A spot or sailor without a forecast is an error."""
+    response = await send("forecast", spot="spot_gone", sailor="sailor_alex")
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_subscribe(hass: HomeAssistant, send: Send, hass_ws_client: Any) -> None:
+    """Subscribers hear whenever SailCast's results or settings change."""
+    assert await async_setup_component(hass, DOMAIN, {})
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id({"type": "sailcast/subscribe"})
+    assert (await client.receive_json())["success"]
+    async_dispatcher_send(hass, SIGNAL_UPDATED)
+    event = await client.receive_json()
+    assert event["type"] == "event"
+    assert "updated" in event["event"]
+
+
+async def test_preferences(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    hass_admin_user: User,
+) -> None:
+    """Preferences follow the user, starting with the sailor linked to them."""
+    assert (await send("preferences/get"))["result"] == {}
+    sailor = loaded.subentries["sailor_sam"]
+    hass.config_entries.async_update_subentry(
+        loaded, sailor, data=dict(sailor.data) | {"user": hass_admin_user.id}
+    )
+    await hass.async_block_till_done()
+    assert (await send("preferences/get"))["result"] == {"sailor": "sailor_sam"}
+
+    result = (await send("preferences/set", spot="spot_river", theme="night"))["result"]
+    assert result == {"spot": "spot_river", "theme": "night"}
+    assert (await send("preferences/set", theme=None))["result"] == {
+        "spot": "spot_river"
+    }
+    assert (await send("preferences/get"))["result"] == {
+        "spot": "spot_river",
+        "sailor": "sailor_sam",
+    }
+
+
+async def test_save_boat(
+    hass: HomeAssistant, loaded: MockConfigEntry, send: Send
+) -> None:
+    """A new boat is checked like the setup dialog checks it, then saved."""
+    boat = {"size_class": "dinghy", "length": 4.2}
+    taken = await send("settings/save", kind="boat", name="keelboat", data=boat)
+    assert taken["result"] == {"errors": {"name": "name_taken"}}
+    long = await send(
+        "settings/save", kind="boat", name="Dinghy", data=boat | {"length": 60}
+    )
+    assert long["result"] == {"errors": {"length": "length_out_of_range"}}
+
+    result = (await send("settings/save", kind="boat", name=" Dinghy ", data=boat))[
+        "result"
+    ]
+    await hass.async_block_till_done()
+    saved = loaded.subentries[result["profile"]]
+    assert (saved.title, dict(saved.data)) == ("Dinghy", boat)
+    assert len(loaded.runtime_data.profiles.boats) == 3
+
+
+async def test_save_sailor(
+    hass: HomeAssistant, family: str, loaded: MockConfigEntry, send: Send
+) -> None:
+    """A sailor's comfort and automatic adding are checked and kept in order."""
+    data = {
+        "skill": "beginner",
+        "boats": ["boat_cruiser", "boat_keelboat", "boat_cruiser"],
+        "days": ["sun", "sat"],
+        "start": "09:00",
+        "comfort": {"ideal_low": 6, "ideal_high": 12, "coldest": 8.5, "rain": "avoid"},
+        "auto_calendar": {
+            "calendar": "calendar.sam_sailing",
+            "days": ["sun", "sat"],
+            "min_score": 60,
+            "ahead": 2,
+            "spots": ["spot_river"],
+        },
+    }
+    response = await send(
+        "settings/save", kind="sailor", profile="sailor_sam", name="Sam", data=data
+    )
+    # SailCast's own calendars can't take new events.
+    assert response["result"] == {"errors": {"calendar": "calendar_read_only"}}
+
+    data["auto_calendar"]["calendar"] = family  # type: ignore[index]
+    response = await send(
+        "settings/save", kind="sailor", profile="sailor_sam", name="Sam", data=data
+    )
+    assert response["result"] == {"profile": "sailor_sam"}
+    await hass.async_block_till_done()
+    assert dict(loaded.subentries["sailor_sam"].data) == {
+        "skill": "beginner",
+        "boats": ["boat_cruiser", "boat_keelboat"],
+        "days": ["sat", "sun"],
+        "start": "09:00:00",
+        "end": None,
+        "user": None,
+        "comfort": {"ideal_low": 6, "ideal_high": 12, "coldest": 8.5, "rain": "avoid"},
+        "auto_calendar": {
+            "calendar": "calendar.family",
+            "days": ["sat", "sun"],
+            "min_score": 60,
+            "ahead": 2,
+            "spots": ["spot_river"],
+        },
+    }
+
+
+async def test_save_spot(
+    hass: HomeAssistant, loaded: MockConfigEntry, send: Send
+) -> None:
+    """A spot keeps its directions in compass order and its sources' names."""
+    data = {
+        "latitude": HARBOR_POINT[0],
+        "longitude": HARBOR_POINT[1],
+        "radius": 12_000,
+        "water_type": "open_coast",
+        "offshore": ["e", "ne"],
+        "exposed": ["w", "sw"],
+        "tide_station": "9410230",
+        "source_names": {"tide_station": "La Jolla"},
+    }
+    result = (await send("settings/save", kind="spot", name="Cove", data=data))[
+        "result"
+    ]
+    await hass.async_block_till_done()
+    saved = dict(loaded.subentries[result["profile"]].data)
+    assert saved["offshore"] == ["ne", "e"]
+    assert saved["exposed"] == ["sw", "w"]
+    assert saved["radius"] == 12_000.0
+    assert saved["source_names"] == {"tide_station": "La Jolla"}
+    assert (saved["current_station"], saved["marine_zone"]) == (None, None)
+
+    response = await send(
+        "settings/save", kind="spot", name="Far", data=data | {"radius": 100}
+    )
+    assert response["result"] == {"errors": {"radius": "radius_out_of_range"}}
+    response = await send(
+        "settings/save", kind="spot", name="Bad", data=data | {"water_type": "pond"}
+    )
+    assert response["error"]["code"] == "invalid_format"
+
+
+async def test_settings_for_administrators_only(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    hass_ws_client: WebSocketGenerator,
+    hass_read_only_access_token: str,
+) -> None:
+    """Other users can read everything but change no settings."""
+    send = _sender(await hass_ws_client(hass, hass_read_only_access_token))
+    assert (await send("forecast", **ALEX_RIVER))["success"]
+    response = await send(
+        "settings/save", kind="boat", name="Dinghy", data={"size_class": "dinghy"}
+    )
+    assert response["error"]["code"] == "unauthorized"
+    response = await send("settings/delete", kind="boat", profile="boat_keelboat")
+    assert response["error"]["code"] == "unauthorized"
+
+
+async def test_delete(hass: HomeAssistant, loaded: MockConfigEntry, send: Send) -> None:
+    """Every sailor keeps a boat, and a removed sailor's sails are forgotten."""
+    response = await send("settings/delete", kind="boat", profile="boat_keelboat")
+    assert response["result"] == {"errors": {"base": "boat_in_use"}, "sailor": "Sam"}
+    response = await send("settings/delete", kind="spot", profile="sailor_sam")
+    assert response["error"]["code"] == "not_found"
+
+    response = await send("settings/delete", kind=SUBENTRY_SAILOR, profile="sailor_sam")
+    assert response["result"] == {"profile": "sailor_sam"}
+    await hass.async_block_till_done()
+    assert "sailor_sam" not in loaded.runtime_data.profiles.sailors
+    response = await send("settings/delete", kind="boat", profile="boat_keelboat")
+    assert response["result"] == {"profile": "boat_keelboat"}
+
+
+async def test_sources(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """The stations and zones near a pin, nearest first, with a suggestion."""
+    mock_suggestions(aioclient_mock)
+    result = (
+        await send(
+            "settings/sources", latitude=HARBOR_POINT[0], longitude=HARBOR_POINT[1]
+        )
+    )["result"]
+    assert result["suggested"]["tide_station"] == result["tide_station"][0]["id"]
+    assert result["tide_station"][0]["distance"] < result["tide_station"][1]["distance"]
+    assert result["failed"] is False
+
+
+async def test_calendar_add_and_remove(
+    hass: HomeAssistant, family: str, loaded: MockConfigEntry, send: Send
+) -> None:
+    """A window goes into a calendar as the user, and comes out again."""
+    window = {
+        **ALEX_RIVER,
+        "boat": "boat_keelboat",
+        "calendar": family,
+        "start": "2026-11-07T21:00:00Z",
+        "end": "2026-11-08T00:00:00Z",
+        "title": "Sailing: River",
+    }
+    short = await send("calendar/add", **window | {"end": "2026-11-07T21:30:00Z"})
+    assert short["error"]["code"] == "invalid_format"
+
+    planned = (await send("calendar/add", **window))["result"]
+    assert planned["start"] == "2026-11-07T21:00:00+00:00"
+    assert planned["status"] == {
+        "rating": "good",
+        "score": 79,
+        "worse": False,
+        "reasons": [],
+    }
+    assert planned["can_delete"] is True
+    listed = (await send("planned/list"))["result"]
+    assert [sail["id"] for sail in listed["planned"]] == [planned["id"]]
+    week = (await send("forecast", **ALEX_RIVER))["result"]
+    assert [sail["id"] for sail in week["planned"]] == [planned["id"]]
+
+    assert (await send("calendar/remove", planned=planned["id"]))["result"] == {
+        "deleted": True
+    }
+    assert (await send("planned/list"))["result"]["planned"] == []
+
+
+async def test_calendar_permissions(
+    hass: HomeAssistant,
+    family: str,
+    loaded: MockConfigEntry,
+    hass_ws_client: WebSocketGenerator,
+    hass_read_only_access_token: str,
+) -> None:
+    """Someone who can't change a calendar can't add to it through SailCast."""
+    send = _sender(await hass_ws_client(hass, hass_read_only_access_token))
+    response = await send(
+        "calendar/add",
+        **ALEX_RIVER,
+        boat="boat_keelboat",
+        calendar=family,
+        start="2026-11-07T21:00:00Z",
+        end="2026-11-08T00:00:00Z",
+        title="Sailing",
+    )
+    assert response["error"]["code"] == "unauthorized"
+
+
+async def test_skipped_days(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The days a sailor took out can be let back in."""
+    store = hass.data[DATA_STORE]
+    store.skip("sailor_alex", datetime(2026, 11, 7, tzinfo=UTC).date())
+    store.skip("sailor_alex", datetime(2026, 11, 8, tzinfo=UTC).date())
+    listed = (await send("planned/list"))["result"]
+    assert listed["skipped"]["sailor_alex"] == ["2026-11-07", "2026-11-08"]
+
+    result = await send("planned/skipped", sailor="sailor_alex", days=["2026-11-08"])
+    assert result["result"] == ["2026-11-08"]
+    assert store.skipped("sailor_alex") == {datetime(2026, 11, 8, tzinfo=UTC).date()}

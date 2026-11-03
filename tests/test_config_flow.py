@@ -35,6 +35,14 @@ SOURCES = {
     "current_station": "PCT0096_1",
     "marine_zone": "PZZ740",
 }
+# What the form sends for its two folded sections when they're left alone.
+SECTIONS = {"comfort": {"rain": "some"}, "auto_calendar": {}}
+# What a sailor saved with the sections left alone has.
+NO_EXTRAS = {
+    "user": None,
+    "comfort": {"ideal_low": None, "ideal_high": None, "coldest": None, "rain": "some"},
+    "auto_calendar": None,
+}
 
 
 async def _add(
@@ -157,6 +165,13 @@ async def test_add_spot(
         "offshore": ["e", "w"],
         "exposed": ["s"],
         **SOURCES,
+        # Each source's name is kept, so the panel can show it.
+        "source_names": {
+            "tide_station": "SAN DIEGO",
+            "current_station": "28th St. Pier (San Diego), 0.92 nmi. SW",
+            "marine_zone": "Coastal Waters from San Mateo Point to the Mexican "
+            "Border and out to 10 nm",
+        },
     }
 
 
@@ -341,7 +356,8 @@ async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> N
             "other_boats": ["boat_keelboat", "boat_cruiser"],
             "days": ["sun", "fri", "sat"],
             "end": "16:30:00",
-        },
+        }
+        | SECTIONS,
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     sam = next(
@@ -355,6 +371,7 @@ async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> N
         "days": ["fri", "sat", "sun"],
         "start": None,
         "end": "16:30:00",
+        **NO_EXTRAS,
     }
 
 
@@ -408,6 +425,7 @@ async def test_sailor_errors(
             "default_boat": "boat_keelboat",
             "days": ["sat"],
         }
+        | SECTIONS
         | changes,
     )
     assert result["type"] is FlowResultType.FORM
@@ -428,7 +446,8 @@ async def test_boat_removed_while_editing(
             "skill": "intermediate",
             "default_boat": "boat_cruiser",
             "days": ["sat"],
-        },
+        }
+        | SECTIONS,
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"default_boat": "unknown_boat"}
@@ -448,7 +467,8 @@ async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> 
             "skill": "advanced",
             "default_boat": "boat_cruiser",
             "days": ["sat", "sun"],
-        },
+        }
+        | SECTIONS,
     )
     assert result["type"] is FlowResultType.ABORT
     assert dict(full_entry.subentries["sailor_alex"].data) == {
@@ -457,6 +477,7 @@ async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> 
         "days": ["sat", "sun"],
         "start": None,
         "end": None,
+        **NO_EXTRAS,
     }
 
 
@@ -473,3 +494,110 @@ async def test_spot_from_before_sources(
         result["flow_id"], SPOT_INPUT | {"name": "Bay", "location": location}
     )
     assert {key: _suggested(result, key) for key in SOURCES} == SOURCES
+
+
+def _suggested_in(result: dict[str, Any], section: str, field: str) -> Any:
+    """Return the value a form suggests for a field in a section."""
+    for key, value in result["data_schema"].schema.items():
+        if key == section:
+            for inner in value.schema.schema:
+                if inner == field:
+                    return inner.description["suggested_value"]
+    raise KeyError(f"{section}.{field}")
+
+
+async def test_sailor_comfort_and_calendar(
+    hass: HomeAssistant, full_entry: MockConfigEntry, family: str
+) -> None:
+    """Comfort is kept in °C, and automatic adding needs a calendar that takes events.
+
+    The SailCast calendars are read-only, so they can't be chosen.
+    """
+    hass.config.units = US_CUSTOMARY_SYSTEM
+    person = await hass.auth.async_create_user("Sam")
+    result = await hass.config_entries.subentries.async_init(
+        (full_entry.entry_id, SUBENTRY_SAILOR), context={"source": SOURCE_USER}
+    )
+    assert {"value": person.id, "label": "Sam"} in _options(result, "user")
+    # Weekends, good windows and three days ahead are suggested, at every spot.
+    assert _suggested_in(result, "auto_calendar", "auto_days") == ["sat", "sun"]
+    assert _suggested_in(result, "auto_calendar", "ahead") == "2"
+    assert _suggested_in(result, "auto_calendar", "auto_spots") == ["spot_harbor"]
+    sailor = {
+        "name": "Sam",
+        "skill": "beginner",
+        "default_boat": "boat_keelboat",
+        "days": ["sat"],
+        "user": person.id,
+        "comfort": {"ideal_low": 6, "ideal_high": 10, "coldest": 59, "rain": "any"},
+        "auto_calendar": {
+            "calendar": "calendar.alex_sailing",
+            "auto_days": ["sun", "sat"],
+            "min_score": "80",
+            "ahead": "4",
+            "auto_spots": ["spot_harbor"],
+        },
+    }
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], sailor
+    )
+    assert result["errors"] == {"calendar": "calendar_read_only"}
+
+    sailor["auto_calendar"]["calendar"] = family  # type: ignore[index]
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], sailor
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    sam = next(
+        subentry
+        for subentry in full_entry.subentries.values()
+        if subentry.title == "Sam"
+    )
+    assert sam.data["user"] == person.id
+    assert sam.data["comfort"] == {
+        "ideal_low": 6,
+        "ideal_high": 10,
+        "coldest": 15.0,
+        "rain": "any",
+    }
+    assert sam.data["auto_calendar"] == {
+        "calendar": "calendar.family",
+        "days": ["sat", "sun"],
+        "min_score": 80,
+        "ahead": 4,
+        "spots": ["spot_harbor"],
+    }
+
+    result = await _edit(hass, full_entry, sam.subentry_id)
+    assert _suggested(result, "user") == person.id
+    assert _suggested_in(result, "comfort", "coldest") == 59
+    assert _suggested_in(result, "auto_calendar", "min_score") == "80"
+
+
+@pytest.mark.parametrize(
+    ("comfort", "errors"),
+    [
+        ({"ideal_low": 14, "ideal_high": 8}, {"ideal_high": "ideal_high_below_low"}),
+        ({"coldest": 40}, {"coldest": "coldest_out_of_range"}),
+    ],
+)
+async def test_sailor_comfort_errors(
+    hass: HomeAssistant,
+    full_entry: MockConfigEntry,
+    comfort: dict[str, Any],
+    errors: dict[str, str],
+) -> None:
+    """A backwards ideal range and far-off cold are caught."""
+    result = await _edit(hass, full_entry, "sailor_alex")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Alex",
+            "skill": "intermediate",
+            "default_boat": "boat_keelboat",
+            "days": ["sat"],
+        }
+        | SECTIONS
+        | {"comfort": {"rain": "some"} | comfort},
+    )
+    assert result["errors"] == errors

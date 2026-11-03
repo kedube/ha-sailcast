@@ -300,3 +300,18 @@ def suggestions(aioclient_mock: AiohttpClientMocker) -> AiohttpClientMocker:
     """Answer the station and zone lookups for the test pins."""
     mock_suggestions(aioclient_mock)
     return aioclient_mock
+
+
+@pytest.fixture
+async def family(hass: HomeAssistant, tmp_path: Path) -> str:
+    """Set up a Local Calendar named Family and return its entity ID.
+
+    It keeps its events in a file in the config folder, so that's a new one.
+    """
+    hass.config.config_dir = str(tmp_path)
+    (tmp_path / ".storage").mkdir()
+    entry = MockConfigEntry(domain="local_calendar", data={"calendar_name": "Family"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return "calendar.family"

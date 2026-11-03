@@ -21,6 +21,7 @@ from __future__ import annotations
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass, field
 import math
+from typing import Any
 
 from .limits import (
     AGAINST_CURRENT_ANGLE,
@@ -62,6 +63,15 @@ class Reason:
     level: Level
     values: Mapping[str, float | str] = field(default_factory=dict)
     modifier: bool = False
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the reason as JSON-ready data, for the panel."""
+        return {
+            "key": self.key,
+            "level": self.level.key,
+            "values": dict(self.values),
+            "modifier": self.modifier,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,7 +178,8 @@ class _Rater:
         speed = abs(hour.current)
         downwind = (hour.wind_direction + 180) % 360
         if (
-            _angle(downwind, hour.current_direction) < 180 - AGAINST_CURRENT_ANGLE
+            angle_between(downwind, hour.current_direction)
+            < 180 - AGAINST_CURRENT_ANGLE
             or speed < AGAINST_CURRENT_MODIFIER * period
         ):
             return
@@ -258,7 +269,7 @@ def compass_point(direction: float) -> str:
     return DIRECTIONS[math.floor(direction % 360 / 45 + 0.5) % len(DIRECTIONS)]
 
 
-def _angle(a: float, b: float) -> float:
+def angle_between(a: float, b: float) -> float:
     """Return the angle between two directions, from 0 to 180 degrees."""
     difference = abs(a - b) % 360
     return 360 - difference if difference > 180 else difference

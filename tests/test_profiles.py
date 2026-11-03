@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import MappingProxyType
 
 from homeassistant.config_entries import ConfigSubentry
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.sailcast import profiles
@@ -56,6 +57,14 @@ def test_as_dict_is_sorted_by_name(full_entry: MockConfigEntry) -> None:
         "days": ("sat", "sun"),
         "start": "09:00:00",
         "end": None,
+        "user": None,
+        "comfort": {
+            "ideal_low": None,
+            "ideal_high": None,
+            "coldest": None,
+            "rain": "some",
+        },
+        "auto_calendar": None,
     }
 
 
@@ -109,3 +118,92 @@ def test_spots_from_before_sources(entry: MockConfigEntry) -> None:
         None,
     )
     assert not spot.open_water
+    assert spot.source_names == {}
+
+
+def test_comfort_and_automatic_adding(full_entry: MockConfigEntry) -> None:
+    """A sailor's comfort settings and automatic adding are read typed.
+
+    Spots that have been removed drop out of automatic adding.
+    """
+    data = dict(full_entry.subentries["sailor_alex"].data) | {
+        "user": "user_alex",
+        "comfort": {"ideal_low": 8, "ideal_high": 14, "coldest": 12, "rain": "avoid"},
+        "auto_calendar": {
+            "calendar": "calendar.family",
+            "days": ["sat", "sun"],
+            "min_score": 80,
+            "ahead": 2,
+            "spots": ["spot_harbor", "spot_gone"],
+        },
+    }
+    subentry = ConfigSubentry(
+        data=MappingProxyType(data),
+        subentry_type="sailor",
+        title="Alex",
+        unique_id=None,
+    )
+    sailor = profiles.Sailor.from_subentry(
+        subentry, boats={"boat_keelboat"}, spots={"spot_harbor"}
+    )
+    assert sailor.user == "user_alex"
+    assert sailor.comfort == profiles.Comfort(
+        ideal_low=8, ideal_high=14, coldest=12, rain=profiles.RainTolerance.AVOID
+    )
+    assert sailor.auto_calendar == profiles.AutoCalendar(
+        calendar="calendar.family",
+        days=("sat", "sun"),
+        min_score=80,
+        ahead=2,
+        spots=("spot_harbor",),
+    )
+    # Without a calendar, automatic adding is off.
+    off = profiles.AutoCalendar.from_data({"calendar": None, "days": []}, set())
+    assert off is None
+
+
+@pytest.mark.parametrize(
+    ("comfort", "errors"),
+    [
+        ({}, {}),
+        ({"ideal_low": 6, "ideal_high": 14, "coldest": -5}, {}),
+        ({"ideal_low": 14, "ideal_high": 6}, {"ideal_high": "ideal_high_below_low"}),
+        ({"ideal_low": -1}, {"ideal_low": "ideal_out_of_range"}),
+        ({"ideal_high": 41}, {"ideal_high": "ideal_out_of_range"}),
+        ({"coldest": 40}, {"coldest": "coldest_out_of_range"}),
+    ],
+)
+def test_check_comfort(comfort: dict[str, float], errors: dict[str, str]) -> None:
+    """The ideal wind runs low to high within 0-40 kt, and cold within reason."""
+    assert profiles.check_comfort(comfort) == errors
+
+
+def test_check_auto_calendar() -> None:
+    """Automatic adding needs days, known spots, and one of the choices."""
+    auto = {
+        "calendar": "calendar.family",
+        "days": ["sat"],
+        "min_score": 60,
+        "ahead": 2,
+        "spots": ["harbor"],
+    }
+    assert profiles.check_auto_calendar(auto, {"harbor"}) == {}
+    assert profiles.check_auto_calendar(None, set()) == {}
+    assert profiles.check_auto_calendar(auto | {"calendar": None}, set()) == {}
+    assert profiles.check_auto_calendar(
+        auto | {"days": [], "spots": ["gone"], "min_score": 70, "ahead": 3},
+        {"harbor"},
+    ) == {
+        "auto_days": "no_days",
+        "auto_spots": "no_spots",
+        "min_score": "invalid_min_score",
+        "ahead": "invalid_ahead",
+    }
+
+
+def test_in_order() -> None:
+    """Chosen values come back in their fixed order, once each."""
+    assert profiles.in_order(["sun", "mon", "sun"], ("mon", "sat", "sun")) == [
+        "mon",
+        "sun",
+    ]

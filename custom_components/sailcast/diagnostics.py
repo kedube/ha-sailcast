@@ -1,7 +1,7 @@
 """Diagnostics for an issue report, without showing where anyone sails.
 
-Spot positions, names, station IDs and marine zones can each point to a
-place, so they're redacted along with people's names.
+Spot positions, names, stations and marine zones can each point to a place,
+so they're redacted along with people's names, linked users and calendars.
 """
 
 from __future__ import annotations
@@ -14,12 +14,15 @@ from homeassistant.core import HomeAssistant
 from .coordinator import SailCastConfigEntry
 
 TO_REDACT = {
+    "calendar",
     "current_station",
     "latitude",
     "longitude",
     "marine_zone",
     "name",
+    "source_names",
     "tide_station",
+    "user",
 }
 
 
@@ -44,6 +47,7 @@ async def async_get_config_entry_diagnostics(
             for source in data.sources.all
         },
         "open_meteo_calls_today": round(data.budget.today, 1),
+        "planned_sails": len(data.planner.store.planned),
         "results": {
             "spots": [
                 {

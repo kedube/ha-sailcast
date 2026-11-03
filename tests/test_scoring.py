@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from custom_components.sailcast.limits import Level
-from custom_components.sailcast.profiles import SizeClass, Skill
+from custom_components.sailcast.profiles import Comfort, RainTolerance, SizeClass, Skill
 from custom_components.sailcast.rating import Rating, rate
 from custom_components.sailcast.scoring import (
     Band,
@@ -233,3 +233,32 @@ def test_steady_level() -> None:
     assert steady_level([caution, good, caution]) is caution
     assert steady_level([caution, good, good, not_recommended]) is good
     assert steady_level([not_recommended]) is not_recommended
+
+
+def test_comfort_narrows_the_ideal_wind() -> None:
+    """A sailor's own range can narrow the boat's, never widen it."""
+    assert ideal_wind(K, INT, Comfort(ideal_low=9, ideal_high=12)) == (9, 12)
+    assert ideal_wind(K, BEG, Comfort(ideal_low=4, ideal_high=20)) == (7, 10)
+    # A range wholly above a beginner's 10 kt limit is ignored.
+    assert ideal_wind(K, BEG, Comfort(ideal_low=12)) == (7, 10)
+
+
+def test_comfort_changes_scores() -> None:
+    """Comfort moves scores, but the rating's cap still holds."""
+    # 13 kt is ideal in a keelboat at 16 kt, but past this sailor's 12 kt: one
+    # knot of the four up to their limit costs 15.
+    assert score(hour(13), K, INT, GOOD) == 100
+    assert score(hour(13), K, INT, GOOD, Comfort(ideal_high=12)) == 85
+    # A 40% chance of rain costs 20, 14 or 6, by tolerance.
+    wet = hour(10, rain_chance=40)
+    assert [
+        score(wet, K, INT, GOOD, Comfort(rain=tolerance))
+        for tolerance in (RainTolerance.AVOID, RainTolerance.SOME, RainTolerance.ANY)
+    ] == [80, 86, 94]
+    # 8 °C costs 1.2 points per °F below 10 °C, or below the sailor's own.
+    cold = hour(10, temperature=8.0)
+    assert score(cold, K, INT, GOOD) == 96
+    assert score(cold, K, INT, GOOD, Comfort(coldest=5)) == 100
+    assert score(cold, K, INT, GOOD, Comfort(coldest=15)) == 85
+    caution = Rating(Level.CAUTION)
+    assert score(hour(10), K, INT, caution, Comfort(rain=RainTolerance.ANY)) == 55
