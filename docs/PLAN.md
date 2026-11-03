@@ -144,17 +144,18 @@ ha-sailcast/
 │   ├── regions.py             # MeteoAlarm's warning regions, downloaded when needed
 │   ├── services.py            # the get_forecast action
 │   ├── ai.py                  # optional AI summary through AI Task
+│   ├── wording.py             # SailCast's own sentences: calendar events and notifications
 │   ├── sensor.py, binary_sensor.py, calendar.py
 │   ├── websocket_api.py       # panel commands, settings, planned sails and subscriptions
 │   ├── storage.py             # per-user preferences, planned sails and skipped days
 │   ├── diagnostics.py, repairs.py
-│   ├── translations/          # en.json plus 11 languages
+│   ├── translations/          # en.json plus 11 languages; `common` holds SailCast's own sentences
 │   ├── icons.json
 │   ├── brand/                 # icon, logo, dark and @2x variants
 │   └── frontend/              # built panel bundle (produced by CI, not committed)
 ├── frontend/                  # panel source: TypeScript, Lit, Vite
 ├── tests/                     # pytest, with responses recorded at made-up San Diego spots
-├── blueprints/automation/sailcast/
+├── blueprints/automation/sailcast/   # windows tomorrow, and a planned sail got worse
 ├── scripts/                   # setup, develop, lint, fixture recorder, privacy hook
 ├── docs/
 ├── hacs.json
@@ -513,13 +514,13 @@ The best window of the day has the highest average score. Windows end at sunset,
 - "Water 55 °F."
 - "High tide 9:33 AM (9.8 ft). Sunset 4:28 PM."
 
-**The AI option** is off by default. When it's on, the day view shows a "Summarize with AI" button that calls Home Assistant's AI Task, using whichever AI provider the user has set up, so SailCast stores no AI keys. Specifically:
+**The AI option** is off by default. It's turned on in SailCast's options, which can also name the AI task to use; otherwise Home Assistant's default for data generation is used. When it's on, the day view shows a "Summarize with AI" button that calls Home Assistant's AI Task, using whichever AI provider the user has set up, so SailCast stores no AI keys. Specifically:
 
-- SailCast calls `ai_task.async_generate_data` with the day's structured conditions, the ratings and the rule-based advice. It asks for two or three sentences in the user's language and checks the result's shape itself, because core doesn't validate it.
-- The prompt says the summary must never contradict or soften the safety rating. The panel always shows the rule-based rating next to the AI text.
+- SailCast calls `ai_task.async_generate_data` with the day's structured conditions, the ratings, windows and warnings, and the rule-based advice, in the reader's units and local times. It asks for two or three sentences of plain text in the reader's language, and checks the answer itself, because core doesn't: it must be text, and short enough to be two or three sentences. Markdown is taken out.
+- The instructions say the summary must never contradict or soften a rating, must name official warnings first, and must not recommend clothing, wetsuits, drysuits or other gear, or give navigation advice. The panel always shows the rule-based ratings next to the AI text and says it was written by AI.
 - AI is never used to set a safety rating. Home Assistant 2026.11 added `ai_task.async_evaluate` for yes/no and score questions, and it's deliberately not used for ratings.
-- Summaries are generated when the user asks and cached for the day. Automatic background use would have to respect the 2026.11 opt-in (`async_is_automatic_evaluation_enabled`), which is off by default.
-- The manifest declares `after_dependencies: ["ai_task"]`, and SailCast checks that AI Task is loaded before offering the button.
+- Summaries are written only when someone asks, as that user, so Home Assistant 2026.11's permission check for the AI task applies. Each is kept for the day, per spot, sailor, boat and language, while the ratings, windows and warnings of the hours still to come stay the same; after that the panel says the forecast has changed and offers a new one. Automatic background use would have to respect the 2026.11 opt-in (`async_is_automatic_evaluation_enabled`), which is off by default.
+- The manifest declares `after_dependencies: ["ai_task"]`, and SailCast checks that AI Task is loaded before offering the button. The options dialog refuses to turn it on until there's an AI task to use.
 
 ## 10. Entities, calendar and actions
 
@@ -539,7 +540,12 @@ The rating, score, "good to sail now" and next-window entities use the sailor's 
 
 `sailcast.get_forecast` is a response-only action (like `weather.get_forecasts`). It returns the daily and hourly ratings, scores and windows for a spot and sailor, for templates and scripts. There are deliberately no entities per day of the week; that view lives in the panel and the action.
 
-The repo includes two automation blueprints: "tell me the evening before a good sailing window" and "tell me when a planned sail's forecast gets worse". Blueprints are imported from a link; they don't install with the integration.
+The repo includes two automation blueprints, imported from a link; they don't install with the integration. Both notify a phone through the Home Assistant app:
+
+- **Tomorrow's sailing windows:** at a time the evening before, each of a sailor's windows for the next day, read from their SailCast calendar. Each calendar event's description starts with a line for its window (times, score and wind), which the blueprint sends on.
+- **A planned sail got worse:** SailCast's own message from the `sailcast_planned_sail_changed` event, for every sailor or one.
+
+Calendar events and notifications are written in Home Assistant's language, from the `common` group of the integration's translations; an event added from the panel is written in the language of whoever added it. The event carries the notification's text as `message`, so the blueprint sends it in that language.
 
 ### Sailing windows in your own calendar
 
@@ -653,7 +659,9 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
 
 - **Integration strings** (setup forms, entity names and states, selector options, errors, repair issues) live in `translations/<code>.json`. `en.json` must be complete. Custom integrations can't use `[%key:…%]` references, so every file is complete on its own.
 - **Panel strings** live in the frontend bundle, one JSON file per language. The panel picks the language from `hass.language` and formats numbers, dates and times with `hass.locale`.
-- **Process:** English first while the wording settles, then the other 11 in one pass. I'll write them, and they'll be marked as needing native-speaker review. Safety wording ("not recommended", "dangerous", reasons) gets a glossary so terms stay consistent, and the README asks sailors to send corrections. CI fails if any language is missing a key.
+- **SailCast's own sentences** (calendar events and the planned-sail notification) are in the integration's translations too, in a `common` group that Home Assistant's validator allows. SailCast reads them with `async_get_translations`, in Home Assistant's language, and formats times (12-hour in English, 24-hour otherwise) and decimals itself.
+- **The panel** builds English in and loads each other language's file the first time someone uses it.
+- **Process:** English first while the wording settled, then the other 11 in one pass, written by AI and marked as needing native-speaker review. Safety wording ("not recommended", "dangerous", reasons) has a glossary in [docs/translations.md](translations.md) so terms stay consistent, with Home Assistant's own names for its menus in each language, and the README asks sailors to send corrections. CI fails if any language is missing, has a key English doesn't, or loses a placeholder.
 
 ## 14. Quality, testing and distribution
 
@@ -679,6 +687,9 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - a day you take out isn't added again, including when you delete the event in your calendar app
   - an event moves or goes when its window does, but not from 6 PM the evening before
   - calendars that can't update or delete events get warnings only
+- **AI summary:** a stand-in AI task: it's offered only when turned on and AI Task is set up, the instructions ask for the reader's language and forbid gear advice, a summary is kept and goes stale when its ratings change, and answers that aren't a summary or a failing provider give an error.
+- **Blueprints:** both run as automations in the tests, with the phone's notification caught.
+- **Languages:** every language has English's keys and placeholders, and SailCast's own sentences come out translated, with every value filled in.
 - **Frontend:** unit tests (Vitest) for formatting, time handling and the advice and reasons as sentences, a contrast check on the day and night palettes, a check that every string the panel uses exists, and a demo page that renders the panel from the integration's own replies for the recorded week.
 
 **CI on GitHub Actions** runs:
@@ -732,7 +743,7 @@ Each milestone ends with something you can install and try.
 | 3 | Wind map | Grid fetch with the budget guard, seamarks, color field, particles and time slider, on the base map from milestone 2. | It animates smoothly on a phone, and the budget stays under the limit with three spots. |
 | 4 | Local accuracy | Buoys, airport reports and your own sensors, with nowcast blending. Exposure and fetch, with fetch worked out from shoreline data. Repairs (pin on land, failed sources). | "Now" readings show at all three test spots, and the river spot's waves come from the sheltered-water estimate. |
 | 5 | Worldwide | Tide providers that need a key, free regional sources, and warning services outside the US. Built: WorldTides; CHS, Rijkswaterstaat and Kartverket tides; the ocean model's rough tide; NWS alerts for lakes; ECCC and MeteoAlarm warnings. | A spot in the UK, the Netherlands and a lake each produce a complete week. |
-| 6 | Languages, AI and notifications | The 11 translations, the AI summary option, and the two notification blueprints. | All 12 languages pass the completeness check. The AI summary appears only when it's turned on. |
+| 6 | Languages, AI and notifications | The 11 translations, the AI summary option, and the two notification blueprints. Built: the translations with a glossary, calendar events and notifications in Home Assistant's language, MeteoAlarm's warning names in the reader's, the AI summary through AI Task, and both blueprints. | All 12 languages pass the completeness check. The AI summary appears only when it's turned on. |
 | 7 | Release | Docs, beta through a custom repository, then the default catalog pull request. Version 1.0. | Marketplace validation passes, and the catalog pull request is open. |
 
 ## 16. Risks
@@ -755,7 +766,7 @@ Each milestone ends with something you can install and try.
 
 ## 17. Review history
 
-On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme, and had the icon and logo redrawn in its blues.
+On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme, and had the icon and logo redrawn in its blues. On November 3 you asked to go on with milestone 6 rather than wait for Home Assistant 2026.11.0.
 
 ## 18. Sources
 

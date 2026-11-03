@@ -69,6 +69,40 @@ export function sourceText(t: Translate, kind: ReadingKind, station: string | nu
   return t(`reading_source.${kind}`, { id: station ?? "" });
 }
 
+// SailCast names MeteoAlarm's warnings itself, as "Yellow wind warning".
+const METEOALARM = /^(yellow|orange|red) (.+) warning$/i;
+
+/**
+ * An official warning's name in the user's language. Services such as the
+ * National Weather Service name their warnings themselves, in English, so
+ * those stay as they are; MeteoAlarm's are put together from their level and
+ * kind.
+ */
+export function eventText(t: Translate, event: string): string {
+  const match = METEOALARM.exec(event);
+  if (!match) return event;
+  const kind = `meteoalarm.kind.${match[2].toLowerCase().replace(/ /g, "_")}`;
+  const kindText = t(kind);
+  if (kindText === kind) return event;
+  return t(`meteoalarm.${match[1].toLowerCase()}`, { kind: kindText });
+}
+
+/** A position such as "32.715° N, 117.180° W", with the language's compass letters. */
+export function positionText(
+  fmt: Formatter,
+  t: Translate,
+  latitude: number,
+  longitude: number,
+  digits: number,
+): string {
+  const north = t(latitude >= 0 ? "compass.n" : "compass.s");
+  const east = t(longitude >= 0 ? "compass.e" : "compass.w");
+  return [
+    `${fmt.number(Math.abs(latitude), digits)}° ${north}`,
+    `${fmt.number(Math.abs(longitude), digits)}° ${east}`,
+  ].join(t("advice.list_separator"));
+}
+
 /** A compass point, such as "WSW". */
 export function compass(t: Translate, degrees: number): string {
   return t(`compass.${compassKey(degrees)}`);
@@ -109,7 +143,7 @@ export function reasonText(fmt: Formatter, t: Translate, reason: Reason): string
         visibility: fmt.number(num(values.visibility) / METERS_PER_NAUTICAL_MILE, 1),
       });
     case "warning":
-      return String(values.event);
+      return eventText(t, String(values.event));
     default:
       return t(`reason.${reason.key}`);
   }
@@ -129,7 +163,7 @@ export function reasonsText(fmt: Formatter, t: Translate, reasons: Reason[]): st
   return [...top, ...modifiers]
     .slice(0, 3)
     .map((reason) => reasonText(fmt, t, reason))
-    .join(", ");
+    .join(t("advice.list_separator"));
 }
 
 /** One piece of advice as a sentence. */
@@ -139,10 +173,10 @@ export function adviceText(fmt: Formatter, t: Translate, advice: Advice): string
     case "warning":
     case "warning_dangerous":
     case "warning_caution":
-      return t(`advice.${advice.key}`, { event: String(values.event) });
+      return t(`advice.${advice.key}`, { event: eventText(t, String(values.event)) });
     case "warning_not_recommended":
       return t("advice.warning_not_recommended", {
-        event: String(values.event),
+        event: eventText(t, String(values.event)),
         size: t(`size_noun.${String(values.size)}`),
       });
     case "wind": {

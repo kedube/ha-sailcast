@@ -13,9 +13,10 @@ it, keeps a simplified copy, and looks for a newer one each month.
 
 Each warning has a level (yellow, orange or red) and a kind, such as wind or
 fog, read from its title: "Yellow Wind Warning issued for The Netherlands -
-Harlingen". Green means no warning, so it's left out. A warning a spot uses
-is read in full once, for its sender, description and advice, which are shown
-as written.
+Harlingen". Titles write a coastal event, such as AEMET's warnings of rough
+seas off the coast, as "Coastalevent". Green means no warning, so it's left
+out. A warning a spot uses is read in full once, for its sender, description
+and advice, which are shown as written.
 
 MeteoAlarm's warnings may be passed on under terms equivalent to CC BY 4.0,
 showing the national service's name, when each warning was issued, a link to
@@ -122,6 +123,8 @@ _POLYGON = re.compile(r"<cap:polygon>([^<]+)</cap:polygon>")
 _HEADLINE = re.compile(
     r"^(Yellow|Orange|Red) (.+?) Warning issued for .+? - (.+)$", re.IGNORECASE
 )
+# Kinds the titles write as one word, as the rating knows them.
+_KINDS: Final = {"coastalevent": "coastal event"}
 _INFO = re.compile(r"<info>(.*?)</info>", re.S)
 _GEOCODES = re.compile(r"^MeteoAlarm_Geocodes_\d{4}_\d{2}_\d{2}\.json$")
 
@@ -244,10 +247,11 @@ def parse_feed(text: str) -> list[Warning]:
         link = _CAP_LINK.search(entry)
         if not match or not link or match.group(1).lower() not in LEVELS:
             continue
+        kind = match.group(2).lower().replace("-", " ")
         try:
             found = Warning(
                 level=match.group(1).lower(),
-                kind=match.group(2).lower().replace("-", " "),
+                kind=_KINDS.get(kind, kind),
                 area=html.unescape(_tag(entry, "areaDesc") or match.group(3)),
                 regions=tuple(_REGION.findall(entry)),
                 outlines=tuple(_ring(points) for points in _POLYGON.findall(entry)),

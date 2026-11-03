@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 import json
 import math
+import re
 from types import SimpleNamespace
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -300,6 +301,13 @@ def test_meteoalarm_feed() -> None:
     merged = meteoalarm.parse_feed(f"<feed>{first}{twice}</feed>")
     assert len(merged) == 1
     assert merged[0].regions == ("NL801", "NL802")
+    # Titles write a coastal event as one word; a yellow one rates as an advisory.
+    coastal = re.sub(
+        r"<title>\w+ \w+ Warning", "<title>Yellow Coastalevent Warning", first
+    )
+    (warning,) = meteoalarm.parse_feed(f"<feed>{coastal}</feed>")
+    assert warning.event == "Yellow coastal event warning"
+    assert warning_group(warning.event) is WarningGroup.ADVISORY
     with pytest.raises(ProviderError):
         meteoalarm.parse_feed("<html>busy</html>")
 

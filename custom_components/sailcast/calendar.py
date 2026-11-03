@@ -1,8 +1,9 @@
 """Each sailor's sailing windows as a read-only calendar.
 
 There's one event per window, spot and boat, always following the latest
-forecast, so calendar triggers can say "an hour before". Event text is in
-English until the translations arrive.
+forecast, so calendar triggers can say "an hour before". Each description
+starts with a line on the window, in Home Assistant's language, which the
+evening-before blueprint sends on.
 """
 
 from __future__ import annotations
@@ -18,8 +19,9 @@ from .coordinator import ResultsCoordinator, SailCastConfigEntry
 from .entity import SailorEntity, async_remove_stale
 from .outlook import BoatOutlook
 from .profiles import Sailor, Spot
-from .scoring import Window, band
-from .timeline import HOUR
+from .scoring import Window
+from .summary import hours_between, summarize
+from .wording import Wording
 
 
 async def async_setup_entry(
@@ -47,12 +49,14 @@ class SailingCalendar(SailorEntity, CalendarEntity):
 
     def _events(self) -> list[CalendarEvent]:
         events: list[CalendarEvent] = []
+        if (wording := self.coordinator.wording) is None:
+            return events
         for outlook in self.coordinator.data.outlooks.values():
             if outlook.sailor.id != self.sailor.id:
                 continue
             for boat in outlook.boats:
                 events.extend(
-                    _event(outlook.spot, boat, window)
+                    _event(outlook.spot, boat, window, wording)
                     for day in boat.days
                     for window in day.windows
                 )
@@ -75,26 +79,35 @@ class SailingCalendar(SailorEntity, CalendarEntity):
         ]
 
 
-def _event(spot: Spot, boat: BoatOutlook, window: Window) -> CalendarEvent:
-    hours = [
-        item.hour
-        for item in boat.hours
-        if item.hour.start < window.end and item.hour.start + HOUR > window.start
+def _event(
+    spot: Spot, boat: BoatOutlook, window: Window, wording: Wording
+) -> CalendarEvent:
+    summary = summarize(
+        hours_between([item.hour for item in boat.hours], window.start, window.end)
+    )
+    lines = [
+        wording.text(
+            "window",
+            start=wording.clock(window.start),
+            end=wording.clock(window.end),
+            score=window.score,
+            band=wording.band(window.score),
+        )
     ]
-    low = min(round(hour.wind) for hour in hours)
-    high = max(round(hour.wind) for hour in hours)
-    gusts = max(round(hour.gust) for hour in hours)
-    wind = f"{low}" if low == high else f"{low} to {high}"
+    if summary is not None:
+        lines.append(
+            wording.text(
+                "wind",
+                direction=wording.compass(summary.direction),
+                wind=wording.range(summary.wind_low, summary.wind_high),
+                gust=wording.number(summary.gust),
+            )
+        )
     return CalendarEvent(
         start=dt_util.as_local(window.start),
         end=dt_util.as_local(window.end),
         summary=f"{spot.name}: {boat.boat.name}",
-        description=(
-            f"Sailing score {window.score} ({band(window.score)}). "
-            f"Wind {wind} kt, gusts to {gusts} kt. "
-            "SailCast is advisory: check the latest forecast and official "
-            "warnings before you go."
-        ),
+        description=wording.join(lines) + "\n\n" + wording.text("advisory"),
         location=spot.name,
         uid=f"sailcast-{spot.id}-{boat.boat.id}-{window.start.isoformat()}",
     )

@@ -10,6 +10,9 @@ SUBENTRY_BOAT: Final = "boat"
 SUBENTRY_SAILOR: Final = "sailor"
 
 CONF_AHEAD: Final = "ahead"
+# The AI summary option, and the AI task it uses (or Home Assistant's default).
+CONF_AI_SUMMARY: Final = "ai_summary"
+CONF_AI_TASK: Final = "ai_task"
 CONF_AIRPORT: Final = "airport"
 CONF_AUTO_CALENDAR: Final = "auto_calendar"
 # Automatic adding's days and spots, where the form also has a sailor's days.

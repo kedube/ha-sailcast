@@ -1466,6 +1466,42 @@ export const styles = css`
   .advice li.hot .i {
     fill: var(--sc-dot-notrec);
   }
+  .ai {
+    display: grid;
+    gap: 6px;
+    max-width: 72ch;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--sc-line);
+    border-radius: 12px;
+    background: var(--sc-sunk);
+  }
+  .ai p {
+    margin: 0;
+  }
+  .ai-ask {
+    justify-items: start;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .ai-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .ai .i {
+    width: 18px;
+    height: 18px;
+    fill: var(--sc-primary-ink);
+  }
+  .ai-text {
+    line-height: 1.5;
+  }
+  .ai-failed {
+    color: var(--sc-danger);
+  }
   .sizes-list {
     display: grid;
     gap: 10px;

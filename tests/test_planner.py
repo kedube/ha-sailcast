@@ -30,13 +30,10 @@ from pytest_homeassistant_custom_component.common import (
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import DOMAIN, NAME
-from custom_components.sailcast.planner import (
-    EVENT_PLANNED_SAIL_CHANGED,
-    MARKER,
-    Planner,
-)
+from custom_components.sailcast.planner import EVENT_PLANNED_SAIL_CHANGED, Planner
 from custom_components.sailcast.scoring import Window
 from custom_components.sailcast.storage import DATA_STORE, PlannedSail
+from custom_components.sailcast.wording import Wording
 
 from .conftest import BAY, CRUISER, HARBOR, KEELBOAT, RECORDED, RIVER, SAILOR
 
@@ -189,7 +186,7 @@ async def test_add_and_take_out(
     )
     assert "Score 80 (great)." in description
     assert "Sunset 4:53 PM." in description
-    assert description.endswith(f"{MARKER} ({sail.id})")
+    assert description.endswith(f"\n\nAdded by SailCast ({sail.id})")
     assert sail.uid
     assert sail.score == 80
     assert hass.data[DATA_STORE].get(sail.id) is sail
@@ -340,9 +337,10 @@ async def test_calendars_that_cannot_update(
     for calendar, expected in ((google, later.start), (caldav, SATURDAY)):
         sail = await add(hass, entry, calendar.entity_id or "")
         sail.auto = True
-        assert await moved._async_move(calendar, sail, "spot_river", later) is (
-            calendar is google
-        )
+        wording = await Wording.async_load(hass)
+        assert await moved._async_move(
+            calendar, sail, "spot_river", later, wording
+        ) is (calendar is google)
         (event,) = calendar.events
         assert event.start == expected
         # CalDAV can't delete either, so taking it out only stops watching.
@@ -382,6 +380,7 @@ async def test_watching_a_sail(
     await hass.async_block_till_done()
     assert sail.worse
     (change,) = changes
+    notification = _async_get_or_create_notifications(hass)[f"{DOMAIN}_{sail.id}"]
     assert change.data | {"score": None} == {
         "sailor": "Alex",
         "spot": "Harbor",
@@ -393,8 +392,9 @@ async def test_watching_a_sail(
         "rating": "not_recommended",
         "score": None,
         "automatic": False,
+        # The notification's text, for the blueprint to send on.
+        "message": notification["message"],
     }
-    notification = _async_get_or_create_notifications(hass)[f"{DOMAIN}_{sail.id}"]
     assert notification["title"] == "SailCast: forecast changed"
     assert (
         "Alex's sail at Harbor on Monday, Nov 2, 2 PM to 4 PM"

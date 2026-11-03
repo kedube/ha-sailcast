@@ -49,6 +49,41 @@ const LEVEL_INDEX: Record<Level, number> = {
   dangerous: 3,
 };
 
+/**
+ * The AI summary, with AI on: the summary written for the day, or a button
+ * to ask for one. The ratings above always come from SailCast's own rules.
+ */
+function aiSummary(ctx: Ctx, day: Day, index: number): TemplateResult | typeof nothing {
+  const { t, fmt } = ctx;
+  if (!ctx.config.ai || day.over) return nothing;
+  const summary = day.ai;
+  if (summary?.current) {
+    return html`<div class="ai">
+      <div class="ai-head">
+        ${icon("ai")}<b>${t("ai.title")}</b>
+        <span class="small">${t("ai.written", { time: fmt.clock(summary.made) })}</span>
+      </div>
+      <p class="ai-text">${summary.text}</p>
+      <p class="small">${t("ai.note")}</p>
+    </div>`;
+  }
+  const busy = ctx.aiBusy === day.date;
+  const failed = ctx.aiError?.date === day.date ? ctx.aiError.text : undefined;
+  return html`<div class="ai ai-ask">
+    ${summary ? html`<p class="small">${t("ai.changed")}</p>` : nothing}
+    ${failed ? html`<p class="small ai-failed" role="alert">${failed}</p>` : nothing}
+    <button
+      type="button"
+      class="btn btn-tonal"
+      ?disabled=${busy}
+      aria-busy=${busy ? "true" : "false"}
+      @click=${() => ctx.act.summarize(index)}
+    >
+      ${icon("ai")}${busy ? t("ai.writing") : summary ? t("ai.again") : t("ai.button")}
+    </button>
+  </div>`;
+}
+
 export function dayView(ctx: Ctx, width: number): TemplateResult {
   const { t, fmt } = ctx;
   const forecast = ctx.forecast;
@@ -66,7 +101,7 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
           @click=${() => ctx.act.openDay(number)}
         >
           <span class="ds-wd"
-            >${isToday(ctx, item) ? t("week.today") : fmt.weekday(item.date)}</span
+            >${isToday(ctx, item) ? t("week.today_short") : fmt.weekday(item.date)}</span
           >
           <span class="ds-d">${fmt.dayOfMonth(item.date)}</span>
           <span class="ds-sc"><i></i><span>${item.score ?? "–"}</span></span>
@@ -124,7 +159,7 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
                     @click=${() => ctx.act.openWindow(index, number)}
                   >
                     ${icon(addIcon(sail))}<b>${fmt.span(window.start, window.end)}</b>
-                    <span>${window.score} · ${t(`band.${band(window.score)}`).toLowerCase()}</span>
+                    <span>${window.score} · ${t(`band_word.${band(window.score)}`)}</span>
                     <span class="act">${addText(ctx, sail)}</span>
                   </button>`;
                 })}
@@ -144,6 +179,7 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
               </li>`,
           )}
         </ul>
+        ${aiSummary(ctx, day, index)}
       </section>
       <section class="card">
         <div class="card-head">
@@ -151,7 +187,7 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
           <span class="small"
             >${t("day.sizes_sub", {
               sailor: ctx.sailor?.name ?? "",
-              skill: t(`skill.${ctx.sailor?.skill ?? "beginner"}`).toLowerCase(),
+              skill: t(`skill_word.${ctx.sailor?.skill ?? "beginner"}`),
             })}</span
           >
         </div>
@@ -189,7 +225,7 @@ function sizeRow(ctx: Ctx, day: Day, size: (typeof SIZES)[number]): TemplateResu
   } else {
     text = t("day.size_changes", {
       best: t(`level.${rating.best}`),
-      worst: t(`level.${rating.worst}`).toLowerCase(),
+      worst: t(`level_word.${rating.worst}`),
       time: fmt.clock(rating.worst_at),
       why,
     });

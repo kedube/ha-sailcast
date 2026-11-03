@@ -11,6 +11,7 @@ import { arrow, dial, icon, ring, weather, type IconName } from "./glyphs";
 import {
   ageText,
   compass,
+  eventText,
   heightRange,
   heightText,
   reasonsText,
@@ -46,7 +47,7 @@ export function plannedStatus(ctx: Ctx, sail: PlannedSail): string {
   if (status.rating !== "good") {
     const why = reasonsText(fmt, t, status.reasons);
     return t(why ? "planned.status_rating_why" : "planned.status_rating", {
-      rating: t(`level.${status.rating}`).toLowerCase(),
+      rating: t(`level_word.${status.rating}`),
       why,
     });
   }
@@ -54,7 +55,7 @@ export function plannedStatus(ctx: Ctx, sail: PlannedSail): string {
     return t("planned.status_score", { score: status.score, was: sail.score ?? "–" });
   }
   return t(sail.auto ? "planned.status_auto" : "planned.status_ok", {
-    band: t(`band.${band(status.score)}`).toLowerCase(),
+    band: t(`band_word.${band(status.score)}`),
     score: status.score,
   });
 }
@@ -123,7 +124,7 @@ function hero(ctx: Ctx, best: Found | undefined, next: Found | undefined): Templ
               ? t("week.best_day", {
                   day: fmt.weekday(top.date, "long"),
                   score: top.score ?? 0,
-                  band: t(`band.${band(top.score ?? 0)}`).toLowerCase(),
+                  band: t(`band_word.${band(top.score ?? 0)}`),
                 })
               : nothing
           }
@@ -408,7 +409,7 @@ export function warningSource(ctx: Ctx): string | null {
   const key = warnings.provider === "nws" && warnings.at_pin ? "nws_pin" : warnings.provider;
   return ctx.t(`sources.warnings_by.${key}`, {
     zone: savedSourceText(saved.id, saved.name),
-    services: warnings.services.join(", "),
+    services: warnings.services.join(ctx.t("advice.list_separator")),
   });
 }
 
@@ -429,7 +430,7 @@ function warningsCard(ctx: Ctx): TemplateResult {
               html`<div class="warn-status on">
                 ${icon("flag")}
                 <span
-                  >${alert.event}${alert.issued && alert.headline ? ` · ${alert.headline}` : ""}
+                  >${eventText(t, alert.event)}${alert.issued && alert.headline ? ` · ${alert.headline}` : ""}
                   <small
                     >${
                       ms(alert.start) <= ms(now)
@@ -509,7 +510,7 @@ function calendarCard(ctx: Ctx): TemplateResult {
       <p class="small">
         ${t("week.calendar_sub", {
           sailor: sailor.name,
-          skill: t(`skill.${sailor.skill}`).toLowerCase(),
+          skill: t(`skill_word.${sailor.skill}`),
           boat: ctx.boat?.name ?? "",
         })}
       </p>
@@ -610,7 +611,7 @@ export function autoSummary(
   return t("auto.summary", {
     days: daysText(ctx, auto.days),
     score: auto.min_score,
-    ahead: t(`ahead.${auto.ahead}`).toLowerCase(),
+    ahead: t(`ahead_word.${auto.ahead}`),
     calendar: calendar ? `${calendar.name} (${calendar.via})` : auto.calendar,
   });
 }
@@ -626,7 +627,7 @@ export function daysText(ctx: Ctx, days: string[]): string {
   }
   return WEEKDAYS.filter((day) => set.has(day))
     .map((day) => fmt.weekday(MONDAY_WEEK[day]))
-    .join(", ");
+    .join(t("advice.list_separator"));
 }
 
 function dayColumn(
@@ -733,7 +734,7 @@ function dayColumn(
   const status =
     day.score === null
       ? t(day.over ? "week.day_over" : "week.not_sailing_day")
-      : t("week.day_score", { score: day.score, band: t(`band.${band(day.score)}`).toLowerCase() });
+      : t("week.day_score", { score: day.score, band: t(`band_word.${band(day.score)}`) });
   const head = html`<button
     type="button"
     class="cd-head"
@@ -746,7 +747,7 @@ function dayColumn(
     })}
     @click=${() => ctx.act.openDay(index)}
   >
-    <span class="cd-wd">${today ? t("week.today") : fmt.weekday(day.date)}</span>
+    <span class="cd-wd">${today ? t("week.today_short") : fmt.weekday(day.date)}</span>
     <span class="cd-date">${fmt.dayOfMonth(day.date)}</span>
     <span class="cd-wx"
       >${
@@ -898,7 +899,7 @@ function windowTip(ctx: Ctx, day: Day, window: Window, sail?: PlannedSail): Temp
     <div>
       ${t("tip.window_score", {
         score: window.score,
-        band: t(`band.${band(window.score)}`).toLowerCase(),
+        band: t(`band_word.${band(window.score)}`),
       })}
     </div>
     ${

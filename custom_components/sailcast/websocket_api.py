@@ -30,9 +30,10 @@ from homeassistant.loader import IntegrationNotLoaded, async_get_loaded_integrat
 from homeassistant.util import dt as dt_util
 import probatio
 
-from . import alerts as alert_sources, profiles, tides as tide_sources
+from . import ai, alerts as alert_sources, profiles, tides as tide_sources
 from .const import (
     CONF_AHEAD,
+    CONF_AI_TASK,
     CONF_AIRPORT,
     CONF_AUTO_CALENDAR,
     CONF_BOATS,
@@ -196,6 +197,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
         ws_planned_list,
         ws_planned_skipped,
         ws_wind_grid,
+        ws_ai_summary,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -226,9 +228,10 @@ async def ws_config(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Send the spots, boats, sailors, limits and calendars."""
+    """Send the spots, boats, sailors, limits and calendars, and if AI is on."""
     if (data := _data(hass, connection, msg)) is None:
         return
+    entry = _entry(hass)
     user = connection.user
     result: dict[str, Any] = data.profiles.as_dict() | {
         "limits": {
@@ -243,6 +246,7 @@ async def ws_config(
         "skills": {skill.value: limit for skill, limit in SKILL_WIND_LIMITS.items()},
         "calendars": _calendars(hass, user),
         "users": [],
+        "ai": entry is not None and ai.enabled(hass, entry),
     }
     if user.is_admin:
         result["users"] = [
@@ -289,6 +293,8 @@ def _calendars(hass: HomeAssistant, user: User) -> list[dict[str, Any]]:
         probatio.Required("spot"): cv.string,
         probatio.Required("sailor"): cv.string,
         probatio.Optional("boat"): cv.string,
+        # The panel's language, for the AI summaries already written in it.
+        probatio.Optional("language"): cv.string,
     }
 )
 @callback
@@ -297,7 +303,11 @@ def ws_forecast(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Send a sailor's week at a spot in one of their boats, with planned sails."""
+    """Send a sailor's week at a spot in one of their boats, with planned sails.
+
+    With AI on, each day carries the AI summary already written for it in the
+    panel's language, if there is one, and whether it's still current.
+    """
     if (data := _data(hass, connection, msg)) is None:
         return
     results = data.results.data
@@ -348,7 +358,96 @@ def ws_forecast(
             if sail.sailor == outlook.sailor.id and sail.end > now
         ],
     }
+    entry = _entry(hass)
+    if entry and ai.enabled(hass, entry) and (language := msg.get("language")):
+        for day in result["days"]:
+            key = (spot.id, outlook.sailor.id, boat.boat.id, day["date"], language)
+            kept = data.summaries.get(key)
+            day["ai"] = (
+                kept.as_dict(ai.facts(result, day["date"], now)) if kept else None
+            )
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {
+        probatio.Required("type"): "sailcast/ai_summary",
+        probatio.Required("spot"): cv.string,
+        probatio.Required("sailor"): cv.string,
+        probatio.Optional("boat"): cv.string,
+        probatio.Required("date"): cv.date,
+        probatio.Required("language"): cv.string,
+    }
+)
+@websocket_api.async_response
+async def ws_ai_summary(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Write an AI summary of a day, as the user, or send the one kept for it."""
+    if (data := _data(hass, connection, msg)) is None:
+        return
+    entry = _entry(hass)
+    if entry is None or not ai.enabled(hass, entry):
+        connection.send_error(msg["id"], "ai_off", "The AI summary is turned off")
+        return
+    results = data.results.data
+    outlook = results.outlook(msg["sailor"], msg["spot"])
+    conditions = results.conditions.get(msg["spot"])
+    boat = next(
+        (
+            item
+            for item in (outlook.boats if outlook else ())
+            if item.boat.id == msg.get("boat")
+        ),
+        outlook.boats[0] if outlook and outlook.boats else None,
+    )
+    now = dt_util.utcnow()
+    day: date = msg["date"]
+    week_data = (
+        week(outlook, boat, conditions, now) if outlook and boat and conditions else {}
+    )
+    found = ai.facts(week_data, day.isoformat(), now) if week_data else {}
+    if outlook is None or boat is None or not found:
+        connection.send_error(
+            msg["id"], websocket_api.ERR_NOT_FOUND, "There's nothing left to summarize"
+        )
+        return
+    asked = ai.instructions(
+        ai.day_data(hass, outlook, boat, week_data, date=day.isoformat(), now=now)
+        or {},
+        outlook,
+        boat,
+        msg["language"],
+        f"{day:%A}",
+    )
+    key = (
+        outlook.spot.id,
+        outlook.sailor.id,
+        boat.boat.id,
+        day.isoformat(),
+        msg["language"],
+    )
+    try:
+        summary = await data.summaries.async_write(
+            hass,
+            key,
+            found,
+            asked,
+            entity_id=entry.options.get(CONF_AI_TASK),
+            context=connection.context(msg),
+        )
+    except ai.BadAnswerError as err:
+        connection.send_error(msg["id"], "bad_answer", str(err))
+        return
+    except TimeoutError:
+        connection.send_error(msg["id"], "ai_failed", "The AI didn't answer in time")
+        return
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "ai_failed", str(err))
+        return
+    connection.send_result(msg["id"], summary.as_dict(found))
 
 
 def _warning_source(data: SailCastData, spot: Spot) -> dict[str, Any] | None:
@@ -688,6 +787,8 @@ async def ws_settings_shoreline(
         probatio.Required("end"): cv.datetime,
         probatio.Required("title"): cv.string,
         probatio.Optional("watch", default=True): cv.boolean,
+        # The panel's language, for the event's description.
+        probatio.Optional("language"): cv.string,
     }
 )
 @websocket_api.async_response
@@ -734,6 +835,7 @@ async def ws_calendar_add(
             title=title,
             watch=msg["watch"],
             user=connection.user.id,
+            language=msg.get("language"),
         )
     except HomeAssistantError as err:
         connection.send_error(msg["id"], "failed", str(err))

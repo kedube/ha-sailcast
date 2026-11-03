@@ -32,7 +32,7 @@ QUIET: Final = timedelta(hours=12)
 FAILING: Final = timedelta(days=1)
 PROVIDERS: Final = {
     tides.NOAA: "NOAA",
-    tides.CHS: "The Canadian Hydrographic Service",
+    tides.CHS: "Canadian Hydrographic Service",
     tides.RWS: "Rijkswaterstaat",
     tides.KARTVERKET: "Kartverket",
     tides.WORLDTIDES: "WorldTides",
@@ -53,7 +53,10 @@ def async_update_issues(hass: HomeAssistant, data: SailCastData, now: datetime) 
     _worldtides_key(data, wanted)
     _quiet_sensors(hass, data, now, wanted)
     if data.budget.today >= SLOW_DOWN_AT:
-        wanted["budget_low"] = ("budget_low", {"calls": f"{data.budget.today:,.0f}"})
+        # A narrow space between thousands reads the same in every language;
+        # a comma would read as a decimal in most of Europe.
+        calls = f"{data.budget.today:,.0f}".replace(",", "\u202f")
+        wanted["budget_low"] = ("budget_low", {"calls": calls})
     for issue_id, (key, placeholders) in wanted.items():
         ir.async_create_issue(
             hass,

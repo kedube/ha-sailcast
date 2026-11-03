@@ -1,0 +1,569 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast zamienia prognozy wiatru, fal, pływów i pogody w oceny bezpieczeństwa i okna żeglarskie dla twoich akwenów, łodzi i żeglarzy.\n\n**SailCast ma charakter doradczy.** Pierwszeństwo mają oficjalne prognozy i ostrzeżenia, a decyzję zawsze podejmuje skipper.\n\nPo konfiguracji dodaj akweny, łodzie i żeglarzy na stronie tej integracji."
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Akwen",
+      "initiate_flow": {
+        "user": "Dodaj akwen"
+      },
+      "step": {
+        "user": {
+          "title": "Dodaj akwen",
+          "data": {
+            "name": "Nazwa",
+            "location": "Lokalizacja",
+            "water_type": "Rodzaj akwenu",
+            "offshore": "Wiatr od lądu",
+            "exposed": "Otwarty na fale z kierunków",
+            "fetch": "Otwarta woda na nawietrznej"
+          },
+          "data_description": {
+            "name": "Na przykład Port albo Jezioro.",
+            "location": "Umieść pinezkę na wodzie tam, gdzie żeglujesz. Okrąg wyznacza obszar pokazywany na mapie wiatru.",
+            "offshore": "Wiatr z tych kierunków wieje od brzegu.",
+            "exposed": "Kierunki z otwartą wodą, gdzie mogą narastać fale.",
+            "fetch": "Tylko dla rzek i jezior. SailCast mierzy na mapie otwartą wodę w każdym kierunku; ustaw to pole tylko wtedy, gdy chcesz zastąpić ten pomiar jedną odległością."
+          }
+        },
+        "reconfigure": {
+          "title": "Edytuj akwen",
+          "data": {
+            "name": "Nazwa",
+            "location": "Lokalizacja",
+            "water_type": "Rodzaj akwenu",
+            "offshore": "Wiatr od lądu",
+            "exposed": "Otwarty na fale z kierunków",
+            "fetch": "Otwarta woda na nawietrznej"
+          },
+          "data_description": {
+            "name": "Na przykład Port albo Jezioro.",
+            "location": "Umieść pinezkę na wodzie tam, gdzie żeglujesz. Okrąg wyznacza obszar pokazywany na mapie wiatru.",
+            "offshore": "Wiatr z tych kierunków wieje od brzegu.",
+            "exposed": "Kierunki z otwartą wodą, gdzie mogą narastać fale.",
+            "fetch": "Tylko dla rzek i jezior. SailCast mierzy na mapie otwartą wodę w każdym kierunku; ustaw to pole tylko wtedy, gdy chcesz zastąpić ten pomiar jedną odległością."
+          }
+        },
+        "sources": {
+          "title": "Źródła danych",
+          "description": "SailCast proponuje najbliższe źródła. Pływy pochodzą z NOAA w USA, z Canadian Hydrographic Service w Kanadzie, z Rijkswaterstaat w Holandii i z Kartverket w Norwegii, a z dowolnego miejsca – z WorldTides, jeśli dodasz jego klucz w opcjach SailCast. Ostrzeżenia pochodzą z National Weather Service w USA, od Environment and Climate Change Canada i z MeteoAlarm w Europie. Dane z boi pochodzą z NDBC, a raporty z lotnisk – z całego świata.",
+          "data": {
+            "tide_station": "Stacja pływowa",
+            "current_station": "Stacja prądów",
+            "marine_zone": "Oficjalne ostrzeżenia",
+            "buoy": "Boja",
+            "airport": "Lotnisko"
+          },
+          "data_description": {
+            "tide_station": "Źródło wysokości pływu oraz wysokich i niskich wód. Pływ z modelu oceanicznego jest przybliżony i przy wybrzeżu często myli się o godzinę lub więcej, dlatego można go wybrać tylko ręcznie, gdy akwenu nie obejmuje żadne inne źródło.",
+            "current_station": "Na potrzeby reguły „wiatr przeciwko prądowi”. Wybierz stację tylko wtedy, gdy jest blisko miejsca, w którym żeglujesz.",
+            "marine_zone": "Stąd pochodzą oficjalne ostrzeżenia, takie jak Small Craft Advisory. Na jeziorze bez akwenu prognozy morskiej wybierz alerty National Weather Service dla miejsca pinezki.",
+            "buoy": "Pomiary wiatru, fal i temperatury wody z boi lub stacji brzegowej. Każdy pomiar liczy się, dopóki jest świeży, i koryguje prognozę na kilka kolejnych godzin.",
+            "airport": "Cogodzinne raporty wiatru, widzialności i temperatury powietrza. Jeśli jest wybór, wybierz lotnisko blisko wody."
+          },
+          "sections": {
+            "sensors": {
+              "name": "Własne czujniki",
+              "description": "Pomiary z twojej stacji pogodowej lub z przyrządów na łodzi mają pierwszeństwo przed boją i lotniskiem. SailCast traktuje je jak pomiary z samego akwenu.",
+              "data": {
+                "wind": "Prędkość wiatru",
+                "gust": "Porywy",
+                "wind_direction": "Kierunek wiatru",
+                "temperature": "Temperatura powietrza",
+                "water_temperature": "Temperatura wody"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Wpisz nazwę.",
+        "name_too_long": "Użyj najwyżej 40 znaków.",
+        "name_taken": "Inny akwen ma już taką nazwę.",
+        "radius_out_of_range": "Promień okręgu musi wynosić od 2 do 50 km (ok. 1–30 mil lądowych).",
+        "suggestions_unavailable": "Nie udało się wyszukać pobliskich źródeł. Możesz zapisać akwen bez nich i dodać je później, edytując go.",
+        "fetch_out_of_range": "Otwarta woda musi wynosić od 0,05 do 100 km (ok. 0,03–60 mil lądowych).",
+        "invalid_sensor": "Wybierz czujnik dla każdego pomiaru albo zostaw pole puste."
+      }
+    },
+    "boat": {
+      "entry_type": "Łódź",
+      "initiate_flow": {
+        "user": "Dodaj łódź"
+      },
+      "step": {
+        "user": {
+          "title": "Dodaj łódź",
+          "data": {
+            "name": "Nazwa",
+            "size_class": "Wielkość",
+            "length": "Długość"
+          },
+          "data_description": {
+            "name": "Na przykład nazwa łodzi.",
+            "size_class": "Każda wielkość ma własne limity bezpieczeństwa dla wiatru, porywów i fal."
+          }
+        },
+        "reconfigure": {
+          "title": "Edytuj łódź",
+          "data": {
+            "name": "Nazwa",
+            "size_class": "Wielkość",
+            "length": "Długość"
+          },
+          "data_description": {
+            "name": "Na przykład nazwa łodzi.",
+            "size_class": "Każda wielkość ma własne limity bezpieczeństwa dla wiatru, porywów i fal."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Wpisz nazwę.",
+        "name_too_long": "Użyj najwyżej 40 znaków.",
+        "name_taken": "Inna łódź ma już taką nazwę.",
+        "length_out_of_range": "Podaj długość od 1 do 50 m (od 3 do 164 ft)."
+      }
+    },
+    "sailor": {
+      "entry_type": "Żeglarz",
+      "initiate_flow": {
+        "user": "Dodaj żeglarza"
+      },
+      "step": {
+        "user": {
+          "title": "Dodaj żeglarza",
+          "data": {
+            "name": "Imię",
+            "skill": "Poziom umiejętności",
+            "default_boat": "Domyślna łódź",
+            "other_boats": "Inne łodzie",
+            "days": "Dni żeglowania",
+            "start": "Najwcześniejszy początek",
+            "end": "Najpóźniejszy koniec",
+            "user": "Użytkownik Home Assistant"
+          },
+          "data_description": {
+            "skill": "Każdy żeglarz sam ocenia swoje umiejętności. Od nich zależy jego limit wiatru średniego; porywy się do niego nie wliczają.",
+            "default_boat": "SailCast ocenia tę łódź, chyba że żeglarz wybierze inną.",
+            "other_boats": "Inne łodzie, na których żegluje ten żeglarz.",
+            "start": "Zostaw puste, aby zaczynać o wschodzie słońca.",
+            "end": "Zostaw puste, aby kończyć o zachodzie słońca.",
+            "user": "Dla tego użytkownika panel otwiera się od razu z tym żeglarzem."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Komfort",
+              "description": "Co lubi ten żeglarz. Te ustawienia zmieniają wyniki, nigdy ocenę bezpieczeństwa.",
+              "data": {
+                "ideal_low": "Idealny wiatr od",
+                "ideal_high": "Idealny wiatr do",
+                "coldest": "Najniższa komfortowa temperatura powietrza",
+                "rain": "Deszcz"
+              },
+              "data_description": {
+                "ideal_low": "Zawęża idealny zakres wiatru dla każdej łodzi tego żeglarza. Zostaw puste, aby użyć zakresu łodzi.",
+                "ideal_high": "Zostaw puste, aby użyć zakresu łodzi, najwyżej do limitu wynikającego z umiejętności.",
+                "coldest": "W zimniejszym powietrzu wyniki spadają. Zostaw puste, aby przyjąć 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatyczny kalendarz",
+              "description": "Dodawaj do kalendarza najlepsze okno tego żeglarza w każdym wybranym dniu, najwyżej jedno wydarzenie dziennie. Do 18:00 poprzedniego dnia SailCast dopasowuje wydarzenie do prognozy, a potem, zamiast je przesuwać, wysyła ostrzeżenie.",
+              "data": {
+                "calendar": "Kalendarz",
+                "auto_days": "Dni",
+                "min_score": "Tylko okna z wynikiem",
+                "ahead": "Jak daleko naprzód",
+                "auto_spots": "Akweny"
+              },
+              "data_description": {
+                "calendar": "Zostaw puste, aby wyłączyć automatyczne dodawanie. Nowe wydarzenia przyjmują kalendarze Local Calendar, Google Calendar i CalDAV.",
+                "ahead": "Prognozy na dalej niż trzy dni naprzód zmieniają się najbardziej.",
+                "auto_spots": "Gdy okna na różnych akwenach się nakładają, SailCast dodaje tylko najlepsze."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Edytuj żeglarza",
+          "data": {
+            "name": "Imię",
+            "skill": "Poziom umiejętności",
+            "default_boat": "Domyślna łódź",
+            "other_boats": "Inne łodzie",
+            "days": "Dni żeglowania",
+            "start": "Najwcześniejszy początek",
+            "end": "Najpóźniejszy koniec",
+            "user": "Użytkownik Home Assistant"
+          },
+          "data_description": {
+            "skill": "Każdy żeglarz sam ocenia swoje umiejętności. Od nich zależy jego limit wiatru średniego; porywy się do niego nie wliczają.",
+            "default_boat": "SailCast ocenia tę łódź, chyba że żeglarz wybierze inną.",
+            "other_boats": "Inne łodzie, na których żegluje ten żeglarz.",
+            "start": "Zostaw puste, aby zaczynać o wschodzie słońca.",
+            "end": "Zostaw puste, aby kończyć o zachodzie słońca.",
+            "user": "Dla tego użytkownika panel otwiera się od razu z tym żeglarzem."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Komfort",
+              "description": "Co lubi ten żeglarz. Te ustawienia zmieniają wyniki, nigdy ocenę bezpieczeństwa.",
+              "data": {
+                "ideal_low": "Idealny wiatr od",
+                "ideal_high": "Idealny wiatr do",
+                "coldest": "Najniższa komfortowa temperatura powietrza",
+                "rain": "Deszcz"
+              },
+              "data_description": {
+                "ideal_low": "Zawęża idealny zakres wiatru dla każdej łodzi tego żeglarza. Zostaw puste, aby użyć zakresu łodzi.",
+                "ideal_high": "Zostaw puste, aby użyć zakresu łodzi, najwyżej do limitu wynikającego z umiejętności.",
+                "coldest": "W zimniejszym powietrzu wyniki spadają. Zostaw puste, aby przyjąć 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatyczny kalendarz",
+              "description": "Dodawaj do kalendarza najlepsze okno tego żeglarza w każdym wybranym dniu, najwyżej jedno wydarzenie dziennie. Do 18:00 poprzedniego dnia SailCast dopasowuje wydarzenie do prognozy, a potem, zamiast je przesuwać, wysyła ostrzeżenie.",
+              "data": {
+                "calendar": "Kalendarz",
+                "auto_days": "Dni",
+                "min_score": "Tylko okna z wynikiem",
+                "ahead": "Jak daleko naprzód",
+                "auto_spots": "Akweny"
+              },
+              "data_description": {
+                "calendar": "Zostaw puste, aby wyłączyć automatyczne dodawanie. Nowe wydarzenia przyjmują kalendarze Local Calendar, Google Calendar i CalDAV.",
+                "ahead": "Prognozy na dalej niż trzy dni naprzód zmieniają się najbardziej.",
+                "auto_spots": "Gdy okna na różnych akwenach się nakładają, SailCast dodaje tylko najlepsze."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Wpisz imię.",
+        "name_too_long": "Użyj najwyżej 40 znaków.",
+        "name_taken": "Inny żeglarz ma już takie imię.",
+        "unknown_boat": "Ta łódź została usunięta. Wybierz inną.",
+        "no_days": "Wybierz co najmniej jeden dzień.",
+        "end_before_start": "Najpóźniejszy koniec musi być później niż najwcześniejszy początek.",
+        "ideal_out_of_range": "Użyj wartości od 0 do 40 kn.",
+        "ideal_high_below_low": "Górna granica zakresu musi być wyższa niż dolna.",
+        "coldest_out_of_range": "Użyj wartości od −20 do 35 °C (od −4 do 95 °F).",
+        "calendar_read_only": "Ten kalendarz nie przyjmuje nowych wydarzeń. Wybierz kalendarz Local Calendar, Google Calendar lub CalDAV.",
+        "no_spots": "Wybierz co najmniej jeden akwen.",
+        "invalid_min_score": "Wybierz jedną z opcji.",
+        "invalid_ahead": "Wybierz jedną z opcji."
+      },
+      "abort": {
+        "no_boats": "Najpierw dodaj łódź. Każdy żeglarz potrzebuje co najmniej jednej."
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "Otwarte wybrzeże",
+        "bay": "Zatoka",
+        "river": "Rzeka lub ujście rzeki",
+        "lake": "Jezioro"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "Północ",
+        "ne": "Północny wschód",
+        "e": "Wschód",
+        "se": "Południowy wschód",
+        "s": "Południe",
+        "sw": "Południowy zachód",
+        "w": "Zachód",
+        "nw": "Północny zachód"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "Łódka mieczowa lub katamaran plażowy, do ok. 16 ft (5 m)",
+        "small_keelboat": "Mały jacht kilowy, 16–25 ft (5–7,5 m)",
+        "cruiser": "Jacht turystyczny, 25–35 ft (7,5–10,5 m)",
+        "large_cruiser": "Duży jacht turystyczny, 35 ft (10,5 m) i więcej"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "Początkujący: wiatr średni do 10 kn",
+        "intermediate": "Średniozaawansowany: do 16 kn",
+        "advanced": "Zaawansowany: bez limitu wiatru, tylko wskazówki"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "Poniedziałek",
+        "tue": "Wtorek",
+        "wed": "Środa",
+        "thu": "Czwartek",
+        "fri": "Piątek",
+        "sat": "Sobota",
+        "sun": "Niedziela"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "Unika deszczu",
+        "some": "Trochę deszczu nie szkodzi",
+        "any": "Deszcz nie przeszkadza"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "Dobre lub lepsze: 60 i więcej",
+        "80": "Świetne: 80 i więcej"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "Dziś i jutro",
+        "2": "Najbliższe 3 dni",
+        "4": "Najbliższe 5 dni",
+        "6": "Cały tydzień"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "Brak"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot}: dobre warunki do żeglowania"
+      },
+      "marine_warning": {
+        "name": "Ostrzeżenie morskie"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "Żeglowanie"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "Następna wysoka woda"
+      },
+      "next_low_tide": {
+        "name": "Następna niska woda"
+      },
+      "next_window": {
+        "name": "Następne okno żeglarskie"
+      },
+      "rating": {
+        "name": "{spot}: ocena bezpieczeństwa",
+        "state": {
+          "good": "Dobre",
+          "caution": "Uwaga",
+          "not_recommended": "Niezalecane",
+          "dangerous": "Niebezpieczne"
+        }
+      },
+      "score": {
+        "name": "{spot}: wynik"
+      },
+      "water_temperature": {
+        "name": "Temperatura wody"
+      },
+      "wave_height": {
+        "name": "Wysokość fal"
+      },
+      "wind_direction": {
+        "name": "Kierunek wiatru"
+      },
+      "wind_gust": {
+        "name": "Porywy"
+      },
+      "wind_speed": {
+        "name": "Wiatr"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "Pobierz prognozę",
+      "description": "Pobiera dla żeglarza oceny bezpieczeństwa, wyniki i okna żeglarskie na akwenie, na każdy dzień i każdą godzinę od teraz.",
+      "fields": {
+        "spot": {
+          "name": "Akwen",
+          "description": "Nazwa akwenu."
+        },
+        "sailor": {
+          "name": "Żeglarz",
+          "description": "Imię żeglarza. Oceny uwzględniają poziom umiejętności tego żeglarza."
+        },
+        "boat": {
+          "name": "Łódź",
+          "description": "Jedna z łodzi żeglarza. Zostaw puste, aby uwzględnić wszystkie."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast nie jest skonfigurowany."
+    },
+    "unknown_spot": {
+      "message": "Nie ma akwenu o nazwie {spot}."
+    },
+    "unknown_sailor": {
+      "message": "Nie ma żeglarza o imieniu {sailor}."
+    },
+    "unknown_boat": {
+      "message": "{sailor} nie żegluje na łodzi o nazwie {boat}."
+    },
+    "no_forecast": {
+      "message": "Nie ma jeszcze prognozy dla akwenu {spot}."
+    },
+    "calendar_read_only": {
+      "message": "Kalendarz {calendar} nie przyjmuje nowych wydarzeń."
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "Pinezka akwenu {spot} jest na lądzie",
+      "description": "SailCast oblicza fale i rozbieg fali dla akwenu {spot} na podstawie położenia jego pinezki, a według mapy pinezka leży na lądzie. Otwórz SailCast, przejdź do zakładki Ustawienia, edytuj akwen {spot} i przeciągnij pinezkę na wodę tam, gdzie żeglujesz."
+    },
+    "quiet_buoy": {
+      "title": "Boja {station} zamilkła",
+      "description": "Boja {station} od 12 godzin nie przesłała żadnego pomiaru, więc akweny korzystające z tej boi ({spots}) opierają się wyłącznie na prognozie. Boje milkną podczas napraw i w czasie sztormów. Jeśli boja nadal będzie milczeć, edytuj te akweny ({spots}) w ustawieniach SailCast i wybierz inną boję albo żadną."
+    },
+    "quiet_airport": {
+      "title": "Lotnisko {station} zamilkło",
+      "description": "Lotnisko {station} od 12 godzin nie przesłało raportu pogodowego, więc akweny korzystające z tego lotniska ({spots}) opierają się wyłącznie na prognozie. Jeśli lotnisko nadal będzie milczeć, edytuj te akweny ({spots}) w ustawieniach SailCast i wybierz inne lotnisko albo żadne."
+    },
+    "quiet_sensor": {
+      "title": "Czujnik {sensor} zamilkł",
+      "description": "Czujnik {sensor} od 12 godzin nie przesłał odczytu, więc akweny korzystające z tego czujnika ({spots}) opierają się na innych pomiarach lub na prognozie. Sprawdź czujnik albo usuń go z tych akwenów ({spots}) w ustawieniach SailCast."
+    },
+    "failing_tide": {
+      "title": "Brak prognoz pływów dla {station}",
+      "description": "{provider} od doby nie zwraca prognoz pływów dla {station}. Akweny korzystające z tego źródła ({spots}) używają prognoz zapisanych wcześniej przez SailCast, dopóki obejmują one jeszcze cały tydzień. Jeśli problem się powtarza, edytuj te akweny ({spots}) w ustawieniach SailCast i wybierz inne źródło pływów."
+    },
+    "failing_current": {
+      "title": "Stacja prądów {station} nie odpowiada",
+      "description": "{provider} od doby nie zwraca prognoz dla stacji prądów {station}. Akweny korzystające z tej stacji ({spots}) używają prognoz zapisanych wcześniej przez SailCast, dopóki obejmują one jeszcze cały tydzień. Jeśli problem się powtarza, edytuj te akweny ({spots}) w ustawieniach SailCast i wybierz inną stację albo żadną."
+    },
+    "budget_low": {
+      "title": "Kończą się darmowe zapytania do Open-Meteo",
+      "description": "SailCast wykorzystał dziś {calls} z 10 000 darmowych zapytań do Open-Meteo, więc aktualizuje teraz prognozę co trzy godziny zamiast co godzinę, a mapa wiatru jest wstrzymana do jutra. Z tego limitu korzysta też wszystko inne na tym samym łączu internetowym. Licznik zeruje się o północy UTC."
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides wymaga klucza",
+      "description": "Akweny ({spots}) pobierają pływy z WorldTides, ale SailCast nie ma klucza WorldTides. Dodaj swój klucz w opcjach SailCast (Ustawienia → Urządzenia oraz usługi → SailCast → Konfiguruj) albo edytuj te akweny ({spots}) w ustawieniach SailCast i wybierz inne źródło pływów."
+    },
+    "worldtides_key_rejected": {
+      "title": "Serwis WorldTides odrzucił klucz SailCast",
+      "description": "Serwis WorldTides odpowiedział: „{error}”. Sprawdź klucz w opcjach SailCast (Ustawienia → Urządzenia oraz usługi → SailCast → Konfiguruj) i stan kredytów na swoim koncie na worldtides.info. Do tego czasu akweny ({spots}) korzystają z prognoz pływów zapisanych przez SailCast, dopóki one wystarczą."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje SailCast",
+        "sections": {
+          "keys": {
+            "name": "Klucze API",
+            "description": "Klucze dla dostawców, którzy ich wymagają. Pozostają w Home Assistant i nigdy nie trafiają do panelu.",
+            "data": {
+              "worldtides_key": "Klucz API WorldTides"
+            },
+            "data_description": {
+              "worldtides_key": "Prognozy pływów z dowolnego miejsca, z worldtides.info, na twoim własnym koncie. Akwen, który z nich korzysta, zużywa ok. 3 kredyty co pięć dni. Zostaw puste, aby usunąć klucz."
+            }
+          },
+          "ai": {
+            "name": "Podsumowanie AI",
+            "description": "Dodaje w widoku dnia w panelu przycisk „Podsumuj za pomocą AI”. Po jego naciśnięciu SailCast prosi dostawcę AI skonfigurowanego w Home Assistant o dwa–trzy zdania o danym dniu. Oceny bezpieczeństwa zawsze pochodzą z własnych reguł SailCast, nigdy z AI.",
+            "data": {
+              "ai_summary": "Udostępniaj podsumowania AI",
+              "ai_task": "Zadanie AI"
+            },
+            "data_description": {
+              "ai_task": "Zostaw puste, aby użyć domyślnego zadania Home Assistant, ustawionego w sekcji Ustawienia → System → AI."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "no_ai_task": "Najpierw skonfiguruj dostawcę AI w Home Assistant. Jego integracja dodaje zadanie AI, z którego korzysta SailCast.",
+      "no_default_ai_task": "Wybierz zadanie AI albo ustaw domyślne w sekcji Ustawienia → System → AI."
+    }
+  },
+  "common": {
+    "weekday_mon": "poniedziałek",
+    "weekday_tue": "wtorek",
+    "weekday_wed": "środa",
+    "weekday_thu": "czwartek",
+    "weekday_fri": "piątek",
+    "weekday_sat": "sobota",
+    "weekday_sun": "niedziela",
+    "month_1": "sty",
+    "month_2": "lut",
+    "month_3": "mar",
+    "month_4": "kwi",
+    "month_5": "maj",
+    "month_6": "cze",
+    "month_7": "lip",
+    "month_8": "sie",
+    "month_9": "wrz",
+    "month_10": "paź",
+    "month_11": "lis",
+    "month_12": "gru",
+    "date": "{weekday}, {day} {month}",
+    "range": "{low}–{high}",
+    "feet": "{value} ft",
+    "meters": "{value} m",
+    "compass_n": "N",
+    "compass_nne": "NNE",
+    "compass_ne": "NE",
+    "compass_ene": "ENE",
+    "compass_e": "E",
+    "compass_ese": "ESE",
+    "compass_se": "SE",
+    "compass_sse": "SSE",
+    "compass_s": "S",
+    "compass_ssw": "SSW",
+    "compass_sw": "SW",
+    "compass_wsw": "WSW",
+    "compass_w": "W",
+    "compass_wnw": "WNW",
+    "compass_nw": "NW",
+    "compass_nnw": "NNW",
+    "band_great": "świetne",
+    "band_good": "dobre",
+    "band_fair": "przeciętne",
+    "band_poor": "słabe",
+    "level_good": "dobre",
+    "level_caution": "uwaga",
+    "level_not_recommended": "niezalecane",
+    "level_dangerous": "niebezpieczne",
+    "event_title": "Żeglowanie: {spot}",
+    "window": "{start}–{end}, wynik {score} ({band}).",
+    "wind": "Wiatr {direction} {wind} kn, w porywach do {gust} kn.",
+    "advisory": "SailCast ma charakter doradczy: przed wypłynięciem sprawdź najnowszą prognozę i oficjalne ostrzeżenia.",
+    "forecast_for": "Prognoza SailCast: {sailor} na łodzi {boat}. Wydana: {date}, godz. {time}.",
+    "score": "Wynik {score} ({band}).",
+    "waves": "Fale {waves}.",
+    "high_tide": "Wysoka woda o {time}.",
+    "low_tide": "Niska woda o {time}.",
+    "sunset": "Zachód słońca o {time}.",
+    "check_again": "SailCast ma charakter doradczy: przed wypłynięciem jeszcze raz sprawdź prognozę i oficjalne ostrzeżenia.",
+    "added_by": "Dodane przez SailCast ({id})",
+    "changed_title": "SailCast: prognoza się zmieniła",
+    "changed": "Pogorszyła się prognoza na zaplanowany rejs: {sailor}, {spot}, {date}, {start}–{end}. Teraz ocena: {level}, wynik {score}. Sprawdź SailCast przed wypłynięciem."
+  }
+}

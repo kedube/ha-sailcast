@@ -206,7 +206,7 @@ async def test_budget_low(hass: HomeAssistant, observed: MockConfigEntry) -> Non
     issue = ir.async_get(hass).async_get_issue(DOMAIN, "budget_low")
     assert issue is not None
     assert issue.translation_placeholders is not None
-    assert issue.translation_placeholders["calls"].startswith("8,")
+    assert issue.translation_placeholders["calls"].startswith("8\u202f")
 
 
 async def test_quiet_sensor(

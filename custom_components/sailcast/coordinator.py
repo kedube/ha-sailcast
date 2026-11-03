@@ -26,6 +26,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import alerts as alert_sources, tides as tide_sources
+from .ai import DATA_SUMMARIES, Summaries
 from .const import CONF_WORLDTIDES_KEY, DOMAIN
 from .nowcast import AIRPORT, BUOY, SENSORS, Observation
 from .outlook import Results, SpotConditions, compute
@@ -49,6 +50,7 @@ from .regions import DATA_REGIONS, Regions
 from .shoreline import DATA_SHORELINES, Shoreline, Shorelines
 from .storage import SailCastStore
 from .timeline import Alert, build, daylight, localize
+from .wording import Wording
 
 LOGGER = logging.getLogger(__package__)
 
@@ -586,6 +588,8 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
         self.entry = entry
         self.profiles = profiles
         self.sources = sources
+        # Calendar text in Home Assistant's language, read again each time.
+        self.wording: Wording | None = None
 
     @callback
     def async_follow_sources(self) -> list[CALLBACK_TYPE]:
@@ -607,6 +611,7 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
         self._async_source_changed()
 
     async def _async_update_data(self) -> Results:
+        self.wording = await Wording.async_load(self.hass)
         zone = dt_util.get_default_time_zone()
         now = dt_util.utcnow()
         today = now.astimezone(zone).date()
@@ -771,6 +776,7 @@ class SailCastData:
     sources: Sources
     results: ResultsCoordinator
     planner: Planner
+    summaries: Summaries
 
     @classmethod
     def create(
@@ -798,6 +804,7 @@ class SailCastData:
             sources=sources,
             results=results,
             planner=Planner(hass, store, profiles, results),
+            summaries=hass.data.setdefault(DATA_SUMMARIES, Summaries()),
         )
 
 

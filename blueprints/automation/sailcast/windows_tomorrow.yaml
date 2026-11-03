@@ -1,0 +1,71 @@
+blueprint:
+  name: "SailCast: tomorrow's sailing windows"
+  description: >-
+    Sends a notification the evening before a day with sailing windows. It
+    reads a sailor's SailCast calendar, which has their windows at every spot
+    in each of their boats, and sends each window's spot and boat, then its
+    times, score and wind as SailCast writes them, in Home Assistant's
+    language.
+  domain: automation
+  author: SailCast
+  source_url: https://github.com/kedube/ha-sailcast/blob/main/blueprints/automation/sailcast/windows_tomorrow.yaml
+  homeassistant:
+    min_version: "2026.11.0"
+  input:
+    calendar:
+      name: Sailing calendar
+      description: The sailor's SailCast calendar, such as Alex Sailing.
+      selector:
+        entity:
+          filter:
+            - integration: sailcast
+              domain: calendar
+    notify_device:
+      name: Phone
+      description: The Home Assistant app to send the notification to.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    time:
+      name: Time
+      description: When to send it, the evening before.
+      default: "19:00:00"
+      selector:
+        time: {}
+    title:
+      name: Title
+      default: Sailing tomorrow
+      selector:
+        text: {}
+
+mode: single
+
+variables:
+  calendar: !input calendar
+
+triggers:
+  - trigger: time
+    at: !input time
+
+actions:
+  - action: calendar.get_events
+    target:
+      entity_id: !input calendar
+    data:
+      start_date_time: "{{ (today_at() + timedelta(days=1)).isoformat() }}"
+      end_date_time: "{{ (today_at() + timedelta(days=2)).isoformat() }}"
+    response_variable: found
+  - variables:
+      windows: "{{ found[calendar].events }}"
+  - condition: template
+    value_template: "{{ windows | count > 0 }}"
+  - domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    title: !input title
+    # Each window on a line of its own: "River: Laser: 1 PM to 4:53 PM, ...".
+    message: >-
+      {% for event in windows %}{{ event.summary }}: {{
+      (event.description or "").split("\n")[0] }}{{ "\n" if not loop.last
+      }}{% endfor %}
