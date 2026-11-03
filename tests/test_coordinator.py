@@ -40,7 +40,9 @@ async def test_budget(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
     """Open-Meteo calls are counted as Open-Meteo counts them."""
     budget = loaded.runtime_data.budget
     assert budget.today == pytest.approx(
-        open_meteo.forecast_calls(3) + open_meteo.marine_calls(2)
+        open_meteo.forecast_calls(3)
+        + open_meteo.marine_calls(2)
+        + open_meteo.spread_calls(3)
     )
 
 

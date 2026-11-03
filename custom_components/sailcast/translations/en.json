@@ -20,13 +20,15 @@
             "location": "Location",
             "water_type": "Water",
             "offshore": "Offshore wind",
-            "exposed": "Open to waves from"
+            "exposed": "Open to waves from",
+            "fetch": "Open water upwind"
           },
           "data_description": {
             "name": "For example, Harbor or Lake.",
             "location": "Drop the pin on the water where you sail. The circle sets the area the wind map shows.",
             "offshore": "Wind from these directions blows away from the shore.",
-            "exposed": "Directions with open water, where waves can build."
+            "exposed": "Directions with open water, where waves can build.",
+            "fetch": "Only for rivers and lakes. SailCast measures the open water each way from the map; set this only to override it with one distance."
           }
         },
         "reconfigure": {
@@ -36,27 +38,46 @@
             "location": "Location",
             "water_type": "Water",
             "offshore": "Offshore wind",
-            "exposed": "Open to waves from"
+            "exposed": "Open to waves from",
+            "fetch": "Open water upwind"
           },
           "data_description": {
             "name": "For example, Harbor or Lake.",
             "location": "Drop the pin on the water where you sail. The circle sets the area the wind map shows.",
             "offshore": "Wind from these directions blows away from the shore.",
-            "exposed": "Directions with open water, where waves can build."
+            "exposed": "Directions with open water, where waves can build.",
+            "fetch": "Only for rivers and lakes. SailCast measures the open water each way from the map; set this only to override it with one distance."
           }
         },
         "sources": {
           "title": "Data sources",
-          "description": "SailCast suggests the nearest sources. Tide and current predictions come from NOAA and warnings from the National Weather Service, so for now they cover US waters only.",
+          "description": "SailCast suggests the nearest sources. Tide and current predictions come from NOAA, warnings from the National Weather Service and buoys from NDBC, so for now those cover US waters only. Airport reports come from anywhere.",
           "data": {
             "tide_station": "Tide station",
             "current_station": "Current station",
-            "marine_zone": "Marine warning zone"
+            "marine_zone": "Marine warning zone",
+            "buoy": "Buoy",
+            "airport": "Airport"
           },
           "data_description": {
             "tide_station": "For tide heights, highs and lows.",
             "current_station": "For the wind-against-current rule. Pick one only if it's close to where you sail.",
-            "marine_zone": "Official warnings, such as a Small Craft Advisory, come from this zone."
+            "marine_zone": "Official warnings, such as a Small Craft Advisory, come from this zone.",
+            "buoy": "Readings of wind, waves and water temperature from a buoy or coastal station. Each reading counts while it's fresh, and nudges the next few hours.",
+            "airport": "Hourly reports of wind, visibility and air temperature. If there's a choice, pick one near the water."
+          },
+          "sections": {
+            "sensors": {
+              "name": "Your own sensors",
+              "description": "Readings from your own weather station or a boat's instruments come first, ahead of the buoy and airport. SailCast takes them to be at the spot.",
+              "data": {
+                "wind": "Wind speed",
+                "gust": "Gusts",
+                "wind_direction": "Wind direction",
+                "temperature": "Air temperature",
+                "water_temperature": "Water temperature"
+              }
+            }
           }
         }
       },
@@ -65,7 +86,9 @@
         "name_too_long": "Use 40 characters or fewer.",
         "name_taken": "Another spot already has this name.",
         "radius_out_of_range": "Make the circle's radius between 2 and 50 km (about 1 to 30 miles).",
-        "suggestions_unavailable": "Couldn't look up nearby sources. You can save without them and add them later by editing the spot."
+        "suggestions_unavailable": "Couldn't look up nearby sources. You can save without them and add them later by editing the spot.",
+        "fetch_out_of_range": "Make the open water between 0.05 and 100 km (about 0.03 to 60 miles).",
+        "invalid_sensor": "Pick a sensor for each reading, or leave it empty."
       }
     },
     "boat": {
@@ -406,6 +429,36 @@
     },
     "calendar_read_only": {
       "message": "{calendar} can't take new events."
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "{spot}'s pin is on land",
+      "description": "SailCast works out {spot}'s waves and fetch from where its pin is, and the map puts the pin on land. Open SailCast, go to Settings, edit {spot}, and drag the pin onto the water where you sail."
+    },
+    "quiet_buoy": {
+      "title": "Buoy {station} has gone quiet",
+      "description": "Buoy {station} hasn't sent a reading for 12 hours, so {spots} use the forecast alone. Buoys go quiet for repairs and in storms. If it stays quiet, edit {spots} in SailCast's settings and pick another buoy, or none."
+    },
+    "quiet_airport": {
+      "title": "Airport {station} has gone quiet",
+      "description": "Airport {station} hasn't sent a weather report for 12 hours, so {spots} use the forecast alone. If it stays quiet, edit {spots} in SailCast's settings and pick another airport, or none."
+    },
+    "quiet_sensor": {
+      "title": "Sensor {sensor} has gone quiet",
+      "description": "{sensor} hasn't reported for 12 hours, so {spots} use other readings or the forecast. Check the sensor, or take it out of {spots} in SailCast's settings."
+    },
+    "failing_tide": {
+      "title": "Tide station {station} isn't answering",
+      "description": "NOAA hasn't returned predictions for tide station {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station."
+    },
+    "failing_current": {
+      "title": "Current station {station} isn't answering",
+      "description": "NOAA hasn't returned predictions for current station {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station, or none."
+    },
+    "budget_low": {
+      "title": "Open-Meteo's free calls are running low",
+      "description": "SailCast has used {calls} of Open-Meteo's 10,000 free calls today, so it now updates the forecast every three hours instead of every hour, and the wind map rests until tomorrow. Anything else on the same internet connection shares the allowance. The count starts again at midnight UTC."
     }
   }
 }

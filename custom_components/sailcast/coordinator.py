@@ -1,13 +1,16 @@
 """Coordinators: one per data source, shared by every spot, and one for results.
 
-The forecast is fetched hourly, marine data every three hours, tide and
-current predictions once a day (kept on disk), and NWS warnings every five
-minutes. Whenever one of them changes, and at the top of each hour, the
-results are worked out again in a worker thread.
+The forecast is fetched hourly, marine data every three hours, the ensemble's
+spread every six, tide and current predictions once a day (kept on disk), and
+NWS warnings every five minutes. Buoys are read every 20 minutes and airports
+every 30, with an hourly forecast where they are. Whenever one of them
+changes, and at the top of each hour, the results are worked out again in a
+worker thread, with your own sensors' latest readings.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, tzinfo
 import logging
@@ -23,13 +26,24 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
+from .nowcast import AIRPORT, BUOY, SENSORS, Observation
 from .outlook import Results, SpotConditions, compute
 from .planner import Planner
 from .profiles import Profiles, Spot
-from .providers import ProviderError, noaa_coops, nws, open_meteo
+from .providers import (
+    ProviderError,
+    Readings,
+    ha_entity,
+    metar,
+    ndbc,
+    noaa_coops,
+    nws,
+    open_meteo,
+)
 from .providers.noaa_coops import CurrentEvent, Currents, TideEvent, Tides
+from .shoreline import DATA_SHORELINES, Shoreline, Shorelines
 from .storage import SailCastStore
-from .timeline import Alert, build, daylight
+from .timeline import Alert, build, daylight, localize
 
 LOGGER = logging.getLogger(__package__)
 
@@ -38,6 +52,13 @@ SLOW_FORECAST_INTERVAL: Final = timedelta(hours=3)
 MARINE_INTERVAL: Final = timedelta(hours=3)
 PREDICTION_INTERVAL: Final = timedelta(hours=1)
 ALERT_INTERVAL: Final = timedelta(minutes=5)
+SPREAD_INTERVAL: Final = timedelta(hours=6)
+# Readings are checked this often; each kind is fetched on its own schedule.
+OBSERVATION_INTERVAL: Final = timedelta(minutes=10)
+BUOY_EVERY: Final = timedelta(minutes=20)
+AIRPORT_EVERY: Final = timedelta(minutes=30)
+NEARBY_EVERY: Final = timedelta(hours=1)
+BUOY_MARINE_EVERY: Final = timedelta(hours=3)
 DAYS: Final = 7
 
 # Open-Meteo's free tier allows 10,000 calls a day per IP address, shared with
@@ -172,12 +193,198 @@ class Predictions:
     currents: dict[str, Currents] = field(default_factory=dict)
 
 
+class SpreadCoordinator(SourceCoordinator[dict[str, open_meteo.Spread]]):
+    """The ECMWF ensemble's wind spread at every spot, in one request."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        profiles: Profiles,
+        budget: Budget,
+    ) -> None:
+        """Set up the spread."""
+        super().__init__(hass, entry, profiles, "spread", SPREAD_INTERVAL)
+        self.budget = budget
+
+    async def _async_update_data(self) -> dict[str, open_meteo.Spread]:
+        spots = list(self.profiles.spots.values())
+        if not spots:
+            return {}
+        try:
+            spreads = await open_meteo.async_get_spread(
+                self.session, [(spot.latitude, spot.longitude) for spot in spots]
+            )
+        except ProviderError as err:
+            raise UpdateFailed(f"Couldn't get the ensemble's spread: {err}") from err
+        self.budget.add(open_meteo.spread_calls(len(spots)))
+        return {spot.id: spread for spot, spread in zip(spots, spreads, strict=True)}
+
+
+@dataclass(frozen=True, slots=True)
+class Station:
+    """A buoy or airport a spot reads, and where it is, if that's known."""
+
+    kind: str
+    id: str
+    position: tuple[float, float] | None = None
+
+    @property
+    def key(self) -> str:
+        """Return the key its readings are kept under."""
+        return f"{self.kind}:{self.id}"
+
+
+def stations(profiles: Profiles) -> dict[str, Station]:
+    """Return every spot's buoy and airport, by key."""
+    found: dict[str, Station] = {}
+    for spot in profiles.spots.values():
+        for kind, station in ((BUOY, spot.buoy), (AIRPORT, spot.airport)):
+            if station:
+                item = Station(kind, station, spot.source_points.get(kind))
+                found.setdefault(item.key, item)
+    return found
+
+
+@dataclass(frozen=True, slots=True)
+class Observed:
+    """The latest readings at each buoy and airport, and the forecast there.
+
+    Each is kept by station key, such as "buoy:46258".
+    """
+
+    readings: dict[str, Readings] = field(default_factory=dict)
+    forecasts: dict[str, open_meteo.Forecast] = field(default_factory=dict)
+    marine: dict[str, open_meteo.Marine] = field(default_factory=dict)
+
+
+class ObservationCoordinator(SourceCoordinator[Observed]):
+    """Readings from every spot's buoy and airport, and the forecast where they are.
+
+    Each kind is fetched on its own schedule. `failing` says since when a
+    station's readings couldn't be fetched, for repair issues, and `started`
+    is when this began trying.
+    """
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        profiles: Profiles,
+        budget: Budget,
+    ) -> None:
+        """Set up the readings."""
+        super().__init__(hass, entry, profiles, "readings", OBSERVATION_INTERVAL)
+        self.budget = budget
+        self.started = dt_util.utcnow()
+        self.failing: dict[str, datetime] = {}
+        self._fetched: dict[str, datetime] = {}
+
+    def _due(self, key: str, every: timedelta, now: datetime) -> bool:
+        fetched = self._fetched.get(key)
+        return fetched is None or now - fetched >= every
+
+    async def _async_update_data(self) -> Observed:
+        now = dt_util.utcnow()
+        wanted = stations(self.profiles)
+        if not wanted:
+            return Observed()
+        old = self.data or Observed()
+        readings = {k: v for k, v in old.readings.items() if k in wanted}
+        attempts = failures = 0
+        for station in wanted.values():
+            if station.kind != BUOY or not self._due(station.key, BUOY_EVERY, now):
+                continue
+            attempts += 1
+            try:
+                readings[station.key] = await ndbc.async_get_readings(
+                    self.session, station.id
+                )
+            except ProviderError as err:
+                failures += 1
+                LOGGER.debug("Couldn't read buoy %s: %s", station.id, err)
+                self.failing.setdefault(station.key, now)
+                continue
+            self._fetched[station.key] = now
+            self.failing.pop(station.key, None)
+        airports = [station for station in wanted.values() if station.kind == AIRPORT]
+        if airports and self._due(AIRPORT, AIRPORT_EVERY, now):
+            attempts += 1
+            try:
+                reports = await metar.async_get_reports(
+                    self.session, [station.id for station in airports]
+                )
+            except ProviderError as err:
+                failures += 1
+                LOGGER.debug("Couldn't get airport reports: %s", err)
+                reports = None
+            else:
+                self._fetched[AIRPORT] = now
+            for station in airports:
+                if reports and station.id in reports:
+                    readings[station.key] = reports[station.id]
+                    self.failing.pop(station.key, None)
+                else:
+                    self.failing.setdefault(station.key, now)
+        if attempts and failures == attempts:
+            raise UpdateFailed("Couldn't get readings from any buoy or airport")
+        forecasts, marine = await self._async_forecasts(wanted, old, now)
+        return Observed(readings, forecasts, marine)
+
+    async def _async_forecasts(
+        self, wanted: dict[str, Station], old: Observed, now: datetime
+    ) -> tuple[dict[str, open_meteo.Forecast], dict[str, open_meteo.Marine]]:
+        """Return the forecast at each placed station, fetching it when due."""
+        placed = {
+            station.key: station.position
+            for station in wanted.values()
+            if station.position is not None
+        }
+        buoys = {
+            key: position
+            for key, position in placed.items()
+            if wanted[key].kind == BUOY
+        }
+        forecasts = {k: v for k, v in old.forecasts.items() if k in placed}
+        marine = {k: v for k, v in old.marine.items() if k in buoys}
+        every = NEARBY_EVERY * 3 if self.budget.today >= SLOW_DOWN_AT else NEARBY_EVERY
+        if placed and (
+            self._due("nearby", every, now) or placed.keys() - forecasts.keys()
+        ):
+            try:
+                found = await open_meteo.async_get_nearby(
+                    self.session, list(placed.values())
+                )
+            except ProviderError as err:
+                LOGGER.debug("Couldn't get the forecast at buoys and airports: %s", err)
+            else:
+                self.budget.add(open_meteo.nearby_calls(len(placed)))
+                self._fetched["nearby"] = now
+                forecasts = dict(zip(placed, found, strict=True))
+        if buoys and (
+            self._due("buoy_marine", BUOY_MARINE_EVERY, now)
+            or buoys.keys() - marine.keys()
+        ):
+            try:
+                found_marine = await open_meteo.async_get_buoy_marine(
+                    self.session, list(buoys.values())
+                )
+            except ProviderError as err:
+                LOGGER.debug("Couldn't get marine data at buoys: %s", err)
+            else:
+                self.budget.add(open_meteo.buoy_calls(len(buoys)))
+                self._fetched["buoy_marine"] = now
+                marine = dict(zip(buoys, found_marine, strict=True))
+        return forecasts, marine
+
+
 class PredictionCoordinator(SourceCoordinator[Predictions]):
     """Tide and current predictions, fetched once a day and kept on disk.
 
     NOAA throttles heavy users, so each station is fetched at most once a
     day, for ten days. Predictions from an earlier day are used while they
-    still cover the coming week.
+    still cover the coming week. `failing` says since when a station has
+    failed, by "tide:<id>" or "current:<id>", for repair issues.
     """
 
     def __init__(
@@ -188,6 +395,7 @@ class PredictionCoordinator(SourceCoordinator[Predictions]):
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._fetched: dict[str, date] = {}
         self._loaded = False
+        self.failing: dict[str, datetime] = {}
 
     async def _async_update_data(self) -> Predictions:
         if not self._loaded:
@@ -207,6 +415,8 @@ class PredictionCoordinator(SourceCoordinator[Predictions]):
             f"current:{station}" for station in current_stations
         }
         self._fetched = {k: v for k, v in self._fetched.items() if k in wanted}
+        self.failing = {k: v for k, v in self.failing.items() if k in wanted}
+        now = dt_util.utcnow()
         failures = []
         for station in sorted(tide_stations):
             if self._fetched.get(f"tide:{station}") == today:
@@ -217,8 +427,10 @@ class PredictionCoordinator(SourceCoordinator[Predictions]):
                 )
             except ProviderError as err:
                 failures.append(str(err))
+                self.failing.setdefault(f"tide:{station}", now)
                 continue
             self._fetched[f"tide:{station}"] = today
+            self.failing.pop(f"tide:{station}", None)
         for station in sorted(current_stations):
             if self._fetched.get(f"current:{station}") == today:
                 continue
@@ -228,8 +440,10 @@ class PredictionCoordinator(SourceCoordinator[Predictions]):
                 )
             except ProviderError as err:
                 failures.append(str(err))
+                self.failing.setdefault(f"current:{station}", now)
                 continue
             self._fetched[f"current:{station}"] = today
+            self.failing.pop(f"current:{station}", None)
         predictions = Predictions(tides, currents)
         if predictions != self.data:
             await self._store.async_save(_to_store(predictions, self._fetched))
@@ -319,35 +533,92 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
 
     async def _async_update_data(self) -> Results:
         zone = dt_util.get_default_time_zone()
-        today = dt_util.now(zone).date()
-        return await self.hass.async_add_executor_job(self._compute, today, zone)
+        now = dt_util.utcnow()
+        today = now.astimezone(zone).date()
+        # Sensors are read here, in the event loop, before the work moves to
+        # a worker thread.
+        sensors = {
+            spot.id: ha_entity.read(self.hass, spot.sensors)
+            for spot in self.profiles.spots.values()
+            if spot.sensors
+        }
+        return await self.hass.async_add_executor_job(
+            self._compute, today, zone, now, sensors
+        )
 
-    def _compute(self, today: date, zone: tzinfo) -> Results:
+    def _compute(
+        self, today: date, zone: tzinfo, now: datetime, sensors: dict[str, Readings]
+    ) -> Results:
         """Build each spot's timeline and every outlook, in a worker thread."""
         conditions = {
             spot.id: spot_conditions
             for spot in self.profiles.spots.values()
-            if (spot_conditions := self.sources.conditions(spot, today, zone))
+            if (
+                spot_conditions := self.sources.conditions(
+                    spot, today, zone, now, sensors.get(spot.id)
+                )
+            )
         }
         return compute(self.profiles, conditions)
 
 
 @dataclass
 class Sources:
-    """The source coordinators."""
+    """The source coordinators, and each pin's shoreline."""
 
     forecast: ForecastCoordinator
     marine: MarineCoordinator
     predictions: PredictionCoordinator
     alerts: AlertCoordinator
+    spread: SpreadCoordinator
+    observations: ObservationCoordinator
+    shorelines: Shorelines
 
     @property
     def all(self) -> tuple[SourceCoordinator[Any], ...]:
         """Return every source."""
-        return (self.forecast, self.marine, self.predictions, self.alerts)
+        return (
+            self.forecast,
+            self.marine,
+            self.predictions,
+            self.alerts,
+            self.spread,
+            self.observations,
+        )
+
+    def shoreline(self, spot: Spot) -> Shoreline | None:
+        """Return a spot's shoreline, if its pin has been measured."""
+        return self.shorelines.get(spot.latitude, spot.longitude)
+
+    def readings(
+        self, spot: Spot, sensors: Readings | None = None
+    ) -> tuple[Observation, ...]:
+        """Return a spot's sources of readings: its sensors, buoy and airport."""
+        observed = self.observations.data or Observed()
+        found = []
+        if spot.sensors:
+            found.append(Observation(SENSORS, None, sensors or Readings()))
+        for kind, station in ((BUOY, spot.buoy), (AIRPORT, spot.airport)):
+            key = f"{kind}:{station}"
+            if station and key in observed.readings:
+                found.append(
+                    Observation(
+                        kind,
+                        station,
+                        observed.readings[key],
+                        observed.forecasts.get(key),
+                        observed.marine.get(key),
+                    )
+                )
+        return tuple(found)
 
     def conditions(
-        self, spot: Spot, today: date, zone: tzinfo
+        self,
+        spot: Spot,
+        today: date,
+        zone: tzinfo,
+        now: datetime,
+        sensors: Readings | None = None,
     ) -> SpotConditions | None:
         """Return a spot's timeline for the coming week, if it has a forecast."""
         forecast = (self.forecast.data or {}).get(spot.id)
@@ -363,13 +634,28 @@ class Sources:
             daylight(spot.latitude, spot.longitude, today + timedelta(days=n), zone)
             for n in range(DAYS)
         ]
+        marine = (self.marine.data or {}).get(spot.id)
         hours = build(
             forecast=forecast,
             days=days,
-            marine=(self.marine.data or {}).get(spot.id),
+            marine=marine,
             tides=tides,
             currents=currents,
             alerts=alerts,
+            spread=(self.spread.data or {}).get(spot.id),
+        )
+        shoreline = self.shoreline(spot)
+        measured = shoreline if shoreline and shoreline.on_water else None
+        observations = self.readings(spot, sensors)
+        hours, adjustments = localize(
+            hours,
+            now=now,
+            forecast=forecast,
+            marine=marine,
+            observations=observations,
+            open_water=spot.open_water,
+            exposed=spot.exposed or (measured.exposed if measured else None),
+            fetch=_fetch(spot, measured),
         )
         return SpotConditions(
             spot=spot,
@@ -378,7 +664,17 @@ class Sources:
             tide_events=tides.events if tides else (),
             current_events=currents.events if currents else (),
             alerts=alerts,
+            observations=observations,
+            adjustments=adjustments,
+            shoreline=shoreline,
         )
+
+
+def _fetch(spot: Spot, shoreline: Shoreline | None) -> Callable[[float], float] | None:
+    """Return the open water upwind of a direction: set by hand, or measured."""
+    if (by_hand := spot.fetch) is not None:
+        return lambda _direction: by_hand
+    return shoreline.fetch if shoreline else None
 
 
 @dataclass
@@ -406,6 +702,9 @@ class SailCastData:
             marine=MarineCoordinator(hass, entry, profiles, budget),
             predictions=PredictionCoordinator(hass, entry, profiles),
             alerts=AlertCoordinator(hass, entry, profiles),
+            spread=SpreadCoordinator(hass, entry, profiles, budget),
+            observations=ObservationCoordinator(hass, entry, profiles, budget),
+            shorelines=hass.data.setdefault(DATA_SHORELINES, Shorelines(hass)),
         )
         results = ResultsCoordinator(hass, entry, profiles, sources)
         return cls(

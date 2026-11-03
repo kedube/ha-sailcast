@@ -33,8 +33,10 @@ import probatio
 from . import profiles
 from .const import (
     CONF_AHEAD,
+    CONF_AIRPORT,
     CONF_AUTO_CALENDAR,
     CONF_BOATS,
+    CONF_BUOY,
     CONF_CALENDAR,
     CONF_COLDEST,
     CONF_COMFORT,
@@ -42,6 +44,7 @@ from .const import (
     CONF_DAYS,
     CONF_END,
     CONF_EXPOSED,
+    CONF_FETCH,
     CONF_IDEAL_HIGH,
     CONF_IDEAL_LOW,
     CONF_LENGTH,
@@ -49,9 +52,11 @@ from .const import (
     CONF_MIN_SCORE,
     CONF_OFFSHORE,
     CONF_RAIN,
+    CONF_SENSORS,
     CONF_SIZE_CLASS,
     CONF_SKILL,
     CONF_SOURCE_NAMES,
+    CONF_SOURCE_POINTS,
     CONF_SPOTS,
     CONF_START,
     CONF_TIDE_STATION,
@@ -64,12 +69,14 @@ from .const import (
     SUBENTRY_SPOT,
 )
 from .coordinator import SailCastConfigEntry, SailCastData
+from .geo import DIRECTIONS
 from .limits import BOAT_LIMITS, SKILL_WIND_LIMITS
 from .planner import calendar_entity, supports
-from .providers import ProviderError
+from .providers import ProviderError, ha_entity
+from .shoreline import DATA_SHORELINES, Shorelines
 from .sources import async_suggest, suggested
 from .storage import DATA_STORE, PREFERENCES, PlannedSail
-from .week import week
+from .week import readings_now, week
 from .wind import DATA_WIND, BudgetSpentError, WindGrids, areas
 
 # A sail added from the panel lasts at least an hour, and at most a day.
@@ -98,14 +105,23 @@ SPOT_DATA: Final = probatio.Schema(
         probatio.Required(CONF_LONGITUDE): cv.longitude,
         probatio.Required(CONF_RADIUS): probatio.Coerce(float),
         probatio.Required(CONF_WATER_TYPE): _choices(profiles.WaterType),
-        probatio.Optional(CONF_OFFSHORE, default=list): [_choices(profiles.DIRECTIONS)],
-        probatio.Optional(CONF_EXPOSED, default=list): [_choices(profiles.DIRECTIONS)],
+        probatio.Optional(CONF_OFFSHORE, default=list): [_choices(DIRECTIONS)],
+        probatio.Optional(CONF_EXPOSED, default=list): [_choices(DIRECTIONS)],
         probatio.Optional(CONF_TIDE_STATION, default=None): probatio.Maybe(cv.string),
         probatio.Optional(CONF_CURRENT_STATION, default=None): probatio.Maybe(
             cv.string
         ),
         probatio.Optional(CONF_MARINE_ZONE, default=None): probatio.Maybe(cv.string),
+        probatio.Optional(CONF_BUOY, default=None): probatio.Maybe(cv.string),
+        probatio.Optional(CONF_AIRPORT, default=None): probatio.Maybe(cv.string),
+        probatio.Optional(CONF_SENSORS, default=dict): {cv.string: cv.entity_id},
+        probatio.Optional(CONF_FETCH, default=None): probatio.Maybe(
+            probatio.Coerce(float)
+        ),
         probatio.Optional(CONF_SOURCE_NAMES, default=dict): {cv.string: cv.string},
+        probatio.Optional(CONF_SOURCE_POINTS, default=dict): {
+            cv.string: probatio.ExactSequence([cv.latitude, cv.longitude])
+        },
     }
 )
 BOAT_DATA: Final = probatio.Schema(
@@ -172,6 +188,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
         ws_settings_save,
         ws_settings_delete,
         ws_settings_sources,
+        ws_settings_shoreline,
         ws_calendar_add,
         ws_calendar_remove,
         ws_planned_list,
@@ -296,14 +313,31 @@ def ws_forecast(
     now = dt_util.utcnow()
     spot = outlook.spot
     fetched = data.sources.forecast.fetched
+    sensors = ha_entity.read(hass, spot.sensors) if spot.sensors else None
+    shoreline = conditions.shoreline
     result = week(outlook, boat, conditions, now) | {
         "fetched": fetched.isoformat() if fetched else None,
         "sources": {
             key: {"id": value, "name": spot.source_names.get(key)}
             if (value := getattr(spot, key))
             else None
-            for key in (CONF_TIDE_STATION, CONF_CURRENT_STATION, CONF_MARINE_ZONE)
-        },
+            for key in (
+                CONF_TIDE_STATION,
+                CONF_CURRENT_STATION,
+                CONF_MARINE_ZONE,
+                CONF_BUOY,
+                CONF_AIRPORT,
+            )
+        }
+        | {CONF_SENSORS: dict(spot.sensors)},
+        "readings": readings_now(data.sources.readings(spot, sensors), now),
+        "adjustments": [item.as_dict() for item in conditions.adjustments],
+        "shoreline": {
+            "on_water": shoreline.on_water,
+            "measured": shoreline.measured.isoformat(),
+        }
+        if shoreline
+        else None,
         "planned": [
             _planned(hass, data, sail)
             for sail in data.planner.store.planned
@@ -470,7 +504,7 @@ async def _async_check(
     if kind == SUBENTRY_SPOT:
         errors.update(profiles.check_spot(data))
         for key in (CONF_OFFSHORE, CONF_EXPOSED):
-            data[key] = profiles.in_order(data[key], profiles.DIRECTIONS)
+            data[key] = profiles.in_order(data[key], DIRECTIONS)
         return errors
     if kind == SUBENTRY_BOAT:
         errors.update(profiles.check_boat(data))
@@ -543,12 +577,14 @@ async def ws_settings_sources(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Send the tide stations, current stations and warning zones near a pin."""
+    """Send the stations, warning zones, buoys and airports near a pin."""
     found = await async_suggest(hass, msg[CONF_LATITUDE], msg[CONF_LONGITUDE])
     choices = {
         CONF_TIDE_STATION: found.tide,
         CONF_CURRENT_STATION: found.current,
         CONF_MARINE_ZONE: found.zones,
+        CONF_BUOY: found.buoys,
+        CONF_AIRPORT: found.airports,
     }
     connection.send_result(
         msg["id"],
@@ -571,6 +607,37 @@ async def ws_settings_sources(
             },
             "failed": found.failed,
         },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        probatio.Required("type"): "sailcast/settings/shoreline",
+        probatio.Required(CONF_LATITUDE): cv.latitude,
+        probatio.Required(CONF_LONGITUDE): cv.longitude,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_settings_shoreline(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Send whether a pin is on water, and how far the water reaches each way.
+
+    Measuring a new pin takes a few seconds, the first time.
+    """
+    shorelines = hass.data.setdefault(DATA_SHORELINES, Shorelines(hass))
+    try:
+        shoreline = await shorelines.async_measure(
+            msg[CONF_LATITUDE], msg[CONF_LONGITUDE]
+        )
+    except ProviderError as err:
+        connection.send_error(msg["id"], "unavailable", str(err))
+        return
+    connection.send_result(
+        msg["id"], shoreline.as_dict() | {"exposed": list(shoreline.exposed)}
     )
 
 

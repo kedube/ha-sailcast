@@ -55,10 +55,12 @@ Each modifier makes the rating one level worse, but modifiers alone can't push i
 | Wind chill 32 °F (0 °C) or lower | Dinghy, small keelboat | One level worse |
 | Visibility below 2 nm / below 1 nm | Dinghy, small keelboat | Caution / not recommended |
 | Visibility below 1 nm / below 0.5 nm | Cruisers | Caution / not recommended |
+| Visibility measured nearby below 0.5 nm | Dinghy, small keelboat | Dangerous, for the hour under way |
+| Visibility measured nearby below 0.25 nm | Cruisers | Dangerous, for the hour under way |
 | Thunderstorms forecast | All | Not recommended for dinghies and small keelboats, caution for cruisers |
 | Thunderstorms possible: CAPE of 1000 J/kg and a 40% chance of rain or more | Dinghy, small keelboat | At least caution |
 
-The current rules use a wave period of at least 3 s. Forecast visibility never makes an hour dangerous on its own.
+The current rules use a wave period of at least 3 s. Forecast visibility never makes an hour dangerous on its own; a visibility measured at the spot's airport or buoy can, for the hour under way.
 
 ## Official warnings
 

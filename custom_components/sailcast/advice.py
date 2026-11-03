@@ -12,10 +12,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Final
 
+from .geo import angle_between, compass_point
 from .limits import BOAT_LIMITS, SKILL_WIND_LIMITS, WARNING_FLOORS, Level, warning_group
 from .profiles import SizeClass, Skill, Spot
 from .providers.noaa_coops import TideEvent
-from .rating import angle_between, compass_point
 from .summary import Summary, summarize
 from .timeline import HOUR, Daylight, Hour
 

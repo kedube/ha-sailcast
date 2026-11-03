@@ -14,7 +14,8 @@ from enum import StrEnum
 import statistics
 from typing import Final
 
-from .timeline import HOUR, Hour, mean_direction
+from .geo import mean_direction
+from .timeline import HOUR, Hour
 
 # The wind is building or easing when the last third of the hours averages
 # this much (kt) more or less than the first third.

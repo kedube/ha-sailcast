@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from .nowcast import Adjustment, Observation
 from .profiles import Boat, Profiles, Sailor, SizeClass, Spot
 from .providers.noaa_coops import CurrentEvent, TideEvent
 from .rating import Rating, rate
@@ -25,12 +26,17 @@ from .scoring import (
     is_available,
     score,
 )
+from .shoreline import Shoreline
 from .timeline import HOUR, Alert, Daylight, Hour
 
 
 @dataclass(frozen=True, slots=True)
 class SpotConditions:
-    """A spot's hourly timeline, its days and the extra details shown with it."""
+    """A spot's hourly timeline, its days and the extra details shown with it.
+
+    `observations` are the readings it was built with, `adjustments` how they
+    moved the forecast, and `shoreline` what its waves were worked out from.
+    """
 
     spot: Spot
     hours: tuple[Hour, ...]
@@ -38,6 +44,9 @@ class SpotConditions:
     tide_events: tuple[TideEvent, ...] = ()
     current_events: tuple[CurrentEvent, ...] = ()
     alerts: tuple[Alert, ...] = ()
+    observations: tuple[Observation, ...] = ()
+    adjustments: tuple[Adjustment, ...] = ()
+    shoreline: Shoreline | None = None
 
     def index_at(self, when: datetime) -> int | None:
         """Return the index of the hour that contains a time."""

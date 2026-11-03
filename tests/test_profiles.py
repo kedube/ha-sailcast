@@ -119,6 +119,56 @@ def test_spots_from_before_sources(entry: MockConfigEntry) -> None:
     )
     assert not spot.open_water
     assert spot.source_names == {}
+    assert (spot.buoy, spot.airport, spot.fetch) == (None, None, None)
+    assert spot.sensors == {}
+    assert spot.source_points == {}
+
+
+def test_spot_readings_and_fetch() -> None:
+    """A spot's buoy, airport, sensors and fetch are read typed."""
+    subentry = ConfigSubentry(
+        data=MappingProxyType(
+            {
+                "latitude": 32.7,
+                "longitude": -117.2,
+                "radius": 10_000.0,
+                "water_type": "lake",
+                "offshore": [],
+                "exposed": [],
+                "buoy": "46258",
+                "airport": "KSAN",
+                "sensors": {"wind": "sensor.dock_wind"},
+                "fetch": 3.5,
+                "source_points": {"buoy": [32.749, -117.502]},
+            }
+        ),
+        subentry_type="spot",
+        title="Lake",
+        unique_id=None,
+    )
+    spot = profiles.Spot.from_subentry(subentry)
+    assert (spot.buoy, spot.airport, spot.fetch) == ("46258", "KSAN", 3.5)
+    assert spot.sensors == {"wind": "sensor.dock_wind"}
+    assert spot.source_points == {"buoy": (32.749, -117.502)}
+
+
+def test_check_spot_fetch_and_sensors() -> None:
+    """Fetch set by hand must be sensible, and sensors must be sensors."""
+    spot = {"radius": 10_000.0}
+    assert profiles.check_spot(spot | {"fetch": 2.0}) == {}
+    assert profiles.check_spot(spot | {"fetch": 0.01}) == {
+        "fetch": "fetch_out_of_range"
+    }
+    assert profiles.check_spot(spot | {"fetch": 500.0}) == {
+        "fetch": "fetch_out_of_range"
+    }
+    assert profiles.check_spot(spot | {"sensors": {"wind": "sensor.a"}}) == {}
+    assert profiles.check_spot(spot | {"sensors": {"wind": "light.a"}}) == {
+        "sensors": "invalid_sensor"
+    }
+    assert profiles.check_spot(spot | {"sensors": {"waves": "sensor.a"}}) == {
+        "sensors": "invalid_sensor"
+    }
 
 
 def test_comfort_and_automatic_adding(full_entry: MockConfigEntry) -> None:

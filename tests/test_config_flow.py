@@ -19,7 +19,7 @@ from custom_components.sailcast.const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
-from custom_components.sailcast.providers import noaa_coops
+from custom_components.sailcast.providers import metar, ndbc, noaa_coops
 
 from .conftest import BAY, HARBOR_POINT
 
@@ -34,9 +34,12 @@ SOURCES = {
     "tide_station": "9410170",
     "current_station": "PCT0096_1",
     "marine_zone": "PZZ740",
+    "buoy": "SDBC1",
+    "airport": "KNZY",
 }
-# What the form sends for its two folded sections when they're left alone.
+# What the forms send for their folded sections when they're left alone.
 SECTIONS = {"comfort": {"rain": "some"}, "auto_calendar": {}}
+NO_SENSORS = {"sensors": {}}
 # What a sailor saved with the sections left alone has.
 NO_EXTRAS = {
     "user": None,
@@ -152,7 +155,7 @@ async def test_add_spot(
     assert {key: _suggested(result, key) for key in SOURCES} == SOURCES
 
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"], SOURCES
+        result["flow_id"], SOURCES | NO_SENSORS
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     spot = _only(entry, SUBENTRY_SPOT)
@@ -164,6 +167,7 @@ async def test_add_spot(
         "water_type": "bay",
         "offshore": ["e", "w"],
         "exposed": ["s"],
+        "fetch": None,
         **SOURCES,
         # Each source's name is kept, so the panel can show it.
         "source_names": {
@@ -171,8 +175,43 @@ async def test_add_spot(
             "current_station": "28th St. Pier (San Diego), 0.92 nmi. SW",
             "marine_zone": "Coastal Waters from San Mateo Point to the Mexican "
             "Border and out to 10 nm",
+            "buoy": "9410170 - San Diego, CA",
+            "airport": "San Diego/North Island NAS",
         },
+        # And the buoy's and airport's positions, for the forecast there.
+        "source_points": {
+            "buoy": [32.714, -117.174],
+            "airport": [32.69217, -117.20983],
+        },
+        "sensors": {},
     }
+
+
+async def test_sensors_and_fetch(
+    hass: HomeAssistant, entry: MockConfigEntry, suggestions: AiohttpClientMocker
+) -> None:
+    """Your own sensors are kept by reading, and fetch in km whatever the units."""
+    hass.config.units = US_CUSTOMARY_SYSTEM
+    result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT | {"fetch": 2})
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        SOURCES
+        | {
+            "sensors": {
+                "wind": "sensor.dock_wind_speed",
+                "wind_direction": "sensor.dock_wind_direction",
+            }
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    spot = _only(entry, SUBENTRY_SPOT)
+    assert spot.data["fetch"] == 3.219
+    assert spot.data["sensors"] == {
+        "wind": "sensor.dock_wind_speed",
+        "wind_direction": "sensor.dock_wind_direction",
+    }
+    result = await _edit(hass, entry, spot.subentry_id)
+    assert _suggested(result, "fetch") == 2.0
 
 
 async def test_source_choices(
@@ -197,7 +236,7 @@ async def test_no_sources(
     """None leaves a source out."""
     result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"], dict.fromkeys(SOURCES, "none")
+        result["flow_id"], dict.fromkeys(SOURCES, "none") | NO_SENSORS
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     spot = _only(entry, SUBENTRY_SPOT)
@@ -220,6 +259,8 @@ async def test_sources_unavailable(
     aioclient_mock.get(f"{noaa_coops.STATIONS_URL}/tidepredstations.json", status=503)
     aioclient_mock.get(f"{noaa_coops.STATIONS_URL}/stations.json", status=503)
     aioclient_mock.get("https://api.weather.gov/zones", status=503)
+    aioclient_mock.get(ndbc.STATIONS_URL, status=503)
+    aioclient_mock.get(metar.STATIONINFO_URL, status=503)
     result = await _add(hass, entry, SUBENTRY_SPOT, SPOT_INPUT)
     assert result["step_id"] == "sources"
     assert result["errors"] == {"base": "suggestions_unavailable"}
@@ -227,7 +268,7 @@ async def test_sources_unavailable(
         SOURCES, "none"
     )
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"], dict.fromkeys(SOURCES, "none")
+        result["flow_id"], dict.fromkeys(SOURCES, "none") | NO_SENSORS
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
@@ -276,13 +317,23 @@ async def test_edit_spot(
         SPOT_INPUT | {"name": "Harbor", "location": harbor | {"radius": 8000.0}},
     )
     assert result["step_id"] == "sources"
-    # The saved sources are kept, including "none".
+    # The saved sources are kept, including "none". A spot saved before
+    # buoys and airports gets the nearest suggested.
     assert _suggested(result, "tide_station") == "9410170"
     assert _suggested(result, "current_station") == "none"
     assert _suggested(result, "marine_zone") == "PZZ740"
+    assert _suggested(result, "buoy") == "SDBC1"
+    assert _suggested(result, "airport") == "KSAN"
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
-        {"tide_station": "9410170", "current_station": "none", "marine_zone": "PZZ740"},
+        {
+            "tide_station": "9410170",
+            "current_station": "none",
+            "marine_zone": "PZZ740",
+            "buoy": "none",
+            "airport": "KSAN",
+        }
+        | NO_SENSORS,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
@@ -290,6 +341,8 @@ async def test_edit_spot(
     assert spot.title == "Harbor"
     assert spot.data["radius"] == 8000.0
     assert spot.data["marine_zone"] == "PZZ740"
+    assert spot.data["buoy"] is None
+    assert spot.data["source_points"] == {"airport": [32.73645, -117.19727]}
 
 
 async def test_add_boat_in_feet(hass: HomeAssistant, entry: MockConfigEntry) -> None:
