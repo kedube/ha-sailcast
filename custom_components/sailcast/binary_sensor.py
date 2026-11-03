@@ -16,6 +16,9 @@ from .coordinator import ResultsCoordinator, SailCastConfigEntry
 from .entity import SailorEntity, SpotEntity, async_remove_stale
 from .profiles import Sailor, Spot
 
+# Every entity reads the shared coordinator, so updates needn't be limited.
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
