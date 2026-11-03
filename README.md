@@ -19,7 +19,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 
 ## Status
 
-SailCast is in early development. Milestones 0 to 3 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. Local accuracy (buoys, airports, your own sensors, and waves in sheltered water) comes in milestone 4. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
+SailCast is in early development. Milestones 0 to 4 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. Readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. Sources outside the US come in milestone 5. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
 
 ## Install
 
@@ -29,7 +29,7 @@ SailCast needs Home Assistant 2026.11 or newer. It isn't in the Marketplace's de
 
 1. Go to **Settings → Devices & services → Add integration** and pick **SailCast**.
 2. Open **SailCast** in the sidebar, and add your spots, boats and sailors on its **Settings** tab. SailCast's page under Devices & services edits the same settings.
-   - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station and marine warning zone. These come from NOAA and the National Weather Service, so for now they cover US waters only.
+   - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station, marine warning zone, buoy and airport. All but the airport come from NOAA and the National Weather Service, so for now they cover US waters only. You can add your own sensors too, such as a weather station on the dock.
    - **Boat:** a name, a size and a length.
    - **Sailor:** their skill, their usual boat and others, and when they can sail. Optionally, what they enjoy (an ideal wind range, the coldest air they like, and how much rain they mind), and the Home Assistant user the panel opens on them for.
 
@@ -40,6 +40,12 @@ Each sailor rates their own skill, which sets their limit for sustained wind: up
 ## The wind map
 
 The **Wind map** tab shows the wind or the gusts around a spot as colors, with particles that follow the wind. Play through the week, jump to a day, or point at the map to read the wind there. A grid of points about 2 km apart is fetched only when you open the map and kept for three hours, and nearby spots share it. Each point counts toward Open-Meteo's free daily allowance, so SailCast stops fetching grids well before the limit and shows the last one instead.
+
+## Readings and waves
+
+When a buoy, an airport or your own sensor has a fresh reading, SailCast compares it with the forecast for the same place and moves the spot's next few hours by the difference, fading out over six hours. The week view shows what's read now, with who read it and how long ago. A visibility measured nearby can make the hour under way dangerous; a forecast one never does.
+
+When you add a spot, SailCast measures how far open water reaches each way from the pin, on OpenStreetMap's map. Rivers and lakes get waves worked out from the wind and that open water upwind. On open water, ocean model waves from a direction the spot is sheltered from are reduced. If the pin is on land, or a buoy, airport, sensor or tide station stops reporting, SailCast says so under **Settings → Repairs**.
 
 ## Your own calendar
 
@@ -101,7 +107,8 @@ The repository holds no personal data. Tests run on responses recorded at made-u
 
 - Weather and marine data: [Open-Meteo](https://open-meteo.com), under CC BY 4.0. SailCast stays within its free tier for non-commercial use.
 - Tide and current predictions: [NOAA CO-OPS](https://tidesandcurrents.noaa.gov). Marine warnings: the [National Weather Service](https://www.weather.gov). Neither is for navigation.
-- Maps: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through Home Assistant's own map tiles, with [OpenFreeMap](https://openfreemap.org) as a fallback; seamarks from [OpenSeaMap](https://www.openseamap.org) (CC BY-SA 2.0). Drawn with [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause).
+- Buoy readings: NOAA's [National Data Buoy Center](https://www.ndbc.noaa.gov). Airport reports: the [Aviation Weather Center](https://aviationweather.gov).
+- Maps: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through Home Assistant's own map tiles, with [OpenFreeMap](https://openfreemap.org) as a fallback; seamarks from [OpenSeaMap](https://www.openseamap.org) (CC BY-SA 2.0). Drawn with [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause). The shoreline that fetch is measured on is OpenStreetMap's water, from [OpenFreeMap](https://openfreemap.org)'s tiles (© OpenMapTiles).
 - Wordmark: [Outfit](https://github.com/Outfitio/Outfit-Fonts), under the SIL Open Font License 1.1. More in [docs/brand](docs/brand/README.md).
 
 ## License

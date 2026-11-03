@@ -71,7 +71,7 @@
     "confidence_title": "The three forecast models typically agree within {spread} kt"
   },
   "now": {
-    "title": "This hour's forecast",
+    "title": "Now",
     "sub": "From the {direction} · gusts {gust} kt · {time}",
     "waves": "Waves",
     "waves_every": "{height} every {period} s",
@@ -80,7 +80,15 @@
     "tide": "Tide",
     "tide_rising": "{height}, rising",
     "tide_falling": "{height}, falling",
-    "note": "The middle of three forecast models at the spot, for the hour now under way."
+    "note": "Readings count while they're fresh: two hours for wind and air, three for waves and six for water. Anything not read shows this hour's forecast.",
+    "forecast_title": "This hour's forecast",
+    "sub_no_gust": "From the {direction} · {time}",
+    "forecast": "forecast",
+    "visibility": "Visibility",
+    "visibility_value": "{value} nm",
+    "note_no_sources": "No buoy, airport or sensor reads this spot, so this is the forecast for the hour now under way.",
+    "note_no_sources_admin": "No buoy, airport or sensor reads this spot, so this is the forecast for the hour now under way. Edit the spot in Settings to pick the nearest.",
+    "visibility_good": "Over 8 nm"
   },
   "warnings": {
     "title": "Official marine warnings",
@@ -288,7 +296,7 @@
     "wind_text": "ECMWF IFS, GFS and ICON models through Open-Meteo. SailCast uses the middle value; the spread between the models sets the confidence.",
     "waves": "Waves",
     "waves_open": "The Open-Meteo marine model's nearest cell. Inside an enclosed bay it can read high.",
-    "waves_sheltered": "No wave forecast for sheltered water yet.",
+    "waves_sheltered": "From directions this spot is sheltered from, SailCast uses the larger of the local estimate and half the model's height.",
     "tide": "Tide",
     "tide_text": "NOAA {station}, in heights above mean lower low water",
     "current": "Current",
@@ -296,7 +304,20 @@
     "warnings": "Warnings",
     "warnings_text": "National Weather Service, marine zone {zone}",
     "updated": "Forecast fetched",
-    "none": "None set for this spot"
+    "none": "None set for this spot",
+    "nudged": "{source} read {difference} {direction} the forecast there at {time}, so the next hours move with it, fading over six hours.",
+    "waves_estimate": "Worked out from the wind and the open water upwind, measured on the map: © OpenStreetMap contributors, through OpenFreeMap.",
+    "waves_estimate_set": "Worked out from the wind and {distance} of open water upwind, as set for this spot.",
+    "waves_none": "None yet: SailCast measures the shoreline when a spot is added.",
+    "waves_nudged": "{source} read {difference} {direction} the model there at {time}, so the next hours move with it.",
+    "up": "above",
+    "down": "below",
+    "on_land": "None: the spot's pin is on land. Move it onto the water in Settings.",
+    "readings": "Readings",
+    "no_readings": "None set for this spot",
+    "buoy_text": "NDBC buoy {station}",
+    "airport_text": "Airport {station}",
+    "newest": "newest {age}"
   },
   "settings": {
     "admin_note": "These are the same settings as Settings → Devices & services → SailCast, so a change in either place shows up in both. Only administrators can change them.",
@@ -399,7 +420,7 @@
     "add_submit": "Add spot",
     "pin": "Pin on the water",
     "map_label": "Map of the spot. Select the water to move the pin.",
-    "pin_hint": "{position}. Select the water to move the pin, or drag it; arrow keys move it too. The circle is the area the wind map will show. ▲ tide and ◆ current stations nearby.",
+    "pin_hint": "{position}. Select the water to move the pin, or drag it; arrow keys move it too. The circle is the area the wind map will show. ▲ tide, ◆ current, ● buoy and ■ airport nearby.",
     "radius_km": "Wind map area: {value} km around the pin",
     "radius_miles": "Wind map area: {value} mi around the pin",
     "water": "Water",
@@ -415,10 +436,34 @@
     "marine_zone_short": "Warnings",
     "none": "None",
     "nearest": "nearest",
-    "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides and currents come from NOAA and warnings from the National Weather Service, so for now they cover US waters only.",
+    "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides, currents, buoys and warnings come from NOAA and the National Weather Service, so for now they cover US waters only. Airport reports come from anywhere.",
     "sources_failed": "Couldn't look up nearby sources. You can save without them and add them later.",
     "tide_mark": "Tide station: {name} ({id})",
-    "current_mark": "Current station: {name} ({id})"
+    "current_mark": "Current station: {name} ({id})",
+    "buoy": "Buoy",
+    "airport": "Airport",
+    "buoy_short": "Buoy",
+    "airport_short": "Airport",
+    "buoy_mark": "Buoy: {name} ({id})",
+    "airport_mark": "Airport: {name} ({id})",
+    "sensors": "Your own sensors",
+    "sensors_short": "Sensors",
+    "sensors_count": "{count} of your own",
+    "sensors_hint": "Readings from your own weather station or a boat's instruments come first, ahead of the buoy and airport. SailCast takes them to be at the spot.",
+    "sensor": {
+      "wind": "Wind speed",
+      "gust": "Gusts",
+      "wind_direction": "Wind direction",
+      "temperature": "Air temperature",
+      "water_temperature": "Water temperature"
+    },
+    "fetch_km": "Open water upwind (km)",
+    "fetch_miles": "Open water upwind (mi)",
+    "fetch_hint": "Optional. SailCast measures the open water each way from the map; set one distance here only to override it.",
+    "shore_measuring": "Measuring the open water around the pin…",
+    "on_land": "This pin is on land. Drop it on the water where you sail, so SailCast can work out waves and fetch.",
+    "shore_open": "Open water reaches {distance} toward the {direction}, and the spot is open to the sea from {open}.",
+    "shore_closed": "Open water reaches {distance} toward the {direction}."
   },
   "error": {
     "load": "SailCast couldn't load: {message}",
@@ -439,7 +484,9 @@
     "invalid_min_score": "Choose one of the scores.",
     "invalid_ahead": "Choose how far ahead.",
     "unknown_user": "That Home Assistant user no longer exists.",
-    "boat_in_use": "{sailor} sails only this boat. Give them another boat first."
+    "boat_in_use": "{sailor} sails only this boat. Give them another boat first.",
+    "fetch_out_of_range": "Make the open water between 0.05 and 100 km (about 0.03 to 60 miles).",
+    "invalid_sensor": "Pick a sensor for each reading, or none."
   },
   "limits": {
     "wind": "Wind",
@@ -489,7 +536,8 @@
     "wind_chill": "wind chill {temperature}",
     "visibility": "visibility {visibility} nm",
     "thunderstorms": "thunderstorms forecast",
-    "thunderstorms_possible": "thunderstorms possible"
+    "thunderstorms_possible": "thunderstorms possible",
+    "visibility_measured": "visibility {visibility} nm, measured nearby"
   },
   "level": {
     "good": "Good",
@@ -586,6 +634,17 @@
     "fahrenheit": "{value} °F",
     "celsius": "{value} °C",
     "km": "{value} km",
-    "miles": "{value} mi"
+    "miles": "{value} mi",
+    "knots": "{value} kt"
+  },
+  "age": {
+    "now": "just now",
+    "minutes": "{value} min ago",
+    "hours": "{value} h ago"
+  },
+  "reading_source": {
+    "sensors": "Your sensors",
+    "buoy": "Buoy {id}",
+    "airport": "Airport {id}"
   }
 }

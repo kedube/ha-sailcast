@@ -214,6 +214,18 @@ def test_confidence() -> None:
     assert confidence([hour(10, wind_models=(10, None, None))]) is None
 
 
+def test_ensemble_spread_lowers_confidence() -> None:
+    """A wide ensemble spread lowers confidence, but a narrow one never raises it."""
+
+    def hours(spread: float, sigma: float) -> list[Hour]:
+        return [hour(10, wind_models=(10, 10 + spread, None), wind_spread=sigma)] * 3
+
+    assert confidence(hours(1, 1.0)) == (Confidence.HIGH, 1)
+    assert confidence(hours(1, 2.5)) == (Confidence.MEDIUM, 1)
+    assert confidence(hours(1, 4.0)) == (Confidence.LOW, 1)
+    assert confidence(hours(7, 0.5)) == (Confidence.LOW, 7)
+
+
 def test_is_available() -> None:
     """Sailors sail on their days, between their start and end times."""
     saturday_9 = DAY + timedelta(hours=9)

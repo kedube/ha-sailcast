@@ -7,6 +7,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from homeassistant.components.calendar import CalendarEntityFeature
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -50,10 +51,12 @@ import probatio
 from . import profiles
 from .const import (
     CONF_AHEAD,
+    CONF_AIRPORT,
     CONF_AUTO_CALENDAR,
     CONF_AUTO_DAYS,
     CONF_AUTO_SPOTS,
     CONF_BOATS,
+    CONF_BUOY,
     CONF_CALENDAR,
     CONF_COLDEST,
     CONF_COMFORT,
@@ -62,6 +65,7 @@ from .const import (
     CONF_DEFAULT_BOAT,
     CONF_END,
     CONF_EXPOSED,
+    CONF_FETCH,
     CONF_IDEAL_HIGH,
     CONF_IDEAL_LOW,
     CONF_LENGTH,
@@ -70,9 +74,11 @@ from .const import (
     CONF_OFFSHORE,
     CONF_OTHER_BOATS,
     CONF_RAIN,
+    CONF_SENSORS,
     CONF_SIZE_CLASS,
     CONF_SKILL,
     CONF_SOURCE_NAMES,
+    CONF_SOURCE_POINTS,
     CONF_SPOTS,
     CONF_START,
     CONF_TIDE_STATION,
@@ -84,12 +90,28 @@ from .const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
+from .geo import DIRECTIONS
 from .planner import calendar_entity, supports
 from .sources import Choice, async_suggest, suggested
 
 # The "no source" choice in the sources step.
 NONE = "none"
-SOURCES = (CONF_TIDE_STATION, CONF_CURRENT_STATION, CONF_MARINE_ZONE)
+SOURCES = (
+    CONF_TIDE_STATION,
+    CONF_CURRENT_STATION,
+    CONF_MARINE_ZONE,
+    CONF_BUOY,
+    CONF_AIRPORT,
+)
+# Sources whose position is kept, for the forecast where they are.
+PLACED = (CONF_BUOY, CONF_AIRPORT)
+SENSOR_CLASSES = {
+    "wind": SensorDeviceClass.WIND_SPEED,
+    "gust": SensorDeviceClass.WIND_SPEED,
+    "wind_direction": SensorDeviceClass.WIND_DIRECTION,
+    "temperature": SensorDeviceClass.TEMPERATURE,
+    "water_temperature": SensorDeviceClass.TEMPERATURE,
+}
 
 
 class SailCastConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -227,20 +249,22 @@ class SpotFlow(ProfileFlow):
     """Add or edit a spot, then pick its data sources."""
 
     _pending: tuple[str, dict[str, Any], ConfigSubentry | None]
-    # The names of the sources shown, by source and ID.
+    # The names and positions of the sources shown, by source and ID.
     _names: dict[str, dict[str, str]]
+    _points: dict[str, dict[str, list[float]]]
 
     async def _async_done(
         self, name: str, data: dict[str, Any], subentry: ConfigSubentry | None
     ) -> SubentryFlowResult:
         self._pending = (name, data, subentry)
         self._names = {}
+        self._points = {}
         return await self.async_step_sources()
 
     async def async_step_sources(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Pick the tide station, current station and marine zone.
+        """Pick the stations, marine zone, buoy, airport and your own sensors.
 
         SailCast suggests the nearest of each; None is always a choice.
         """
@@ -251,17 +275,22 @@ class SpotFlow(ProfileFlow):
                 key: None if user_input.get(key, NONE) == NONE else user_input[key]
                 for key in SOURCES
             }
-            # Keep each chosen source's name, or the one saved with it.
-            known = dict(saved.get(CONF_SOURCE_NAMES) or {})
-            names = {}
-            for key, value in sources.items():
-                source_name = self._names.get(key, {}).get(value or "")
-                if value and value == saved.get(key):
-                    source_name = source_name or known.get(key)
-                if source_name:
-                    names[key] = source_name
             return self._save(
-                name, data | sources | {CONF_SOURCE_NAMES: names}, subentry
+                name,
+                data
+                | sources
+                | {
+                    CONF_SOURCE_NAMES: self._chosen_names(sources, saved),
+                    CONF_SOURCE_POINTS: self._chosen_points(sources, saved),
+                    CONF_SENSORS: {
+                        key: entity_id
+                        for key, entity_id in (
+                            user_input.get(CONF_SENSORS) or {}
+                        ).items()
+                        if entity_id
+                    },
+                },
+                subentry,
             )
         suggestions = await async_suggest(
             self.hass, data[CONF_LATITUDE], data[CONF_LONGITUDE]
@@ -270,13 +299,23 @@ class SpotFlow(ProfileFlow):
             CONF_TIDE_STATION: suggestions.tide,
             CONF_CURRENT_STATION: suggestions.current,
             CONF_MARINE_ZONE: suggestions.zones,
+            CONF_BUOY: suggestions.buoys,
+            CONF_AIRPORT: suggestions.airports,
         }
         self._names = {
             key: {choice.id: choice.name for choice in found}
             for key, found in choices.items()
         }
-        schema = {}
-        values = {}
+        self._points = {
+            key: {
+                choice.id: [choice.latitude, choice.longitude]
+                for choice in choices[key]
+                if choice.latitude is not None and choice.longitude is not None
+            }
+            for key in PLACED
+        }
+        schema: dict[probatio.Marker, Any] = {}
+        values: dict[str, Any] = {}
         for key, found in choices.items():
             options = [SelectOptionDict(value=NONE, label="None")] + [
                 SelectOptionDict(value=choice.id, label=self._label(key, choice))
@@ -296,6 +335,18 @@ class SpotFlow(ProfileFlow):
                 values[key] = chosen or NONE
             else:
                 values[key] = suggested(key, found) or NONE
+        schema[probatio.Required(CONF_SENSORS)] = section(
+            probatio.Schema(
+                {
+                    probatio.Optional(key): EntitySelector(
+                        EntitySelectorConfig(domain="sensor", device_class=device_class)
+                    )
+                    for key, device_class in SENSOR_CLASSES.items()
+                }
+            ),
+            {"collapsed": True},
+        )
+        values[CONF_SENSORS] = dict(saved.get(CONF_SENSORS) or {})
         return self.async_show_form(
             step_id="sources",
             data_schema=self.add_suggested_values_to_schema(
@@ -303,6 +354,42 @@ class SpotFlow(ProfileFlow):
             ),
             errors={"base": "suggestions_unavailable"} if suggestions.failed else {},
         )
+
+    def _chosen_names(
+        self, sources: dict[str, str | None], saved: dict[str, Any]
+    ) -> dict[str, str]:
+        """Return each chosen source's name, or the one saved with it."""
+        known = dict(saved.get(CONF_SOURCE_NAMES) or {})
+        names = {}
+        for key, value in sources.items():
+            source_name = self._names.get(key, {}).get(value or "")
+            if value and value == saved.get(key):
+                source_name = source_name or known.get(key)
+            if source_name:
+                names[key] = source_name
+        return names
+
+    def _chosen_points(
+        self, sources: dict[str, str | None], saved: dict[str, Any]
+    ) -> dict[str, list[float]]:
+        """Return the chosen buoy's and airport's positions, or the saved ones."""
+        known = dict(saved.get(CONF_SOURCE_POINTS) or {})
+        points = {}
+        for key in PLACED:
+            value = sources[key]
+            point = self._points.get(key, {}).get(value or "")
+            if value and value == saved.get(key):
+                point = point or known.get(key)
+            if point:
+                points[key] = list(point)
+        return points
+
+    @property
+    def _distance_unit(self) -> UnitOfLength:
+        """Return miles with US units and kilometers otherwise. Data is in km."""
+        if self.hass.config.units.length_unit == UnitOfLength.MILES:
+            return UnitOfLength.MILES
+        return UnitOfLength.KILOMETERS
 
     def _label(self, key: str, choice: Choice) -> str:
         """Label a source with its name, ID and distance."""
@@ -326,10 +413,18 @@ class SpotFlow(ProfileFlow):
                     profiles.WaterType, CONF_WATER_TYPE
                 ),
                 probatio.Optional(CONF_OFFSHORE): _select(
-                    profiles.DIRECTIONS, "direction", multiple=True
+                    DIRECTIONS, "direction", multiple=True
                 ),
                 probatio.Optional(CONF_EXPOSED): _select(
-                    profiles.DIRECTIONS, "direction", multiple=True
+                    DIRECTIONS, "direction", multiple=True
+                ),
+                probatio.Optional(CONF_FETCH): NumberSelector(
+                    NumberSelectorConfig(
+                        min=0,
+                        step=0.1,
+                        mode=NumberSelectorMode.BOX,
+                        unit_of_measurement=self._distance_unit,
+                    )
                 ),
             }
         )
@@ -351,10 +446,20 @@ class SpotFlow(ProfileFlow):
             CONF_RADIUS: location.get(CONF_RADIUS, profiles.DEFAULT_RADIUS),
             CONF_WATER_TYPE: user_input[CONF_WATER_TYPE],
             CONF_OFFSHORE: profiles.in_order(
-                user_input.get(CONF_OFFSHORE, ()), profiles.DIRECTIONS
+                user_input.get(CONF_OFFSHORE, ()), DIRECTIONS
             ),
             CONF_EXPOSED: profiles.in_order(
-                user_input.get(CONF_EXPOSED, ()), profiles.DIRECTIONS
+                user_input.get(CONF_EXPOSED, ()), DIRECTIONS
+            ),
+            CONF_FETCH: (
+                round(
+                    DistanceConverter.convert(
+                        fetch, self._distance_unit, UnitOfLength.KILOMETERS
+                    ),
+                    3,
+                )
+                if (fetch := user_input.get(CONF_FETCH))
+                else None
             ),
         }
 
@@ -368,7 +473,18 @@ class SpotFlow(ProfileFlow):
             CONF_WATER_TYPE: data[CONF_WATER_TYPE],
             CONF_OFFSHORE: list(data[CONF_OFFSHORE]),
             CONF_EXPOSED: list(data[CONF_EXPOSED]),
-        }
+        } | (
+            {
+                CONF_FETCH: round(
+                    DistanceConverter.convert(
+                        fetch, UnitOfLength.KILOMETERS, self._distance_unit
+                    ),
+                    1,
+                )
+            }
+            if (fetch := data.get(CONF_FETCH))
+            else {}
+        )
 
     def _check(self, data: Mapping[str, Any]) -> dict[str, str]:
         errors = profiles.check_spot(data)

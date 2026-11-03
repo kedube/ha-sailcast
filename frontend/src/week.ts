@@ -8,7 +8,15 @@ import { html, nothing, svg, type TemplateResult } from "lit";
 import { isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime, ms, WEEKDAYS } from "./format";
 import { arrow, dial, icon, ring, weather, type IconName } from "./glyphs";
-import { compass, heightRange, heightText, reasonsText, temperatureText } from "./text";
+import {
+  ageText,
+  compass,
+  heightRange,
+  heightText,
+  reasonsText,
+  sourceText,
+  temperatureText,
+} from "./text";
 import type { Day, Hour, Level, PlannedSail, SizeClass, Window } from "./types";
 
 export const SIZES: SizeClass[] = ["dinghy", "small_keelboat", "cruiser", "large_cruiser"];
@@ -278,55 +286,95 @@ function heroWave(ctx: Ctx, day: Day, window: Window): TemplateResult {
   </svg>`;
 }
 
-/** The forecast for this hour at the spot. */
+/**
+ * What's read at the spot now: each value from its freshest reading, with who
+ * read it and when, and this hour's forecast for anything not read.
+ */
 function nowCard(ctx: Ctx): TemplateResult {
   const { t, fmt } = ctx;
-  const now = Date.parse(ctx.forecast?.now ?? "");
-  const hour = ctx.forecast?.hours.find(
+  const forecast = ctx.forecast;
+  const now = Date.parse(forecast?.now ?? "");
+  const hour = forecast?.hours.find(
     (item) => Date.parse(item.time) <= now && now < Date.parse(item.time) + HOUR_MS,
   );
-  if (!hour) return html``;
+  if (!forecast || !hour) return html``;
+  const read = forecast.readings.fields;
+  const reading = forecast.readings.sources.length > 0;
+  const from = (key: string): TemplateResult | typeof nothing => {
+    const item = read[key];
+    if (item) {
+      return html`<span class="src"
+        >${sourceText(t, item.kind, item.station)} · ${ageText(t, forecast.now, item.time)}</span
+      >`;
+    }
+    return reading ? html`<span class="src">${t("now.forecast")}</span>` : nothing;
+  };
+  const wind = read.wind?.value ?? hour.wind;
+  const direction = read.wind_direction?.value ?? hour.direction;
+  const gust = read.gust?.value ?? (read.wind ? null : hour.gust);
+  const waves = read.wave_height?.value ?? hour.wave_height;
+  const period = read.wave_height ? read.wave_period?.value : hour.wave_period;
+  const water = read.water_temperature?.value ?? hour.water_temperature;
+  const air = read.temperature?.value ?? hour.temperature;
+  const visibility = read.visibility?.value;
   return html`<section class="card">
-    <div class="eyebrow">${t("now.title")}</div>
+    <div class="eyebrow">${t(read.wind ? "now.title" : "now.forecast_title")}</div>
     <div class="now-main">
-      ${dial(hour.direction)}
+      ${dial(direction)}
       <div>
-        <div class="now-big">${fmt.number(hour.wind)}<small>${t("unit.knots_short")}</small></div>
+        <div class="now-big">${fmt.number(wind)}<small>${t("unit.knots_short")}</small></div>
         <div class="now-sub">
-          ${t("now.sub", {
-            direction: compass(t, hour.direction),
-            gust: fmt.number(hour.gust),
-            time: fmt.clock(hour.time),
+          ${t(gust === null ? "now.sub_no_gust" : "now.sub", {
+            direction: compass(t, direction),
+            gust: fmt.number(gust ?? 0),
+            time: fmt.clock(read.wind?.time ?? hour.time),
           })}
         </div>
+        ${read.wind ? html`<div class="now-sub">${from("wind")}</div>` : nothing}
       </div>
     </div>
     <dl class="kv">
       ${
-        hour.wave_height !== null
+        waves !== null
           ? html`<dt>${t("now.waves")}</dt>
               <dd>
                 ${
-                  hour.wave_period
+                  period
                     ? t("now.waves_every", {
-                        height: heightText(fmt, t, hour.wave_height),
-                        period: fmt.number(hour.wave_period),
+                        height: heightText(fmt, t, waves),
+                        // Short chop on sheltered water needs a decimal.
+                        period: fmt.number(period, period < 5 ? 1 : 0),
                       })
-                    : heightText(fmt, t, hour.wave_height)
+                    : heightText(fmt, t, waves)
                 }
+                ${from("wave_height")}
               </dd>`
           : nothing
       }
       ${
-        hour.water_temperature !== null
+        water !== null
           ? html`<dt>${t("now.water")}</dt>
-              <dd>${temperatureText(fmt, t, hour.water_temperature)}</dd>`
+              <dd>${temperatureText(fmt, t, water)} ${from("water_temperature")}</dd>`
           : nothing
       }
       ${
-        hour.temperature !== null
+        air !== null
           ? html`<dt>${t("now.air")}</dt>
-              <dd>${temperatureText(fmt, t, hour.temperature)}</dd>`
+              <dd>${temperatureText(fmt, t, air)} ${from("temperature")}</dd>`
+          : nothing
+      }
+      ${
+        visibility !== undefined
+          ? html`<dt>${t("now.visibility")}</dt>
+              <dd>
+                ${
+                  // Airports report ten statute miles or more as 10+.
+                  visibility >= 16_000
+                    ? t("now.visibility_good")
+                    : t("now.visibility_value", { value: fmt.number(visibility / 1852, 1) })
+                }
+                ${from("visibility")}
+              </dd>`
           : nothing
       }
       ${
@@ -340,7 +388,9 @@ function nowCard(ctx: Ctx): TemplateResult {
           : nothing
       }
     </dl>
-    <p class="small">${t("now.note")}</p>
+    <p class="small">
+      ${t(reading ? "now.note" : ctx.admin ? "now.note_no_sources_admin" : "now.note_no_sources")}
+    </p>
   </section>`;
 }
 

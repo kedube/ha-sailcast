@@ -1,0 +1,264 @@
+[
+ {
+  "id": "46225",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "Torrey Pines Outer",
+  "lat": 32.93,
+  "lon": -117.393,
+  "elev": 0,
+  "state": "",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ },
+ {
+  "id": "46231",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "Mission Bay",
+  "lat": 32.748,
+  "lon": -117.37,
+  "elev": 0,
+  "state": "",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ },
+ {
+  "id": "46232",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "Point Loma South",
+  "lat": 32.53,
+  "lon": -117.431,
+  "elev": 0,
+  "state": "",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ },
+ {
+  "id": "IIWC1",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "USS Midway Navy Pier",
+  "lat": 32.714,
+  "lon": -117.175,
+  "elev": 37,
+  "state": "CA",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ },
+ {
+  "id": "KMYF",
+  "icaoId": "KMYF",
+  "iataId": "MYF",
+  "faaId": "MYF",
+  "wmoId": null,
+  "site": "San Diego/Montgomery Arpt",
+  "lat": 32.81453,
+  "lon": -117.13747,
+  "elev": 128,
+  "state": "CA",
+  "country": "US",
+  "priority": 6,
+  "siteType": [
+   "METAR"
+  ]
+ },
+ {
+  "id": "KNKX",
+  "icaoId": "KNKX",
+  "iataId": "NKX",
+  "faaId": "NKX",
+  "wmoId": null,
+  "site": "Miramar ",
+  "lat": 32.865,
+  "lon": -117.137,
+  "elev": 138,
+  "state": "CA",
+  "country": "US",
+  "priority": 5,
+  "siteType": [
+   "METAR",
+   "TAF"
+  ]
+ },
+ {
+  "id": "KNRS",
+  "icaoId": "KNRS",
+  "iataId": "NRS",
+  "faaId": "NRS",
+  "wmoId": null,
+  "site": "Imperial Beach",
+  "lat": 32.563,
+  "lon": -117.11094,
+  "elev": 15,
+  "state": "CA",
+  "country": "US",
+  "priority": 6,
+  "siteType": [
+   "METAR"
+  ]
+ },
+ {
+  "id": "KNZY",
+  "icaoId": "KNZY",
+  "iataId": "NZY",
+  "faaId": "NZY",
+  "wmoId": null,
+  "site": "San Diego/North Island NAS",
+  "lat": 32.69217,
+  "lon": -117.20983,
+  "elev": 4,
+  "state": "CA",
+  "country": "US",
+  "priority": 7,
+  "siteType": [
+   "METAR",
+   "TAF"
+  ]
+ },
+ {
+  "id": "KRNM",
+  "icaoId": "KRNM",
+  "iataId": null,
+  "faaId": "RNM",
+  "wmoId": null,
+  "site": "Ramona Arpt",
+  "lat": 33.03798,
+  "lon": -116.91597,
+  "elev": 423,
+  "state": "CA",
+  "country": "US",
+  "priority": 5,
+  "siteType": [
+   "METAR"
+  ]
+ },
+ {
+  "id": "KSAN",
+  "icaoId": "KSAN",
+  "iataId": "SAN",
+  "faaId": "SAN",
+  "wmoId": "72290",
+  "site": "San Diego Intl Arpt",
+  "lat": 32.73645,
+  "lon": -117.19727,
+  "elev": 3,
+  "state": "CA",
+  "country": "US",
+  "priority": 2,
+  "siteType": [
+   "METAR",
+   "TAF"
+  ]
+ },
+ {
+  "id": "KSDM",
+  "icaoId": "KSDM",
+  "iataId": "SDM",
+  "faaId": "SDM",
+  "wmoId": null,
+  "site": "San Diego/Brown Fld",
+  "lat": 32.57583,
+  "lon": -116.99392,
+  "elev": 161,
+  "state": "CA",
+  "country": "US",
+  "priority": 5,
+  "siteType": [
+   "METAR"
+  ]
+ },
+ {
+  "id": "KSEE",
+  "icaoId": "KSEE",
+  "iataId": "SEE",
+  "faaId": "SEE",
+  "wmoId": null,
+  "site": "San Diego/Gillespie Fld",
+  "lat": 32.82733,
+  "lon": -116.97374,
+  "elev": 113,
+  "state": "CA",
+  "country": "US",
+  "priority": 6,
+  "siteType": [
+   "METAR"
+  ]
+ },
+ {
+  "id": "LJAC1",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "La Jolla",
+  "lat": 32.867,
+  "lon": -117.258,
+  "elev": 0,
+  "state": "CA",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ },
+ {
+  "id": "MMTJ",
+  "icaoId": "MMTJ",
+  "iataId": "TIJ",
+  "faaId": null,
+  "wmoId": null,
+  "site": "Tijuana Intl",
+  "lat": 32.544,
+  "lon": -116.982,
+  "elev": 150,
+  "state": "BC",
+  "country": "MX",
+  "priority": 7,
+  "siteType": [
+   "METAR",
+   "TAF"
+  ]
+ },
+ {
+  "id": "SDBC1",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "San Diego",
+  "lat": 32.713,
+  "lon": -117.173,
+  "elev": 0,
+  "state": "CA",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ },
+ {
+  "id": "TIXC1",
+  "icaoId": null,
+  "iataId": null,
+  "faaId": null,
+  "wmoId": null,
+  "site": "Tijuana River Reserv",
+  "lat": 32.574,
+  "lon": -117.127,
+  "elev": 3,
+  "state": "CA",
+  "country": "US",
+  "priority": 8,
+  "siteType": []
+ }
+]

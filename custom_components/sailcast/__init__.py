@@ -2,24 +2,34 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+from typing import Final
+
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_utc_time_change
+from homeassistant.helpers.event import (
+    async_track_time_interval,
+    async_track_utc_time_change,
+)
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, SIGNAL_UPDATED
 from .coordinator import SailCastConfigEntry, SailCastData
 from .panel import async_register_panel, async_remove_panel
 from .profiles import Profiles
+from .repairs import async_clear_issues, async_update_issues
 from .services import async_register_services
 from .storage import DATA_STORE, SailCastStore
 from .websocket_api import async_register_commands
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.CALENDAR, Platform.SENSOR]
+# Pins whose shoreline couldn't be measured are tried again this often.
+SHORELINE_CHECK: Final = timedelta(hours=1)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -55,13 +65,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
 
     @callback
     def _async_results_changed() -> None:
-        """Tell open panels, and check planned sails against the new results."""
+        """Tell open panels, check planned sails, and update repair issues."""
         async_dispatcher_send(hass, SIGNAL_UPDATED)
         entry.async_create_background_task(
             hass, data.planner.async_sync(), "sailcast planned sails"
         )
+        async_update_issues(hass, data, dt_util.utcnow())
 
     entry.async_on_unload(data.results.async_add_listener(_async_results_changed))
+
+    async def _async_measure_shorelines(_: datetime | None = None) -> None:
+        """Measure new pins' shorelines, and rate again with them."""
+        pins = [
+            (spot.latitude, spot.longitude) for spot in data.profiles.spots.values()
+        ]
+        if await data.sources.shorelines.async_measure_pins(pins):
+            await data.results.async_request_refresh()
+
+    entry.async_create_background_task(
+        hass, _async_measure_shorelines(), "sailcast shorelines"
+    )
+    entry.async_on_unload(
+        async_track_time_interval(hass, _async_measure_shorelines, SHORELINE_CHECK)
+    )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_register_panel(hass)
 
@@ -88,8 +114,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: SailCastConfigEntry) ->
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> None:
-    """Remove the panel when SailCast is deleted."""
+    """Remove the panel and SailCast's repair issues when SailCast is deleted."""
     async_remove_panel(hass)
+    async_clear_issues(hass)
 
 
 async def _async_update_listener(

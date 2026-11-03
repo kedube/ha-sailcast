@@ -248,8 +248,8 @@ SPOT_SENSORS: tuple[SpotSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         entity_registry_enabled_default=False,
+        # Sheltered water and lakes have waves worked out from the fetch.
         value=lambda _, hour: hour.wave_height,
-        applies=lambda spot: spot.open_water,
     ),
     SpotSensorDescription(
         key="water_temperature",

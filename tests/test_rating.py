@@ -8,9 +8,10 @@ from typing import Any
 
 import pytest
 
+from custom_components.sailcast.geo import compass_point
 from custom_components.sailcast.limits import Level
 from custom_components.sailcast.profiles import SizeClass, Skill
-from custom_components.sailcast.rating import compass_point, rate, wind_chill
+from custom_components.sailcast.rating import rate, wind_chill
 from custom_components.sailcast.timeline import Alert, Hour
 
 START = datetime(2026, 11, 7, 18, tzinfo=UTC)
@@ -237,6 +238,24 @@ def test_wind_chill() -> None:
 def test_visibility(size: SizeClass, visibility: float, level: Level) -> None:
     """Forecast visibility can set not recommended, never dangerous."""
     assert rate(hour(8, 10, visibility=visibility), size, ADV).level is level
+
+
+@pytest.mark.parametrize(
+    ("size", "miles", "level"),
+    [
+        (K, 0.6, NOT_RECOMMENDED),
+        (K, 0.4, DANGEROUS),
+        (C, 0.4, NOT_RECOMMENDED),
+        (C, 0.2, DANGEROUS),
+        (L, 0.2, DANGEROUS),
+    ],
+)
+def test_measured_visibility(size: SizeClass, miles: float, level: Level) -> None:
+    """A visibility measured nearby can make the hour dangerous."""
+    measured = hour(8, 10, visibility=miles * 1852, visibility_measured=True)
+    rating = rate(measured, size, ADV)
+    assert rating.level is level
+    assert rating.reasons[0].key == "visibility_measured"
 
 
 def test_thunderstorms() -> None:

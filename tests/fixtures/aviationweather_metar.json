@@ -1,0 +1,58 @@
+[
+ {
+  "icaoId": "KSAN",
+  "receiptTime": "2026-11-02T21:54:08.496Z",
+  "obsTime": 1793656260,
+  "reportTime": "2026-11-02T22:00:00.000Z",
+  "temp": 22.2,
+  "dewp": 11.1,
+  "wdir": 300,
+  "wspd": 8,
+  "visib": "10+",
+  "altim": 1019,
+  "slp": 1018.8,
+  "qcField": 4,
+  "metarType": "METAR",
+  "rawOb": "METAR KSAN 022151Z 30008KT 10SM FEW020 22/11 A3009 RMK AO2 SLP188 T02220111",
+  "lat": 32.7364,
+  "lon": -117.1973,
+  "elev": 3,
+  "name": "San Diego Intl Arpt, CA, US",
+  "cover": "FEW",
+  "clouds": [
+   {
+    "cover": "FEW",
+    "base": 2000
+   }
+  ],
+  "fltCat": "VFR"
+ },
+ {
+  "icaoId": "KNZY",
+  "receiptTime": "2026-11-02T22:00:17.696Z",
+  "obsTime": 1793656320,
+  "reportTime": "2026-11-02T22:00:00.000Z",
+  "temp": 22.2,
+  "dewp": 10.6,
+  "wdir": 300,
+  "wspd": 10,
+  "visib": "10+",
+  "altim": 1018.4,
+  "slp": 1018.1,
+  "qcField": 4,
+  "metarType": "METAR",
+  "rawOb": "METAR KNZY 022152Z 30010KT 10SM FEW250 22/11 A3007 RMK AO2 SLP181 T02220106",
+  "lat": 32.6922,
+  "lon": -117.2098,
+  "elev": 4,
+  "name": "San Diego/North Island NAS, CA, US",
+  "cover": "FEW",
+  "clouds": [
+   {
+    "cover": "FEW",
+    "base": 25000
+   }
+  ],
+  "fltCat": "VFR"
+ }
+]

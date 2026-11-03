@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from custom_components.sailcast.limits import BOAT_LIMITS, SKILL_WIND_LIMITS  # noqa: E402
+from custom_components.sailcast.nowcast import AIRPORT, BUOY, Observation  # noqa: E402
 from custom_components.sailcast.outlook import SpotConditions, compute  # noqa: E402
 from custom_components.sailcast.planner import sail_status  # noqa: E402
 from custom_components.sailcast.profiles import (  # noqa: E402
@@ -38,13 +39,17 @@ from custom_components.sailcast.profiles import (  # noqa: E402
 )
 from custom_components.sailcast.providers import (  # noqa: E402
     ProviderError,
+    metar,
+    ndbc,
     noaa_coops,
     nws,
     open_meteo,
+    openfreemap,
 )
+from custom_components.sailcast.shoreline import Shoreline, measure  # noqa: E402
 from custom_components.sailcast.storage import PlannedSail  # noqa: E402
-from custom_components.sailcast.timeline import build, daylight  # noqa: E402
-from custom_components.sailcast.week import week  # noqa: E402
+from custom_components.sailcast.timeline import build, daylight, localize  # noqa: E402
+from custom_components.sailcast.week import readings_now, week  # noqa: E402
 from custom_components.sailcast.wind import WindGrid, areas  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
@@ -67,10 +72,15 @@ SPOTS = (
         exposed=("sw", "w", "nw"),
         tide_station="9410170",
         marine_zone="PZZ745",
+        buoy="46258",
+        airport="KSAN",
         source_names={
             "tide_station": "SAN DIEGO",
             "marine_zone": "Waters from San Mateo Point to Mexico, 10 to 60 nm out",
+            "buoy": "Mission Bay West, CA (220)",
+            "airport": "San Diego Intl Arpt",
         },
+        source_points={"buoy": (32.749, -117.502), "airport": (32.7364, -117.1973)},
     ),
     Spot(
         id="bay",
@@ -84,11 +94,16 @@ SPOTS = (
         tide_station="9410166",
         current_station="PCT0056_1",
         marine_zone="PZZ740",
+        buoy="SDBC1",
+        airport="KNZY",
         source_names={
             "tide_station": "U.S. Quarantine Station, S.D. Bay",
             "current_station": "North Island",
             "marine_zone": "Coastal waters from San Mateo Point to the Mexican Border",
+            "buoy": "9410170 - San Diego, CA",
+            "airport": "San Diego/North Island NAS",
         },
+        source_points={"buoy": (32.714, -117.174), "airport": (32.6922, -117.2098)},
     ),
     Spot(
         id="river",
@@ -100,12 +115,17 @@ SPOTS = (
         exposed=("w",),
         tide_station="9410196",
         marine_zone="PZZ740",
+        airport="KSAN",
         source_names={
             "tide_station": "Mission Bay",
             "marine_zone": "Coastal waters from San Mateo Point to the Mexican Border",
+            "airport": "San Diego Intl Arpt",
         },
+        source_points={"airport": (32.7364, -117.1973)},
     ),
 )
+# The buoys and airports, in the order their forecasts were recorded.
+STATIONS = ("46258", "SDBC1", "KSAN", "KNZY")
 BOATS = (
     Boat(
         id="keelboat",
@@ -162,10 +182,49 @@ def fixture(name: str) -> Any:
     return json.loads((FIXTURES / f"{name}.json").read_text())
 
 
+def shoreline(spot: Spot) -> Shoreline:
+    """Measure a spot's shoreline from the recorded map tiles."""
+    tiles = []
+    for z, x, y in sorted(
+        openfreemap.tiles_around(spot.latitude, spot.longitude, openfreemap.REACH_KM)
+    ):
+        body = (FIXTURES / "tiles" / str(z) / str(x) / f"{y}.pbf").read_bytes()
+        tiles.append(openfreemap.water(body, z, x, y))
+    on_water, rays = measure(spot.latitude, spot.longitude, tiles)
+    return Shoreline(on_water, rays, NOW.replace(minute=1))
+
+
+def observations() -> dict[str, Observation]:
+    """Return the recorded readings at each buoy and airport, by station."""
+    nearby = open_meteo.parse_forecast(
+        fixture("open_meteo_nearby"), len(STATIONS), open_meteo.NEARBY_VARIABLES
+    )
+    there = dict(zip(STATIONS, nearby, strict=True))
+    marine = open_meteo.parse_marine(
+        fixture("open_meteo_marine_buoys"), 2, open_meteo.BUOY_VARIABLES
+    )
+    reports = metar.parse_reports(fixture("aviationweather_metar"))
+    found = {}
+    for index, buoy in enumerate(STATIONS[:2]):
+        readings = ndbc.parse_readings((FIXTURES / f"ndbc_{buoy}.txt").read_text())
+        found[buoy] = Observation(BUOY, buoy, readings, there[buoy], marine[index])
+    for airport in STATIONS[2:]:
+        found[airport] = Observation(AIRPORT, airport, reports[airport], there[airport])
+    return found
+
+
 def conditions() -> dict[str, SpotConditions]:
     """Build each spot's week from the recorded responses."""
     forecasts = open_meteo.parse_forecast(fixture("open_meteo_forecast"), 3)
     marine = open_meteo.parse_marine(fixture("open_meteo_marine"), 2)
+    spreads = [
+        open_meteo.Spread(
+            tuple(open_meteo.from_unix(t) for t in place["hourly"]["time"]),
+            tuple(place["hourly"][open_meteo.SPREAD_VARIABLE]),
+        )
+        for place in fixture("open_meteo_spread")
+    ]
+    stations = observations()
     currents = noaa_coops.parse_currents(
         fixture("noaa_currents_PCT0056_1"), "PCT0056_1"
     )
@@ -194,13 +253,30 @@ def conditions() -> dict[str, SpotConditions]:
         ]
         spot_alerts = tuple(alert for alert in alerts if alert.zone == spot.marine_zone)
         spot_currents = currents if spot.current_station else None
+        spot_marine = marine[index] if spot.open_water else None
         hours = build(
             forecast=forecasts[index],
             days=days,
-            marine=marine[index] if spot.open_water else None,
+            marine=spot_marine,
             tides=tides,
             currents=spot_currents,
             alerts=spot_alerts,
+            spread=spreads[index],
+        )
+        shore = shoreline(spot)
+        measured = shore if shore.on_water else None
+        spot_observations = tuple(
+            stations[station] for station in (spot.buoy, spot.airport) if station
+        )
+        hours, adjustments = localize(
+            hours,
+            now=NOW,
+            forecast=forecasts[index],
+            marine=spot_marine,
+            observations=spot_observations,
+            open_water=spot.open_water,
+            exposed=spot.exposed or (measured.exposed if measured else None),
+            fetch=measured.fetch if measured else None,
         )
         result[spot.id] = SpotConditions(
             spot=spot,
@@ -209,6 +285,9 @@ def conditions() -> dict[str, SpotConditions]:
             tide_events=tides.events,
             current_events=spot_currents.events if spot_currents else (),
             alerts=spot_alerts,
+            observations=spot_observations,
+            adjustments=adjustments,
+            shoreline=shore,
         )
     return result
 
@@ -301,8 +380,23 @@ def main() -> None:
                     key: {"id": value, "name": spot.source_names.get(key)}
                     if (value := getattr(spot, key))
                     else None
-                    for key in ("tide_station", "current_station", "marine_zone")
-                },
+                    for key in (
+                        "tide_station",
+                        "current_station",
+                        "marine_zone",
+                        "buoy",
+                        "airport",
+                    )
+                }
+                | {"sensors": {}},
+                "readings": readings_now(spots[spot_id].observations, NOW),
+                "adjustments": [item.as_dict() for item in spots[spot_id].adjustments],
+                "shoreline": {
+                    "on_water": shore.on_water,
+                    "measured": shore.measured.isoformat(),
+                }
+                if (shore := spots[spot_id].shoreline)
+                else None,
                 "planned": [item for item in planned if item["sailor"] == sailor_id],
             }
     config = profiles.as_dict() | {
@@ -329,6 +423,16 @@ def main() -> None:
         "forecasts": forecasts,
         "planned": {"planned": planned, "skipped": {"alex": [], "sam": []}},
         "wind_grid": wind_grid(spots),
+        "shorelines": [
+            {
+                "latitude": item.spot.latitude,
+                "longitude": item.spot.longitude,
+                **item.shoreline.as_dict(),
+                "exposed": list(item.shoreline.exposed),
+            }
+            for item in spots.values()
+            if item.shoreline
+        ],
     }
     OUTPUT.write_text(json.dumps(data, default=_json, separators=(",", ":")))
     print(f"Wrote {OUTPUT.relative_to(ROOT)} ({OUTPUT.stat().st_size // 1024} KB)")

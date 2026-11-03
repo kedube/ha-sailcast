@@ -2,13 +2,15 @@
 
 Every source is turned into one list of hours. Values are in SI units, except
 wind and current, which are in knots because every threshold is set in knots.
+Local corrections come after: readings nudge the next few hours, then waves
+are worked out for the spot's shelter.
 """
 
 from __future__ import annotations
 
 from bisect import bisect_right
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Collection, Sequence
+from dataclasses import dataclass, fields
 from datetime import UTC, date, datetime, time, timedelta, tzinfo
 import math
 import statistics
@@ -17,9 +19,13 @@ from typing import TYPE_CHECKING, Any
 from astral import Observer
 from astral.sun import elevation, sun
 
+from .geo import mean_direction
+from .nowcast import Adjustment, Observation, latest, nudge
+from .waves import shelter
+
 if TYPE_CHECKING:
     from .providers.noaa_coops import Currents, Tides
-    from .providers.open_meteo import Forecast, Marine
+    from .providers.open_meteo import Forecast, Marine, Spread
 
 HOUR = timedelta(hours=1)
 
@@ -40,9 +46,12 @@ class Hour:
     """The conditions at a spot for the hour that begins at `start`.
 
     Wind is the middle value of the forecast models, and `wind_models` keeps
-    each model's value in a fixed order. Current is positive on the flood and
+    each model's value in a fixed order; `wind_spread` is the ECMWF ensemble's
+    spread (one standard deviation). Current is positive on the flood and
     negative on the ebb, and its direction is where the water flows to. Tide
-    heights are above the station's chart datum.
+    heights are above the station's chart datum. `wave_source` says where the
+    waves come from, `adjusted` lists the fields readings have nudged, and
+    `visibility_measured` says the visibility was read, not forecast.
     """
 
     start: datetime
@@ -65,6 +74,10 @@ class Hour:
     current: float | None = None
     current_direction: float | None = None
     alerts: tuple[Alert, ...] = ()
+    wind_spread: float | None = None
+    wave_source: str | None = None
+    adjusted: tuple[str, ...] = ()
+    visibility_measured: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,6 +128,7 @@ def build(
     tides: Tides | None = None,
     currents: Currents | None = None,
     alerts: Sequence[Alert] = (),
+    spread: Spread | None = None,
 ) -> list[Hour]:
     """Return the hours of the given local days, from every source.
 
@@ -127,6 +141,7 @@ def build(
     end = datetime.combine(days[-1].date + timedelta(days=1), time(), zone)
     by_date = {day.date: day for day in days}
     marine_index = {when: i for i, when in enumerate(marine.times)} if marine else {}
+    spreads = dict(zip(spread.times, spread.values, strict=True)) if spread else {}
     tide_heights = dict(tides.hourly) if tides else {}
     hours = []
     for index, when in enumerate(forecast.times):
@@ -157,6 +172,8 @@ def build(
         }
         if (code := _most(forecast.at("weather_code", index))) is not None:
             hour["weather_code"] = int(code)
+        if (sigma := spreads.get(when)) is not None:
+            hour["wind_spread"] = sigma
         if marine and (marine_hour := marine_index.get(when)) is not None:
             hour.update(
                 wave_height=marine.values["wave_height"][marine_hour],
@@ -170,6 +187,32 @@ def build(
             hour.update(_current(currents, when))
         hours.append(Hour(**hour))
     return hours
+
+
+def localize(
+    hours: Sequence[Hour],
+    *,
+    now: datetime,
+    forecast: Forecast | None = None,
+    marine: Marine | None = None,
+    observations: Sequence[Observation] = (),
+    open_water: bool = True,
+    exposed: Collection[str] | None = None,
+    fetch: Callable[[float], float] | None = None,
+) -> tuple[list[Hour], tuple[Adjustment, ...]]:
+    """Apply a spot's local corrections, and say how readings moved it.
+
+    Readings nudge the next hours first, so the waves follow the nudged
+    wind. `forecast` and `marine` are the spot's own, for its sensors.
+    """
+    rows = [
+        {item.name: getattr(hour, item.name) for item in fields(Hour)} for hour in hours
+    ]
+    adjustments = nudge(
+        rows, latest(observations, now), forecast=forecast, marine=marine, now=now
+    )
+    shelter(rows, open_water=open_water, exposed=exposed, fetch=fetch)
+    return [Hour(**row) for row in rows], adjustments
 
 
 def _tide(
@@ -231,13 +274,3 @@ def _most(values: Sequence[float | None]) -> float | None:
 def _least(values: Sequence[float | None]) -> float | None:
     known = [value for value in values if value is not None]
     return min(known) if known else None
-
-
-def mean_direction(values: Sequence[float | None]) -> float:
-    """Return the average of compass directions, so 350° and 10° make 0°."""
-    known = [math.radians(value) for value in values if value is not None]
-    if not known:
-        return 0.0
-    x = sum(math.cos(value) for value in known)
-    y = sum(math.sin(value) for value in known)
-    return math.degrees(math.atan2(y, x)) % 360

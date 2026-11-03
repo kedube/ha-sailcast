@@ -7,7 +7,11 @@ import json
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.sailcast.diagnostics import async_get_config_entry_diagnostics
+from custom_components.sailcast.diagnostics import (
+    async_get_config_entry_diagnostics,
+    safe_error,
+)
+from custom_components.sailcast.providers import ProviderError
 
 
 async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
@@ -53,9 +57,9 @@ async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None
         assert private not in text, private
     assert diagnostics["sources"]["SailCast forecast"]["last_update_success"]
     assert diagnostics["sources"]["SailCast warnings"]["update_interval"] == 300
-    # The entry reloaded twice, fetching the forecast and marine data each
-    # time, and the count keeps going.
-    assert diagnostics["open_meteo_calls_today"] == 27.6
+    # The entry reloaded twice, fetching the forecast, marine data and the
+    # ensemble's spread each time, and the count keeps going.
+    assert diagnostics["open_meteo_calls_today"] == 36.6
     assert diagnostics["planned_sails"] == 0
     assert diagnostics["wind_grids"] == []
     assert diagnostics["results"]["outlooks"] == 6
@@ -63,3 +67,39 @@ async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None
     spot = diagnostics["profiles"]["spots"][0]
     assert spot["latitude"] == "**REDACTED**"
     assert spot["water_type"] == "bay"
+
+
+async def test_diagnostics_with_readings(
+    hass: HomeAssistant, observed: MockConfigEntry
+) -> None:
+    """Buoys, airports and sensors show by kind only, shorelines without places."""
+    diagnostics = await async_get_config_entry_diagnostics(hass, observed)
+    text = json.dumps(diagnostics)
+    for private in ("46258", "SDBC1", "KSAN", "KNZY", "Mission Bay", "32.749"):
+        assert private not in text, private
+    assert [reading["kind"] for reading in diagnostics["readings"]] == [
+        "buoy",
+        "airport",
+        "buoy",
+        "airport",
+    ]
+    assert diagnostics["readings"][0]["fields"] == [
+        "water_temperature",
+        "wave_direction",
+        "wave_height",
+        "wave_period",
+    ]
+    spots = diagnostics["results"]["spots"]
+    assert [spot["shoreline"]["on_water"] for spot in spots] == [True, False, True]
+    assert spots[2]["wave_sources"] == ["estimate"]
+    assert "wind" in spots[2]["nudged"]
+
+
+def test_errors_without_addresses() -> None:
+    """Errors keep their kind and host, not the address or a position."""
+    error = ProviderError(
+        "https://www.ndbc.noaa.gov/data/realtime2/46258.txt returned 404"
+    )
+    assert safe_error(error) == "ProviderError: www.ndbc.noaa.gov returned 404"
+    assert safe_error(ValueError("near 32.7500,-117.2700")) == "ValueError: near …,…"
+    assert safe_error(None) is None

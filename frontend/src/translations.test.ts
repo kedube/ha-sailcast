@@ -45,15 +45,21 @@ const FAMILIES: Record<string, string[]> = {
     "tide_station",
     "current_station",
     "marine_zone",
+    "buoy",
+    "airport",
     "tide_station_short",
     "current_station_short",
     "marine_zone_short",
+    "buoy_short",
+    "airport_short",
     "offshore",
     "exposed",
     "offshore_hint",
     "exposed_hint",
     "tide_mark",
     "current_mark",
+    "buoy_mark",
+    "airport_mark",
   ],
   // The backend's advice keys (advice.py).
   advice: [
@@ -96,9 +102,13 @@ const FAMILIES: Record<string, string[]> = {
     "offshore_wind",
     "wind_chill",
     "visibility",
+    "visibility_measured",
     "thunderstorms",
     "thunderstorms_possible",
   ],
+  "spot.sensor": ["wind", "gust", "wind_direction", "temperature", "water_temperature"],
+  reading_source: ["sensors", "buoy", "airport"],
+  sources: ["buoy_text", "airport_text"],
   // Errors the settings commands send back (profiles.py and websocket_api.py).
   error: [
     "name_required",
@@ -118,6 +128,8 @@ const FAMILIES: Record<string, string[]> = {
     "invalid_ahead",
     "unknown_user",
     "boat_in_use",
+    "fetch_out_of_range",
+    "invalid_sensor",
   ],
 };
 

@@ -124,6 +124,10 @@ WIND_CHILL: Final = 0.0
 # recommended below the second. It never makes an hour dangerous.
 VISIBILITY_SMALL: Final = (2.0, 1.0)
 VISIBILITY_CRUISER: Final = (1.0, 0.5)
+# Visibility measured nearby (nautical miles) below which the hour under way
+# is dangerous.
+MEASURED_VISIBILITY_SMALL: Final = 0.5
+MEASURED_VISIBILITY_CRUISER: Final = 0.25
 
 # Thunderstorms: forecast as WMO weather codes 95 and up. "Possible" means
 # CAPE (J/kg) and rain chance (%) of at least these.

@@ -63,6 +63,10 @@ class Confidence(StrEnum):
 
 # Typical spread between the models' wind (kt) for high and medium.
 CONFIDENCE_SPREADS: Final = (3.0, 6.0)
+# Typical spread of the ECMWF ensemble's wind (kt, one standard deviation)
+# for high and medium. Three models typically span about 1.7 of these, so the
+# two scales match.
+ENSEMBLE_SPREADS: Final = (1.75, 3.5)
 
 # Points off for each percent chance of rain, by the sailor's tolerance.
 RAIN_PENALTIES: Final = MappingProxyType(
@@ -258,7 +262,8 @@ def confidence(hours: Sequence[Hour]) -> tuple[Confidence, float] | None:
     """Return how closely the models agree on wind over some hours.
 
     The spread is the typical (median) gap between the highest and lowest
-    model's wind in an hour.
+    model's wind in an hour. A wide spread in the ECMWF ensemble can lower
+    the confidence, but never raise it.
     """
     spreads = sorted(
         max(winds) - min(winds)
@@ -268,11 +273,28 @@ def confidence(hours: Sequence[Hour]) -> tuple[Confidence, float] | None:
     if not spreads:
         return None
     spread = spreads[len(spreads) // 2]
-    if spread <= CONFIDENCE_SPREADS[0]:
-        return Confidence.HIGH, spread
-    if spread <= CONFIDENCE_SPREADS[1]:
-        return Confidence.MEDIUM, spread
-    return Confidence.LOW, spread
+    level = _level(spread, CONFIDENCE_SPREADS)
+    ensemble = sorted(
+        hour.wind_spread for hour in hours if hour.wind_spread is not None
+    )
+    if ensemble:
+        level = max(
+            level,
+            _level(ensemble[len(ensemble) // 2], ENSEMBLE_SPREADS),
+            key=_CONFIDENCE_ORDER.index,
+        )
+    return level, spread
+
+
+_CONFIDENCE_ORDER: Final = (Confidence.HIGH, Confidence.MEDIUM, Confidence.LOW)
+
+
+def _level(spread: float, starts: tuple[float, float]) -> Confidence:
+    if spread <= starts[0]:
+        return Confidence.HIGH
+    if spread <= starts[1]:
+        return Confidence.MEDIUM
+    return Confidence.LOW
 
 
 def steady_level(levels: Sequence[Level]) -> Level:

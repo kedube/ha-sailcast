@@ -1,9 +1,12 @@
-"""Open-Meteo: the forecast from three models, marine data and the wind map's grid.
+"""Open-Meteo: the forecast from three models, marine data, spread and the wind map.
 
 One request covers every spot. Times are requested as Unix seconds in UTC,
 with a day of past hours so the timeline can start at local midnight
-anywhere. The wind map's grid is one request for all its points, from
-Open-Meteo's best model for the place, with no past hours.
+anywhere. Buoys and airports get a lighter forecast of their own, so their
+readings can be compared with the forecast for the same place. The ECMWF
+ensemble's spread comes from its ensemble mean, which costs one variable. The
+wind map's grid is one request for all its points, from Open-Meteo's best
+model for the place, with no past hours.
 """
 
 from __future__ import annotations
@@ -19,6 +22,8 @@ from . import ProviderError, fetch_json, from_unix
 
 FORECAST_URL: Final = "https://api.open-meteo.com/v1/forecast"
 MARINE_URL: Final = "https://marine-api.open-meteo.com/v1/marine"
+ENSEMBLE_URL: Final = "https://ensemble-api.open-meteo.com/v1/ensemble"
+SPREAD_MODEL: Final = "ecmwf_ifs025_ensemble_mean"
 
 # ECMWF IFS (9 km), GFS (HRRR for about 40 hours in the US) and ICON.
 MODELS: Final = ("ecmwf_ifs", "ncep_gfs_seamless", "dwd_icon_seamless")
@@ -39,8 +44,18 @@ MARINE_VARIABLES: Final = (
     "sea_surface_temperature",
 )
 WIND_VARIABLES: Final = ("wind_speed_10m", "wind_direction_10m", "wind_gusts_10m")
+# What buoys and airports read, for comparing with the forecast there.
+NEARBY_VARIABLES: Final = (
+    "wind_speed_10m",
+    "wind_gusts_10m",
+    "wind_direction_10m",
+    "temperature_2m",
+)
+BUOY_VARIABLES: Final = ("wave_height", "sea_surface_temperature")
+SPREAD_VARIABLE: Final = "wind_speed_10m_spread"
 PAST_DAYS: Final = 1
 FORECAST_DAYS: Final = 7
+NEARBY_DAYS: Final = 1
 
 type Values = tuple[float | None, ...]
 
@@ -66,6 +81,17 @@ class Marine:
 
     times: tuple[datetime, ...]
     values: Mapping[str, Values]
+
+
+@dataclass(frozen=True, slots=True)
+class Spread:
+    """The ECMWF ensemble's hourly wind spread at one place.
+
+    Each value is one standard deviation of the ensemble's wind, in knots.
+    """
+
+    times: tuple[datetime, ...]
+    values: Values
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +131,21 @@ def wind_calls(points: int) -> float:
     return calls(len(WIND_VARIABLES), points, FORECAST_DAYS)
 
 
+def nearby_calls(points: int) -> float:
+    """Return the calls counted for the forecast at buoys and airports."""
+    return calls(len(NEARBY_VARIABLES) * len(MODELS), points, PAST_DAYS + NEARBY_DAYS)
+
+
+def buoy_calls(points: int) -> float:
+    """Return the calls counted for marine data at buoys."""
+    return calls(len(BUOY_VARIABLES), points, PAST_DAYS + NEARBY_DAYS)
+
+
+def spread_calls(points: int) -> float:
+    """Return the calls counted for one ensemble spread request."""
+    return calls(1, points)
+
+
 async def async_get_forecast(
     session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
 ) -> list[Forecast]:
@@ -116,6 +157,23 @@ async def async_get_forecast(
         | {"models": ",".join(MODELS), "wind_speed_unit": "kn"},
     )
     return parse_forecast(payload, len(points))
+
+
+async def async_get_nearby(
+    session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
+) -> list[Forecast]:
+    """Return today's wind and air temperature from the three models at each point."""
+    payload = await fetch_json(
+        session,
+        FORECAST_URL,
+        _params(points, NEARBY_VARIABLES)
+        | {
+            "models": ",".join(MODELS),
+            "wind_speed_unit": "kn",
+            "forecast_days": NEARBY_DAYS,
+        },
+    )
+    return parse_forecast(payload, len(points), NEARBY_VARIABLES)
 
 
 async def async_get_marine(
@@ -130,6 +188,35 @@ async def async_get_marine(
     return parse_marine(payload, len(points))
 
 
+async def async_get_buoy_marine(
+    session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
+) -> list[Marine]:
+    """Return today's wave height and water temperature at each buoy."""
+    payload = await fetch_json(
+        session,
+        MARINE_URL,
+        _params(points, BUOY_VARIABLES)
+        | {"cell_selection": "sea", "forecast_days": NEARBY_DAYS},
+    )
+    return parse_marine(payload, len(points), BUOY_VARIABLES)
+
+
+async def async_get_spread(
+    session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
+) -> list[Spread]:
+    """Return the ECMWF ensemble's wind spread at each point."""
+    payload = await fetch_json(
+        session,
+        ENSEMBLE_URL,
+        _params(points, (SPREAD_VARIABLE,))
+        | {"models": SPREAD_MODEL, "wind_speed_unit": "kn"},
+    )
+    return [
+        Spread(_times(place["hourly"]), _series(place["hourly"], SPREAD_VARIABLE))
+        for place in _places(payload, len(points))
+    ]
+
+
 async def async_get_wind(
     session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
 ) -> WindPoints:
@@ -142,7 +229,9 @@ async def async_get_wind(
     return parse_wind(payload, len(points))
 
 
-def parse_forecast(payload: Any, count: int) -> list[Forecast]:
+def parse_forecast(
+    payload: Any, count: int, variables: Sequence[str] = FORECAST_VARIABLES
+) -> list[Forecast]:
     """Read a forecast response for `count` points."""
     forecasts = []
     for place in _places(payload, count):
@@ -154,21 +243,22 @@ def parse_forecast(payload: Any, count: int) -> list[Forecast]:
                     variable: tuple(
                         _series(hourly, f"{variable}_{model}") for model in MODELS
                     )
-                    for variable in FORECAST_VARIABLES
+                    for variable in variables
                 },
             )
         )
     return forecasts
 
 
-def parse_marine(payload: Any, count: int) -> list[Marine]:
+def parse_marine(
+    payload: Any, count: int, variables: Sequence[str] = MARINE_VARIABLES
+) -> list[Marine]:
     """Read a marine response for `count` points."""
     return [
         Marine(
             times=_times(place["hourly"]),
             values={
-                variable: _series(place["hourly"], variable)
-                for variable in MARINE_VARIABLES
+                variable: _series(place["hourly"], variable) for variable in variables
             },
         )
         for place in _places(payload, count)

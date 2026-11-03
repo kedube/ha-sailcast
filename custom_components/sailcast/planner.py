@@ -48,10 +48,11 @@ from homeassistant.util.ulid import ulid_now
 from homeassistant.util.unit_conversion import DistanceConverter
 
 from .const import DOMAIN, SIGNAL_UPDATED
+from .geo import compass_point
 from .limits import Level
 from .outlook import BoatOutlook, Results
 from .profiles import AutoCalendar, Profiles, Sailor
-from .rating import Reason, compass_point
+from .rating import Reason
 from .scoring import WINDOW_SCORE, Window, band, round_half_up
 from .storage import PlannedSail, SailCastStore
 from .summary import hours_between, summarize

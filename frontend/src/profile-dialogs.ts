@@ -6,17 +6,37 @@
 import { html, nothing, type TemplateResult } from "lit";
 
 import { checked, define, numberOrNull, ScDialog, value } from "./dialog";
-import { FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
+import { compassKey, FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
 import { limitBars, skillBars } from "./settings";
 import "./spot-map";
 import type { StationMark } from "./spot-map";
-import type { Comfort, SizeClass, Skill, SourceKey, SourceSuggestions, Spot } from "./types";
+import type {
+  Comfort,
+  SensorKey,
+  Shoreline,
+  SizeClass,
+  Skill,
+  SourceKey,
+  SourceSuggestions,
+  Spot,
+  WaterType,
+} from "./types";
 import { SIZES } from "./week";
 
 const SKILLS: Skill[] = ["beginner", "intermediate", "advanced"];
 const WATER = ["open_coast", "bay", "river", "lake"];
 const DIRECTIONS = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
-const SOURCES: SourceKey[] = ["tide_station", "current_station", "marine_zone"];
+const SOURCES: SourceKey[] = ["tide_station", "current_station", "marine_zone", "buoy", "airport"];
+// Sources whose position is kept, for the forecast where they are.
+const PLACED = ["buoy", "airport"] as const;
+// Your own sensors, by the device class each reading needs.
+const SENSORS: [SensorKey, string][] = [
+  ["wind", "wind_speed"],
+  ["gust", "wind_speed"],
+  ["wind_direction", "wind_direction"],
+  ["temperature", "temperature"],
+  ["water_temperature", "temperature"],
+];
 const HOURS = Array.from({ length: 17 }, (_, index) => index + 5);
 
 /** A field's error from the server, under the field. */
@@ -423,6 +443,9 @@ export class ScSpotDialog extends ProfileDialog {
     radius: { state: true },
     found: { state: true },
     chosen: { state: true },
+    water: { state: true },
+    exposed: { state: true },
+    shore: { state: true },
   };
   declare latitude: number;
   declare longitude: number;
@@ -431,7 +454,13 @@ export class ScSpotDialog extends ProfileDialog {
   declare found?: SourceSuggestions;
   /** Sources picked so far: an ID, or "" for none. */
   declare chosen: Partial<Record<SourceKey, string>>;
+  declare water: WaterType;
+  declare exposed: string[];
+  /** The pin's shoreline: measured, being measured (null), or not to be had. */
+  declare shore?: Shoreline | null | "failed";
   private lookup?: number;
+  /** Whether someone picked the exposure by hand, which a moved pin leaves alone. */
+  private exposedTouched = false;
 
   private get spot(): Spot | undefined {
     return this.ctx.config.spots.find((item) => item.id === this.profileId);
@@ -445,7 +474,11 @@ export class ScSpotDialog extends ProfileDialog {
     this.longitude = spot?.longitude ?? this.ctx.hass.config.longitude;
     this.radius = spot?.radius ?? 15_000;
     this.chosen = spot ? Object.fromEntries(SOURCES.map((key) => [key, spot[key] ?? ""])) : {};
+    this.water = spot?.water_type ?? "bay";
+    this.exposed = [...(spot?.exposed ?? [])];
+    this.exposedTouched = Boolean(spot?.exposed.length);
     void this.suggest();
+    void this.measure();
   }
 
   override disconnectedCallback(): void {
@@ -470,9 +503,37 @@ export class ScSpotDialog extends ProfileDialog {
         tide_station: [],
         current_station: [],
         marine_zone: [],
-        suggested: { tide_station: null, current_station: null, marine_zone: null },
+        buoy: [],
+        airport: [],
+        suggested: {
+          tide_station: null,
+          current_station: null,
+          marine_zone: null,
+          buoy: null,
+          airport: null,
+        },
         failed: true,
       };
+    }
+  }
+
+  /**
+   * Measure how far the water reaches from the pin. For a new spot, or one
+   * without exposure set, the directions open to the sea are checked.
+   */
+  private async measure(): Promise<void> {
+    const at = [this.latitude, this.longitude];
+    this.shore = null;
+    let shore: Shoreline | "failed";
+    try {
+      shore = await this.ctx.api.shoreline(this.latitude, this.longitude);
+    } catch {
+      shore = "failed";
+    }
+    if (at[0] !== this.latitude || at[1] !== this.longitude) return;
+    this.shore = shore;
+    if (shore !== "failed" && shore.on_water && !this.exposedTouched) {
+      this.exposed = [...shore.exposed];
     }
   }
 
@@ -483,7 +544,10 @@ export class ScSpotDialog extends ProfileDialog {
     this.latitude = Math.round(event.detail.latitude * 100_000) / 100_000;
     this.longitude = Math.round(event.detail.longitude * 100_000) / 100_000;
     window.clearTimeout(this.lookup);
-    this.lookup = window.setTimeout(() => void this.suggest(), 700);
+    this.lookup = window.setTimeout(() => {
+      void this.suggest();
+      void this.measure();
+    }, 700);
   }
 
   protected heading(): string {
@@ -491,7 +555,7 @@ export class ScSpotDialog extends ProfileDialog {
     return spot ? this.t("spot.edit", { name: spot.name }) : this.t("spot.add");
   }
 
-  /** The suggested tide and current stations, to show on the map. */
+  /** The suggested stations, buoys and airports, to show on the map. */
   private stations(): StationMark[] {
     const found = this.found;
     if (!found) return [];
@@ -499,6 +563,8 @@ export class ScSpotDialog extends ProfileDialog {
     for (const [key, kind] of [
       ["tide_station", "tide"],
       ["current_station", "current"],
+      ["buoy", "buoy"],
+      ["airport", "airport"],
     ] as const) {
       for (const choice of found[key]) {
         if (choice.latitude === null || choice.longitude === null) continue;
@@ -579,6 +645,7 @@ export class ScSpotDialog extends ProfileDialog {
             position: `${fmt.number(Math.abs(this.latitude), 4)}° ${this.latitude >= 0 ? "N" : "S"}, ${fmt.number(Math.abs(this.longitude), 4)}° ${this.longitude >= 0 ? "E" : "W"}`,
           })}</span
         >
+        ${this.shoreText()}
       </div>
       <label class="fld">
         <span class="lbl"
@@ -612,10 +679,15 @@ export class ScSpotDialog extends ProfileDialog {
       </label>
       <label class="fld">
         <span class="lbl">${t("spot.water")}</span>
-        <select name="water_type">
+        <select
+          name="water_type"
+          @change=${(event: Event) => {
+            this.water = (event.target as HTMLSelectElement).value as WaterType;
+          }}
+        >
           ${WATER.map(
             (water) =>
-              html`<option value=${water} ?selected=${(spot?.water_type ?? "bay") === water}>
+              html`<option value=${water} ?selected=${this.water === water}>
                 ${t(`water_type.${water}`)}
               </option>`,
           )}
@@ -633,7 +705,12 @@ export class ScSpotDialog extends ProfileDialog {
                       type="checkbox"
                       name=${key}
                       value=${direction}
-                      ?checked=${spot?.[key].includes(direction) ?? false}
+                      .checked=${
+                        key === "exposed"
+                          ? this.exposed.includes(direction)
+                          : (spot?.offshore.includes(direction) ?? false)
+                      }
+                      @change=${key === "exposed" ? this.exposedChanged : nothing}
                     /><span>${t(`compass.${direction}`)}</span></label
                   >`,
               )}
@@ -641,9 +718,96 @@ export class ScSpotDialog extends ProfileDialog {
             <span class="hint">${t(`spot.${key}_hint`)}</span>
           </fieldset>`,
       )}
+      ${this.water === "river" || this.water === "lake" ? this.fetchField() : nothing}
       ${SOURCES.map((key) => this.sourceSelect(key))}
       <p class="hint">${this.found?.failed ? t("spot.sources_failed") : t("spot.sources_hint")}</p>
+      ${this.sensorFields()}
     `;
+  }
+
+  private exposedChanged(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.exposedTouched = true;
+    this.exposed = input.checked
+      ? DIRECTIONS.filter((item) => item === input.value || this.exposed.includes(item))
+      : this.exposed.filter((item) => item !== input.value);
+  }
+
+  /** Whether the pin is on water, and how far the water reaches. */
+  private shoreText(): TemplateResult | typeof nothing {
+    const { t } = this.ctx;
+    const shore = this.shore;
+    if (shore === undefined || shore === "failed") return nothing;
+    if (shore === null) return html`<span class="hint">${t("spot.shore_measuring")}</span>`;
+    if (!shore.on_water) return html`<p class="form-err" role="alert">${t("spot.on_land")}</p>`;
+    const longest = Math.max(...shore.rays);
+    const toward = shore.rays.indexOf(longest) * 3;
+    const open = shore.exposed.map((point) => t(`compass.${point}`)).join(", ");
+    return html`<span class="hint"
+      >${t(open ? "spot.shore_open" : "spot.shore_closed", {
+        distance: this.distance(longest),
+        direction: t(`compass.${compassKey(toward)}`),
+        open,
+      })}</span
+    >`;
+  }
+
+  /** The open water upwind, set by hand, for a river or lake. */
+  private fetchField(): TemplateResult {
+    const { t, fmt } = this.ctx;
+    const fetch = this.spot?.fetch;
+    return html`<label class="fld">
+      <span class="lbl">${t(fmt.miles ? "spot.fetch_miles" : "spot.fetch_km")}</span>
+      <input
+        type="number"
+        name="fetch"
+        min="0"
+        step="0.1"
+        inputmode="decimal"
+        .value=${fetch ? String(Math.round(fmt.distance(fetch) * 10) / 10) : ""}
+      />
+      <span class="hint">${t("spot.fetch_hint")}</span>
+      ${this.err("fetch")}
+    </label>`;
+  }
+
+  /** Your own sensors: any sensor with the right kind of reading. */
+  private sensorFields(): TemplateResult {
+    const { t, hass } = this.ctx;
+    const saved = this.spot?.sensors ?? {};
+    const states = Object.values(hass.states ?? {});
+    return html`<fieldset class="fld">
+      <legend class="lbl">${t("spot.sensors")}</legend>
+      ${SENSORS.map(([key, deviceClass]) => {
+        const chosen = saved[key] ?? "";
+        const options = states
+          .filter(
+            (state) =>
+              state.entity_id.startsWith("sensor.") &&
+              state.attributes.device_class === deviceClass,
+          )
+          .sort((a, b) => a.entity_id.localeCompare(b.entity_id));
+        return html`<label class="fld">
+          <span class="lbl">${t(`spot.sensor.${key}`)}</span>
+          <select name=${`sensor_${key}`}>
+            <option value="" ?selected=${!chosen}>${t("spot.none")}</option>
+            ${
+              chosen && !options.some((state) => state.entity_id === chosen)
+                ? html`<option value=${chosen} selected>${chosen}</option>`
+                : nothing
+            }
+            ${options.map(
+              (state) =>
+                html`<option value=${state.entity_id} ?selected=${state.entity_id === chosen}>
+                  ${state.attributes.friendly_name ?? state.entity_id}
+                </option>`,
+            )}
+          </select>
+        </label>`;
+      })}
+      <span class="hint">${t("spot.sensors_hint")}</span>
+      ${this.err("sensors")}
+    </fieldset>`;
   }
 
   protected footer(): TemplateResult {
@@ -659,6 +823,7 @@ export class ScSpotDialog extends ProfileDialog {
     const spot = this.spot;
     const names: Partial<Record<SourceKey, string>> = {};
     const sources: Partial<Record<SourceKey, string | null>> = {};
+    const points: Partial<Record<(typeof PLACED)[number], [number, number]>> = {};
     for (const key of SOURCES) {
       const id = value(form, key) || null;
       sources[key] = id;
@@ -666,15 +831,36 @@ export class ScSpotDialog extends ProfileDialog {
       const name = found?.name ?? (id && id === spot?.[key] ? spot?.source_names[key] : undefined);
       if (id && name) names[key] = name;
     }
+    for (const key of PLACED) {
+      const id = sources[key];
+      const found = this.found?.[key].find((option) => option.id === id);
+      const point =
+        found?.latitude != null && found.longitude != null
+          ? ([found.latitude, found.longitude] as [number, number])
+          : id && id === spot?.[key]
+            ? spot.source_points[key]
+            : undefined;
+      if (id && point) points[key] = point;
+    }
+    const sensors = Object.fromEntries(
+      SENSORS.map(([key]) => [key, value(form, `sensor_${key}`)]).filter(([, id]) => id),
+    );
+    const fetch = numberOrNull(form, "fetch");
     return this.save("spot", name, {
       latitude: this.latitude,
       longitude: this.longitude,
       radius: this.radius,
       water_type: value(form, "water_type"),
       offshore: checked(form, "offshore"),
-      exposed: checked(form, "exposed"),
+      exposed: this.exposed,
       ...sources,
+      sensors,
+      fetch:
+        fetch && (this.water === "river" || this.water === "lake")
+          ? Math.round((this.ctx.fmt.miles ? fetch * KM_PER_MILE : fetch) * 1000) / 1000
+          : null,
       source_names: names,
+      source_points: points,
     });
   }
 }

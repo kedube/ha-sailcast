@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 import math
 from typing import Any
 
+from .geo import angle_between, compass_point
 from .limits import (
     AGAINST_CURRENT_ANGLE,
     AGAINST_CURRENT_FLOOR,
@@ -31,6 +32,8 @@ from .limits import (
     AGAINST_CURRENT_WIND,
     BOAT_LIMITS,
     FOOT,
+    MEASURED_VISIBILITY_CRUISER,
+    MEASURED_VISIBILITY_SMALL,
     NAUTICAL_MILE,
     OFFSHORE_FLOOR_WIND,
     OFFSHORE_MODIFIER_WIND,
@@ -46,7 +49,7 @@ from .limits import (
     Level,
     warning_group,
 )
-from .profiles import DIRECTIONS, SizeClass, Skill
+from .profiles import SizeClass, Skill
 from .timeline import Hour
 
 
@@ -190,7 +193,7 @@ class _Rater:
             self.modify(key, current=speed)
 
     def check_shore_and_weather(self, offshore: Collection[str]) -> None:
-        """Offshore wind for dinghies, wind chill and forecast visibility."""
+        """Offshore wind for dinghies, wind chill and visibility."""
         hour, limits = self.hour, self.limits
         if self.size is SizeClass.DINGHY and compass_point(hour.wind_direction) in (
             offshore
@@ -207,14 +210,21 @@ class _Rater:
             caution, not_recommended = (
                 VISIBILITY_SMALL if limits.small else VISIBILITY_CRUISER
             )
+            dangerous = (
+                MEASURED_VISIBILITY_SMALL
+                if limits.small
+                else MEASURED_VISIBILITY_CRUISER
+            )
             miles = hour.visibility / NAUTICAL_MILE
-            # Forecast visibility is rough, so it never makes an hour dangerous.
-            if miles < not_recommended:
-                self.set_floor(
-                    Level.NOT_RECOMMENDED, "visibility", visibility=hour.visibility
-                )
+            key = "visibility_measured" if hour.visibility_measured else "visibility"
+            # Forecast visibility is rough, so only a measured one makes an
+            # hour dangerous.
+            if hour.visibility_measured and miles < dangerous:
+                self.set_floor(Level.DANGEROUS, key, visibility=hour.visibility)
+            elif miles < not_recommended:
+                self.set_floor(Level.NOT_RECOMMENDED, key, visibility=hour.visibility)
             elif miles < caution:
-                self.set_floor(Level.CAUTION, "visibility", visibility=hour.visibility)
+                self.set_floor(Level.CAUTION, key, visibility=hour.visibility)
 
     def check_storms_and_warnings(self) -> None:
         """Thunderstorms and official warnings, the same at every skill level."""
@@ -259,20 +269,6 @@ def wind_chill(temperature: float, wind: float) -> float:
     v = math.pow(mph, 0.16)
     chill = 35.74 + 0.6215 * fahrenheit - 35.75 * v + 0.4275 * fahrenheit * v
     return (chill - 32) * 5 / 9
-
-
-def compass_point(direction: float) -> str:
-    """Return the nearest of the eight compass points, such as "ne".
-
-    A direction halfway between two points goes to the next one clockwise.
-    """
-    return DIRECTIONS[math.floor(direction % 360 / 45 + 0.5) % len(DIRECTIONS)]
-
-
-def angle_between(a: float, b: float) -> float:
-    """Return the angle between two directions, from 0 to 180 degrees."""
-    difference = abs(a - b) % 360
-    return 360 - difference if difference > 180 else difference
 
 
 def _two_levels(value: float, starts: tuple[float, float]) -> Level:

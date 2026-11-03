@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Formatter } from "./format";
 import { localize } from "./localize";
-import { adviceText, reasonsText, reasonText } from "./text";
+import { adviceText, ageText, reasonsText, reasonText, sourceText } from "./text";
 import type { Advice, HomeAssistant, Reason } from "./types";
 
 function formatter(units: "us" | "metric"): Formatter {
@@ -38,6 +38,9 @@ describe("reasonText", () => {
     expect(reasonText(metric, t, reason("waves", { height: 1.38 }))).toBe("waves 1.4 m");
     expect(reasonText(us, t, reason("gusts", { gust: 22.6 }))).toBe("gusts 23 kt");
     expect(reasonText(us, t, reason("visibility", { visibility: 1500 }))).toBe("visibility 0.8 nm");
+    expect(reasonText(us, t, reason("visibility_measured", { visibility: 600 }))).toBe(
+      "visibility 0.3 nm, measured nearby",
+    );
     expect(reasonText(us, t, reason("wind_chill", { temperature: -2 }))).toBe("wind chill 28 °F");
     expect(reasonText(us, t, reason("warning", { event: "Gale Warning" }))).toBe("Gale Warning");
     expect(reasonText(us, t, reason("thunderstorms"))).toBe("thunderstorms forecast");
@@ -126,5 +129,21 @@ describe("adviceText", () => {
     expect(adviceText(us, t, advice("rain_visibility", { chance: 60, visibility: 2500 }))).toBe(
       "Rain likely (60%), with visibility down to 1.3 nm.",
     );
+  });
+});
+
+describe("readings", () => {
+  const now = "2026-11-02T22:36:00+00:00";
+
+  it("says how long ago something was read", () => {
+    expect(ageText(t, now, "2026-11-02T22:36:20+00:00")).toBe("just now");
+    expect(ageText(t, now, "2026-11-02T21:51:00+00:00")).toBe("45 min ago");
+    expect(ageText(t, now, "2026-11-02T19:10:00+00:00")).toBe("3 h ago");
+  });
+
+  it("names who read it", () => {
+    expect(sourceText(t, "buoy", "46258")).toBe("Buoy 46258");
+    expect(sourceText(t, "airport", "KSAN")).toBe("Airport KSAN");
+    expect(sourceText(t, "sensors", null)).toBe("Your sensors");
   });
 });

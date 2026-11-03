@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from .advice import advise
+from .nowcast import Observation, latest
 from .outlook import BoatOutlook, HourOutlook, Outlook, SpotConditions
 from .profiles import SizeClass
 from .rating import Rating
@@ -152,8 +153,12 @@ def _hour(item: HourOutlook, sizes: dict[str, str]) -> dict[str, Any]:
         "rain_chance": hour.rain_chance,
         "weather_code": hour.weather_code,
         "visibility": hour.visibility,
+        "visibility_measured": hour.visibility_measured,
         "wave_height": hour.wave_height,
         "wave_period": hour.wave_period,
+        "wave_source": hour.wave_source,
+        "wind_spread": hour.wind_spread,
+        "adjusted": list(hour.adjusted),
         "water_temperature": hour.water_temperature,
         "tide_height": hour.tide_height,
         "tide_rising": hour.tide_rising,
@@ -164,6 +169,31 @@ def _hour(item: HourOutlook, sizes: dict[str, str]) -> dict[str, Any]:
         "score": item.score,
         "sizes": sizes,
         "warnings": [alert.event for alert in hour.alerts],
+    }
+
+
+def readings_now(observations: Sequence[Observation], now: datetime) -> dict[str, Any]:
+    """Return each field's freshest reading and every source's newest, for the panel."""
+    return {
+        "fields": {
+            key: {
+                "value": reading.value,
+                "time": reading.time.isoformat(),
+                "kind": observation.kind,
+                "station": observation.station,
+            }
+            for key, (observation, reading) in latest(observations, now).items()
+        },
+        "sources": [
+            {
+                "kind": observation.kind,
+                "station": observation.station,
+                "newest": newest.isoformat()
+                if (newest := observation.readings.latest)
+                else None,
+            }
+            for observation in observations
+        ],
     }
 
 

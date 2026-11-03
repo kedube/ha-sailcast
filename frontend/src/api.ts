@@ -8,6 +8,7 @@ import type {
   Preferences,
   SailCastConfig,
   SaveResult,
+  Shoreline,
   SourceSuggestions,
   WindGrid,
 } from "./types";
@@ -60,6 +61,11 @@ export class Api {
 
   sources(latitude: number, longitude: number): Promise<SourceSuggestions> {
     return this.send("settings/sources", { latitude, longitude });
+  }
+
+  /** How far open water reaches from a pin; the first time takes a few seconds. */
+  shoreline(latitude: number, longitude: number): Promise<Shoreline> {
+    return this.send("settings/shoreline", { latitude, longitude });
   }
 
   addToCalendar(sail: {

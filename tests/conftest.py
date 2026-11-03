@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import json
 from pathlib import Path
+import re
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -12,7 +13,10 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
     AiohttpClientMockResponse,
@@ -26,7 +30,14 @@ from custom_components.sailcast.const import (
     SUBENTRY_SAILOR,
     SUBENTRY_SPOT,
 )
-from custom_components.sailcast.providers import noaa_coops, nws, open_meteo
+from custom_components.sailcast.providers import (
+    metar,
+    ndbc,
+    noaa_coops,
+    nws,
+    open_meteo,
+    openfreemap,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 # When the fixtures were recorded: 2:36 PM in San Diego.
@@ -38,11 +49,43 @@ HARBOR_POINT = (32.75, -117.27)
 BAY_POINT = (32.68, -117.17)
 RIVER_POINT = (32.76, -117.24)
 POINTS = (HARBOR_POINT, BAY_POINT, RIVER_POINT)
+# The buoys and airports the readings were recorded at, where NDBC and
+# aviationweather.gov put them, in the order the station forecasts were.
+STATION_POINTS = {
+    "46258": (32.749, -117.502),
+    "SDBC1": (32.714, -117.174),
+    "KSAN": (32.7364, -117.1973),
+    "KNZY": (32.6922, -117.2098),
+}
+STATION_NAMES = {
+    "46258": "Mission Bay West, CA (220)",
+    "SDBC1": "9410170 - San Diego, CA",
+    "KSAN": "San Diego Intl Arpt",
+    "KNZY": "San Diego/North Island NAS",
+}
+TILE_URL = re.compile(
+    r"^https://tiles\.openfreemap\.org/planet/[^/]+/(\d+)/(\d+)/(\d+)\.pbf"
+)
 
 
 def fixture(name: str) -> Any:
     """Return a recorded response."""
     return json.loads((FIXTURES / f"{name}.json").read_text())
+
+
+def with_stations(
+    spot: ConfigSubentryData, buoy: str | None = None, airport: str | None = None
+) -> ConfigSubentryData:
+    """Return a test spot that also reads a buoy and an airport."""
+    chosen = {"buoy": buoy, "airport": airport}
+    data = dict(spot["data"]) | chosen
+    data["source_names"] = {
+        key: STATION_NAMES[station] for key, station in chosen.items() if station
+    }
+    data["source_points"] = {
+        key: list(STATION_POINTS[station]) for key, station in chosen.items() if station
+    }
+    return ConfigSubentryData(**{**spot, "data": data})
 
 
 def _spot(
@@ -222,13 +265,23 @@ def mock_sources(
     """
     aioclient_mock.get(
         open_meteo.FORECAST_URL,
-        params={"models": ",".join(open_meteo.MODELS)},
+        params={
+            "models": ",".join(open_meteo.MODELS),
+            "hourly": ",".join(open_meteo.FORECAST_VARIABLES),
+        },
         side_effect=by_point("open_meteo_forecast", POINTS),
     )
     aioclient_mock.get(
-        open_meteo.MARINE_URL, side_effect=by_point("open_meteo_marine", POINTS[:2])
+        open_meteo.MARINE_URL,
+        params={"hourly": ",".join(open_meteo.MARINE_VARIABLES)},
+        side_effect=by_point("open_meteo_marine", POINTS[:2]),
+    )
+    aioclient_mock.get(
+        open_meteo.ENSEMBLE_URL, side_effect=by_point("open_meteo_spread", POINTS)
     )
     aioclient_mock.get(f"{nws.API}/alerts/active", json=fixture("nws_alerts"))
+    mock_readings(aioclient_mock)
+    mock_tiles(aioclient_mock)
     if not predictions:
         return
     for station in ("9410166", "9410170", "9410196"):
@@ -243,6 +296,43 @@ def mock_sources(
         params={"station": "PCT0056", "product": "currents_predictions"},
         json=fixture("noaa_currents_PCT0056_1"),
     )
+
+
+def mock_readings(aioclient_mock: AiohttpClientMocker) -> None:
+    """Answer the buoys, airports and the forecast where they are."""
+    for buoy in ("46258", "SDBC1"):
+        aioclient_mock.get(
+            ndbc.REALTIME_URL.format(station=buoy),
+            text=(FIXTURES / f"ndbc_{buoy}.txt").read_text(),
+        )
+    aioclient_mock.get(metar.METAR_URL, json=fixture("aviationweather_metar"))
+    aioclient_mock.get(
+        open_meteo.FORECAST_URL,
+        params={"hourly": ",".join(open_meteo.NEARBY_VARIABLES)},
+        side_effect=by_point("open_meteo_nearby", tuple(STATION_POINTS.values())),
+    )
+    aioclient_mock.get(
+        open_meteo.MARINE_URL,
+        params={"hourly": ",".join(open_meteo.BUOY_VARIABLES)},
+        side_effect=by_point(
+            "open_meteo_marine_buoys",
+            (STATION_POINTS["46258"], STATION_POINTS["SDBC1"]),
+        ),
+    )
+
+
+def mock_tiles(aioclient_mock: AiohttpClientMocker) -> None:
+    """Answer map tile requests with the recorded tiles' water."""
+    aioclient_mock.get(openfreemap.TILEJSON_URL, json=fixture("openfreemap_tilejson"))
+
+    async def respond(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
+        match = TILE_URL.match(str(url))
+        assert match is not None
+        z, x, y = match.groups()
+        path = FIXTURES / "tiles" / z / x / f"{y}.pbf"
+        return AiohttpClientMockResponse(method, url, response=path.read_bytes())
+
+    aioclient_mock.get(TILE_URL, side_effect=respond)
 
 
 def wind_response(start: datetime = RECORDED) -> Any:
@@ -301,6 +391,24 @@ def sources(aioclient_mock: AiohttpClientMocker) -> AiohttpClientMocker:
     return aioclient_mock
 
 
+async def set_up(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """Set an entry up at the time the fixtures were recorded.
+
+    The pins' shorelines are measured in the background once setup is done,
+    and the results are worked out again with them. The clock then moves past
+    the refresh's cooldown, so later changes refresh at once, and goes back.
+    """
+    freezer.move_to(RECORDED)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    freezer.tick(timedelta(seconds=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    freezer.move_to(RECORDED)
+
+
 @pytest.fixture
 async def loaded(
     hass: HomeAssistant,
@@ -309,14 +417,51 @@ async def loaded(
     freezer: FrozenDateTimeFactory,
 ) -> MockConfigEntry:
     """Return the test entry, set up at the time the fixtures were recorded."""
-    freezer.move_to(RECORDED)
-    assert await hass.config_entries.async_setup(sailcast_entry.entry_id)
-    await hass.async_block_till_done()
+    await set_up(hass, sailcast_entry, freezer)
     return sailcast_entry
 
 
+@pytest.fixture
+def observed_entry(hass: HomeAssistant) -> MockConfigEntry:
+    """Return an entry whose three test spots also read buoys and airports."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=NAME,
+        data={},
+        subentries_data=[
+            with_stations(HARBOR, "46258", "KSAN"),
+            with_stations(BAY, "SDBC1", "KNZY"),
+            with_stations(RIVER, airport="KSAN"),
+            KEELBOAT,
+            CRUISER,
+            SAILOR,
+            BEGINNER,
+        ],
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+@pytest.fixture
+async def observed(
+    hass: HomeAssistant,
+    observed_entry: MockConfigEntry,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> MockConfigEntry:
+    """Return that entry, set up when the readings were recorded."""
+    await set_up(hass, observed_entry, freezer)
+    return observed_entry
+
+
 def mock_suggestions(aioclient_mock: AiohttpClientMocker) -> None:
-    """Answer the station and zone lookups for the harbor and bay pins."""
+    """Answer the station, zone, buoy and airport lookups for the test pins."""
+    aioclient_mock.get(
+        ndbc.STATIONS_URL, text=(FIXTURES / "ndbc_stations.xml").read_text()
+    )
+    aioclient_mock.get(
+        metar.STATIONINFO_URL, json=fixture("aviationweather_stationinfo")
+    )
     aioclient_mock.get(
         f"{noaa_coops.STATIONS_URL}/tidepredstations.json",
         json=fixture("noaa_tide_stations"),

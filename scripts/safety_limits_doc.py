@@ -169,6 +169,12 @@ def render() -> str:
         f"| Visibility below {_number(limits.VISIBILITY_CRUISER[0])} nm / below "
         f"{_number(limits.VISIBILITY_CRUISER[1])} nm | Cruisers "
         "| Caution / not recommended |",
+        "| Visibility measured nearby below "
+        f"{_number(limits.MEASURED_VISIBILITY_SMALL)} nm | Dinghy, small keelboat "
+        "| Dangerous, for the hour under way |",
+        "| Visibility measured nearby below "
+        f"{_number(limits.MEASURED_VISIBILITY_CRUISER)} nm | Cruisers "
+        "| Dangerous, for the hour under way |",
         "| Thunderstorms forecast | All | Not recommended for dinghies and "
         "small keelboats, caution for cruisers |",
         f"| Thunderstorms possible: CAPE of {_number(limits.THUNDERSTORM_CAPE)} "
@@ -177,7 +183,8 @@ def render() -> str:
         "",
         "The current rules use a wave period of at least "
         f"{_number(limits.AGAINST_CURRENT_MIN_PERIOD)} s. Forecast visibility "
-        "never makes an hour dangerous on its own.",
+        "never makes an hour dangerous on its own; a visibility measured at "
+        "the spot's airport or buoy can, for the hour under way.",
         "",
         "## Official warnings",
         "",

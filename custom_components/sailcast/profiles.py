@@ -18,10 +18,12 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS
 
 from .const import (
     CONF_AHEAD,
+    CONF_AIRPORT,
     CONF_AUTO_CALENDAR,
     CONF_AUTO_DAYS,
     CONF_AUTO_SPOTS,
     CONF_BOATS,
+    CONF_BUOY,
     CONF_CALENDAR,
     CONF_COLDEST,
     CONF_COMFORT,
@@ -29,6 +31,7 @@ from .const import (
     CONF_DAYS,
     CONF_END,
     CONF_EXPOSED,
+    CONF_FETCH,
     CONF_IDEAL_HIGH,
     CONF_IDEAL_LOW,
     CONF_LENGTH,
@@ -36,9 +39,11 @@ from .const import (
     CONF_MIN_SCORE,
     CONF_OFFSHORE,
     CONF_RAIN,
+    CONF_SENSORS,
     CONF_SIZE_CLASS,
     CONF_SKILL,
     CONF_SOURCE_NAMES,
+    CONF_SOURCE_POINTS,
     CONF_SPOTS,
     CONF_START,
     CONF_TIDE_STATION,
@@ -56,11 +61,22 @@ DEFAULT_RADIUS = 15_000
 MIN_RADIUS = 2_000
 MAX_RADIUS = 50_000
 
+# The open water upwind that can be set by hand, in km.
+FETCH_RANGE: Final = (0.05, 100.0)
+
+# The readings a spot can take from your own sensors.
+SENSOR_FIELDS: Final = (
+    "wind",
+    "gust",
+    "wind_direction",
+    "temperature",
+    "water_temperature",
+)
+
 # Boat lengths, in meters.
 MIN_LENGTH = 1.0
 MAX_LENGTH = 50.0
 
-DIRECTIONS = ("n", "ne", "e", "se", "s", "sw", "w", "nw")
 
 # A sailor's ideal wind, in knots, and the coldest air they enjoy, in °C.
 MAX_IDEAL_WIND: Final = 40.0
@@ -108,10 +124,13 @@ class RainTolerance(StrEnum):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Spot:
-    """A place to sail, and where its tides, currents and warnings come from.
+    """A place to sail, and where its tides, currents, warnings and readings come from.
 
     The current station includes its depth bin, as in "PCT0056_1". The
-    sources' names are kept when they're chosen, by source.
+    sources' names are kept when they're chosen, by source, and so are the
+    buoy's and airport's positions, for the forecast there. `sensors` maps
+    readings such as "wind" to your own sensors. `fetch`, the open water
+    upwind in km, is set by hand only to override the shoreline.
     """
 
     id: str
@@ -125,7 +144,14 @@ class Spot:
     tide_station: str | None = None
     current_station: str | None = None
     marine_zone: str | None = None
+    buoy: str | None = None
+    airport: str | None = None
+    sensors: Mapping[str, str] = field(default_factory=dict, hash=False)
+    fetch: float | None = None
     source_names: Mapping[str, str] = field(default_factory=dict, hash=False)
+    source_points: Mapping[str, tuple[float, float]] = field(
+        default_factory=dict, hash=False
+    )
 
     @property
     def open_water(self) -> bool:
@@ -148,7 +174,15 @@ class Spot:
             tide_station=data.get(CONF_TIDE_STATION),
             current_station=data.get(CONF_CURRENT_STATION),
             marine_zone=data.get(CONF_MARINE_ZONE),
+            buoy=data.get(CONF_BUOY),
+            airport=data.get(CONF_AIRPORT),
+            sensors=dict(data.get(CONF_SENSORS) or {}),
+            fetch=data.get(CONF_FETCH),
             source_names=dict(data.get(CONF_SOURCE_NAMES) or {}),
+            source_points={
+                key: (float(point[0]), float(point[1]))
+                for key, point in (data.get(CONF_SOURCE_POINTS) or {}).items()
+            },
         )
 
 
@@ -337,9 +371,19 @@ def check_name(name: str, taken: Iterable[str]) -> str | None:
 
 def check_spot(data: Mapping[str, Any]) -> dict[str, str]:
     """Return errors in a spot's data, by field."""
+    errors = {}
     if not MIN_RADIUS <= data[CONF_RADIUS] <= MAX_RADIUS:
-        return {CONF_RADIUS: "radius_out_of_range"}
-    return {}
+        errors[CONF_RADIUS] = "radius_out_of_range"
+    fetch = data.get(CONF_FETCH)
+    if fetch is not None and not FETCH_RANGE[0] <= fetch <= FETCH_RANGE[1]:
+        errors[CONF_FETCH] = "fetch_out_of_range"
+    sensors = data.get(CONF_SENSORS) or {}
+    if any(
+        key not in SENSOR_FIELDS or not str(entity_id).startswith("sensor.")
+        for key, entity_id in sensors.items()
+    ):
+        errors[CONF_SENSORS] = "invalid_sensor"
+    return errors
 
 
 def check_boat(data: Mapping[str, Any]) -> dict[str, str]:

@@ -12,7 +12,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import DOMAIN
-from custom_components.sailcast.providers import open_meteo
+from custom_components.sailcast.providers import open_meteo, openfreemap
 
 
 async def test_devices_and_subentries(
@@ -44,12 +44,20 @@ async def test_devices_and_subentries(
 async def test_conditions_are_off_by_default(
     hass: HomeAssistant, loaded: MockConfigEntry, entity_registry: er.EntityRegistry
 ) -> None:
-    """Spot conditions start disabled; waves only exist on open water."""
-    for entity_id in ("sensor.harbor_wind", "sensor.harbor_wave_height"):
+    """Spot conditions start disabled; rivers get waves but no water temperature.
+
+    Sheltered water's waves are worked out from its fetch, and water
+    temperature comes from the ocean model, for open water only.
+    """
+    for entity_id in (
+        "sensor.harbor_wind",
+        "sensor.harbor_wave_height",
+        "sensor.river_wave_height",
+    ):
         entry = entity_registry.async_get(entity_id)
         assert entry
         assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert entity_registry.async_get("sensor.river_wave_height") is None
+    assert entity_registry.async_get("sensor.river_water_temperature") is None
     assert entity_registry.async_get("sensor.river_next_high_tide")
 
 
@@ -127,6 +135,8 @@ async def test_unavailable_without_a_forecast(
     freezer.move_to(datetime(2026, 11, 2, 22, 36, tzinfo=UTC))
     aioclient_mock.get(open_meteo.FORECAST_URL, status=503)
     aioclient_mock.get(open_meteo.MARINE_URL, status=503)
+    aioclient_mock.get(open_meteo.ENSEMBLE_URL, status=503)
+    aioclient_mock.get(openfreemap.TILEJSON_URL, status=503)
     aioclient_mock.get(
         "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter", status=503
     )

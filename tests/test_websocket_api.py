@@ -370,6 +370,58 @@ async def test_sources(
     assert isinstance(station["latitude"], float)
     assert isinstance(station["longitude"], float)
     assert result["marine_zone"][0]["latitude"] is None
+    # The nearest buoy and airport are suggested too.
+    assert [buoy["id"] for buoy in result["buoy"][:2]] == ["SDBC1", "LJAC1"]
+    assert result["suggested"]["buoy"] == "SDBC1"
+    assert result["airport"][0]["id"] == "KSAN"
+    assert result["airport"][0]["name"] == "San Diego Intl Arpt"
+    assert result["suggested"]["airport"] == "KSAN"
+
+
+async def test_forecast_with_readings(
+    hass: HomeAssistant, observed: MockConfigEntry, send: Send
+) -> None:
+    """The panel gets readings, how they moved the forecast, and the waves' source."""
+    result = (await send("forecast", **ALEX_RIVER))["result"]
+    assert result["sources"]["airport"] == {"id": "KSAN", "name": "San Diego Intl Arpt"}
+    assert result["sources"]["buoy"] is None
+    assert result["sources"]["sensors"] == {}
+    wind = result["readings"]["fields"]["wind"]
+    assert (wind["value"], wind["kind"], wind["station"]) == (8, "airport", "KSAN")
+    assert result["readings"]["sources"] == [
+        {"kind": "airport", "station": "KSAN", "newest": "2026-11-02T21:51:00+00:00"}
+    ]
+    assert {item["field"] for item in result["adjustments"]} >= {"wind", "temperature"}
+    assert result["shoreline"]["on_water"] is True
+    assert {hour["wave_source"] for hour in result["hours"]} == {"estimate"}
+    now = next(
+        hour for hour in result["hours"] if hour["time"] == "2026-11-02T22:00:00+00:00"
+    )
+    assert "wind" in now["adjusted"]
+    assert now["visibility_measured"] is True
+
+
+async def test_shoreline(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    hass_ws_client: WebSocketGenerator,
+    hass_read_only_access_token: str,
+) -> None:
+    """A pin's open water each way, for the spot editor; administrators only."""
+    result = (await send("settings/shoreline", latitude=32.715, longitude=-117.18))[
+        "result"
+    ]
+    assert result["on_water"] is True
+    assert len(result["rays"]) == 120
+    assert result["exposed"] == []
+    land = (await send("settings/shoreline", latitude=32.68, longitude=-117.17))[
+        "result"
+    ]
+    assert land["on_water"] is False
+    reader = _sender(await hass_ws_client(hass, hass_read_only_access_token))
+    response = await reader("settings/shoreline", latitude=32.715, longitude=-117.18)
+    assert response["error"]["code"] == "unauthorized"
 
 
 async def test_calendar_add_and_remove(
