@@ -80,7 +80,7 @@ I pulled one real week of data (November 1–7, 2026) for the three test spots. 
 6. **Official warnings need a pin on the water.** The National Weather Service matched a point in the water near the spots to its marine zone, but a point on land a few hundred meters away matched no marine zone at all.
 7. **Forecast agreement varies a lot.** The three models' wind forecasts agreed within about 3 kt on calm days but differed by up to 13 kt in some hours at the harbor spot. That spread is the confidence signal.
 8. **November daylight is short.** Sunset was about 4:30 PM, which cuts most weekday evenings.
-9. **Shoreline data is heavy.** Pulling the OpenStreetMap coastline around the test spots took 38 seconds and 3 MB. Working out exposure and fetch from map data has to happen once, when a spot is added, never on every refresh.
+9. **Shoreline data is heavy.** Pulling the OpenStreetMap coastline around the test spots took 38 seconds and 3 MB. Working out exposure and fetch from map data has to happen once, when a spot is added, never on every refresh. In milestone 4, the same OpenStreetMap water came far quicker from OpenFreeMap's map tiles: 0.2 seconds a tile, about 4 KB of water each, against 35 to 120 seconds for each Overpass query, one of which timed out.
 
 ## 3. How it fits together
 
@@ -124,7 +124,7 @@ ha-sailcast/
 │   ├── profiles.py            # spot, boat and sailor schemas and checks, shared by setup and the panel
 │   ├── sources.py             # nearest tide station, current station and marine zone for a spot
 │   ├── coordinator.py         # one coordinator per source, and one for the results
-│   ├── providers/             # open_meteo, noaa_coops, ndbc, nws, metar, ha_entity, keyed tide providers
+│   ├── providers/             # open_meteo, noaa_coops, ndbc, nws, metar, ha_entity, openfreemap, keyed tide providers
 │   ├── timeline.py            # the normalized hourly conditions model
 │   ├── limits.py              # the safety limits table (versioned)
 │   ├── rating.py              # safety rating rules
@@ -135,6 +135,9 @@ ha-sailcast/
 │   ├── week.py                # the week the panel shows, from now on
 │   ├── planner.py             # windows in your own calendars: added, moved, watched
 │   ├── wind.py                # the wind map's grid, shared by nearby spots, within the budget
+│   ├── nowcast.py             # readings nudge the next hours
+│   ├── waves.py               # wind waves over a fetch, and shelter from model waves
+│   ├── shoreline.py           # fetch and exposure, measured once per pin from map tiles
 │   ├── services.py            # the get_forecast action
 │   ├── ai.py                  # optional AI summary through AI Task
 │   ├── sensor.py, binary_sensor.py, calendar.py
@@ -172,7 +175,7 @@ The panel's Settings tab lists the sailors, boats and spots and edits them in pl
 
 - **Sailors:** name, skill, boats and default boat, sailing days and hours, and linked Home Assistant user. Automatic calendar adding has its own dialog, reached from Settings or the week view.
 - **Boats:** name, size and length. Each boat shows its size's limits as a scale, so you can see where caution and dangerous start.
-- **Spots:** a pin on a map, the wind map's radius, name, water type and data sources. To add a spot, you select the water to drop the pin, and SailCast suggests the nearest tide, current and buoy stations, with their distances. You can drag the pin later.
+- **Spots:** a pin on a map, the wind map's radius, name, water type and data sources. To add a spot, you select the water to drop the pin, and SailCast suggests the nearest tide, current and buoy stations and airport, with their distances, and shows them on the map. Your own sensors can be picked for wind, gusts, direction, air and water. As the pin moves, SailCast measures the open water around it, warns when it's on land, and checks the directions open to the sea for a new spot. Rivers and lakes can override the measured fetch with one distance. You can drag the pin later.
 
 The pencil next to each picker in the toolbar opens that spot, sailor or boat, so you don't have to go through Settings.
 - **API keys** stay in Home Assistant's own options dialog and never reach the panel.
@@ -187,7 +190,7 @@ Home Assistant specifics, checked against the 2026.11 beta:
 
 - The config flow returns `{"spot": …, "boat": …, "sailor": …}` from `async_get_supported_subentry_types`. Each subentry flow has a `user` step and a `reconfigure` step, so all three can be edited later.
 - The pin uses `LocationSelector` with `radius=True`, which draws on Home Assistant's new map as of 2026.10.
-- The fetch field shows only for sheltered water and lakes, using the conditional fields added in 2026.11.
+- The fetch field shows only for sheltered water and lakes, using the conditional fields added in 2026.11. Until the tests run on 2026.11, the setup dialog always shows it, described as for rivers and lakes; the panel shows it only for them.
 - Validation uses Probatio. Home Assistant replaced voluptuous with Probatio in 2026.9; the `vol` alias still works, but new code should use Probatio directly.
 - Every form passes a `step_id`. Leaving it out is deprecated in 2026.11 and breaks in 2027.5.
 
@@ -204,7 +207,8 @@ The free sources work everywhere. Regional free sources and optional keyed provi
 | Waves, swell, water temperature, sea level | Open-Meteo Marine API | 5–25 km models, and one cell can cover several spots. Not used for sheltered water or lakes. Its sea level is described as "not suitable for coastal navigation", so it's only a last-resort tide curve, labeled as rough, and never used for launch-depth rules. |
 | Wind grid for the map | Open-Meteo Forecast API, many points in one request | About 225 points per area. |
 | Sunrise and sunset | Computed locally | Home Assistant's astronomy helpers. No API needed. |
-| Airport weather reports | aviationweather.gov Data API (METAR) | Worldwide, JSON, wind in knots. Stations are found by bounding box. Limit 100 requests a minute, custom User-Agent required. At the test spots, the nearest airport is about 21 km away. |
+| Airport weather reports | aviationweather.gov Data API (METAR) | Worldwide, JSON, wind in knots. Stations are found by bounding box. Limit 100 requests a minute, custom User-Agent required. At the test spots, the nearest airport is about 21 km away. A report leaves gusts out unless they're well over the mean wind, gives `VRB` for variable wind, and gives visibility as text such as `10+` (miles). |
+| Shoreline | OpenFreeMap's map tiles (OpenMapTiles schema) | The `water` layer holds OpenStreetMap's sea, lakes, rivers and ponds as polygons. Zoom 12, about 36 tiles for 20 km around a pin, read with a small decoder of SailCast's own. Free with no key; attribution required, no service guarantee. The address changes with each weekly build, so it's read from the TileJSON first. |
 | Your own sensors | Any Home Assistant sensor | A Tempest or Ecowitt station, or a boat's instruments through NMEA 2000 or Signal K integrations. |
 
 ### Regional, free
@@ -212,7 +216,7 @@ The free sources work everywhere. Regional free sources and optional keyed provi
 | Data | Source | Notes |
 | --- | --- | --- |
 | US tides and currents | NOAA CO-OPS | High/low and hourly predictions from harmonic stations. Subordinate current stations give only slack and peak events, whatever interval you ask for. Requests send an `application` name. CO-OPS throttles heavy users, so predictions are fetched once a day for 10 days and cached on disk. Near the test spots, one current station peaks around 3 kn and another around 1–1.4 kn, each with its own flood and ebb directions. |
-| Buoys (US and partner networks) | NDBC realtime files | Each file holds 45 days, newest first (about 600 KB for one buoy). NDBC supports HTTP range requests, so SailCast reads only the first 8 KB, about the last 11 hours. `MM` means missing. Wind is an 8-minute average in m/s. Fields arrive on different schedules. Of the three buoys near the test spots, one reports everything, one is patchy, and one has waves but no wind. |
+| Buoys (US and partner networks) | NDBC realtime files | Each file holds 45 days, newest first (about 600 KB for one buoy). NDBC supports HTTP range requests, so SailCast reads only the first 8 KB, about the last 11 hours. `MM` means missing. Wind is an 8-minute average in m/s. Fields arrive on different schedules. Of the three buoys near the test spots, one reports everything, one is patchy, and one has waves but no wind. Buoys are suggested from NDBC's list of active stations, those with standard readings, fetched at most once a day. |
 | US marine warnings | National Weather Service API | Alerts are fetched by marine zone (`/alerts/active?zone=<zone>`). A point query only matches zones that contain the point. When a spot is added, SailCast finds the nearest marine zone: the forecast office from `/points`, then that office's coastal zones, then the closest zone polygon (0.67 km away for a test point on land). A User-Agent is required (HTTP 403 without one). Event names include Small Craft Advisory; Gale, Storm and Hurricane Force Wind Warning; Hazardous Seas Warning; Special Marine Warning; Dense Fog Advisory; and Brisk Wind Advisory. |
 | Canadian tides | CHS IWLS API | Free and no key. Limits are 3 requests a second and 30 a minute per IP. The licence requires a CHS notice and rules out commercial derivative products and navigation use. |
 | UK tides | UKHO Admiralty Tidal API (Discovery tier) | A free 1-year key covers 607 UK stations for 7 days. Caching is forbidden and the redistribution terms are unclear, so this waits until UKHO confirms (milestone 5). |
@@ -237,7 +241,9 @@ Open-Meteo counts each location as `max(1, V/10 × max(1, D/14))` calls. V is th
 | Ensemble spread | Every 6 hours | about 12 |
 | Marine | Every 3 hours | about 24 |
 | Wind grid, about 225 points | On demand, cached 3 hours | up to 1,800 per map area |
-| **Worst case** | | **about 2,100** |
+| Forecast at each buoy and airport: 3 models × 4 variables, 2 days | Every hour | about 29 per station |
+| Marine data at each buoy | Every 3 hours | about 8 per buoy |
+| **Worst case** | | **about 2,300** |
 
 SailCast counts its own calls. It stops refreshing the map at 6,000 in a day and slows the forecast before 8,000, leaving room for anything else on the same IP address, such as Home Assistant's own Open-Meteo weather.
 
@@ -247,7 +253,9 @@ The other sources are polled on these schedules:
 | --- | --- |
 | Tide and current predictions | Once a day per station |
 | Buoys | Every 20 minutes |
-| Airport reports | Every 30 minutes |
+| Airport reports | Every 30 minutes, one request for all |
+| Your own sensors | Whenever the results are worked out, and live when the panel asks |
+| Shoreline | Once per pin, kept on disk; a pin that fails is tried again after 6 hours |
 | NWS warnings | Every 5 minutes, one request for all zones |
 
 ## 6. Conditions timeline and local corrections
@@ -268,10 +276,10 @@ Local corrections are applied once, while the timeline is built:
 
 | Correction | How |
 | --- | --- |
-| **Exposure** | Each spot lists the directions it's open to. If model waves come from a sheltered direction, SailCast uses the larger of the local wind-wave estimate and half the model height. That leans cautious, because the model's wave direction is itself coarse. |
-| **Sheltered water and lakes** | Waves are estimated from wind speed and fetch with the standard fetch-limited growth formula used in coastal engineering (SMB). Fetch is set per spot at first, and worked out per direction from OpenStreetMap shoreline data later. |
+| **Exposure** | Each spot lists the directions it's open to. If model waves come from a sheltered direction, SailCast uses the larger of the local wind-wave estimate and half the model height. That leans cautious, because the model's wave direction is itself coarse. A spot with no directions set uses those the shoreline shows open: a compass point is open when some ray within its 45° sector reaches 20 km over water. Without a fetch to estimate from, the model's waves stand. |
+| **Sheltered water and lakes** | Waves are estimated from wind speed and fetch with the standard fetch-limited growth formula used in coastal engineering (SMB, deep water, which leans toward bigger waves). Fetch is worked out per direction from OpenStreetMap's water when a spot is added: rays every 3° out to 20 km, each stopping where the water does, and the fetch for a wind is the average of the rays within 15° of it, as coastal engineers measure it, so a narrow channel opening onto the sea doesn't count as open sea. Along a ray, each stretch between polygon edges is checked by whether its middle is in any water, because tiles cut polygons at their edges and river and sea polygons overlap. A distance set by hand overrides it for every direction. |
 | **Currents** | Values between NOAA's slack and peak times are interpolated with a cosine curve. The flood and ebb directions come from the station. |
-| **Observations ("nowcast")** | When a buoy, airport or your own sensor has a fresh reading, SailCast compares it with the forecast for the same place and nudges the next few hours by that difference, fading to nothing over about 6 hours. Readings expire field by field. |
+| **Observations ("nowcast")** | When a buoy, airport or your own sensor has a fresh reading, SailCast compares it with the forecast for the same place and nudges the next few hours by that difference, fading to nothing over about 6 hours. Readings expire field by field: wind, gusts, direction and air after 2 hours, waves after 3, water after 6. Each field comes from the best source that has it: your sensors, which are taken to be at the spot, then the buoy, then the airport. Buoys and airports get a lighter forecast of their own (3 models, 4 variables, today), and buoys the marine model's waves and water temperature there. Without a gust reading, gusts move with the wind; direction isn't nudged in air under 3 kt. A measured visibility replaces the forecast's for the hour under way. |
 | **Tide datum** | Heights are shown above the station's chart datum (MLLW in the US), never above mean sea level. |
 
 ## 7. Safety rating
@@ -473,7 +481,7 @@ A **sailing window** is at least two hours in a row that meet all of these condi
 
 The best window of the day has the highest average score. Windows end at sunset, not on the hour. If a day has no window, its score is capped at 59, so a single good hour can't make a day look "great".
 
-**Confidence** compares the hourly wind from three models: ECMWF IFS, GFS (HRRR for the first 40 hours in the US) and ICON. It's "high" when the models typically agree within 3 kt over the day, "medium" within 6 kt, and "low" beyond that. From milestone 4, the ECMWF ensemble's spread can also lower it. The day view shows the spread between models as a shaded band.
+**Confidence** compares the hourly wind from three models: ECMWF IFS, GFS (HRRR for the first 40 hours in the US) and ICON. It's "high" when the models typically agree within 3 kt over the day, "medium" within 6 kt, and "low" beyond that. The ECMWF ensemble's spread (its ensemble mean's standard deviation, one call per spot every 6 hours) can also lower it: "medium" when it's typically over 1.75 kt and "low" over 3.5 kt. Three models typically span about 1.7 standard deviations, so the two scales match. The day view shows the spread between models as a shaded band.
 
 ## 9. Advice and the AI option
 
@@ -540,12 +548,13 @@ SailCast adds at most one event a day for each sailor and keeps it in step with 
 
 **Watching the forecast.** SailCast keeps a list of every event it added, stored per Home Assistant user. If the forecast for one gets worse (any hour below "good", or the score under 60), the panel flags it, SailCast posts a Home Assistant notification, and it fires a `sailcast_planned_sail_changed` event. The second blueprint turns that event into a phone notification. You can turn the warning off for each sail you add yourself.
 
-Repair issues cover the following. Repairs are Home Assistant's built-in way to tell you something needs fixing.
+Repair issues cover the following. Repairs are Home Assistant's built-in way to tell you something needs fixing. Each clears itself once things are right again, and they're checked whenever the results are worked out.
 
-- a spot pin on land (no marine zone, no wave data)
-- a rejected API key
-- the Open-Meteo daily budget running out
-- a tide station that stopped returning data
+- a spot pin on land, from the shoreline measured on the map
+- a buoy, airport or one of your sensors that has sent nothing for 12 hours
+- a tide or current station that has failed for a day
+- the Open-Meteo daily budget running low, from 8,000 calls
+- a rejected API key (milestone 5, with the keyed providers)
 
 Diagnostics include each provider's last fetch status and the budget use, with API keys and spot coordinates redacted, so you can share them in an issue without showing where you sail.
 
@@ -569,7 +578,7 @@ The four views follow the mockup:
 
 - **Week:**
   - the best window this week, with that day's tide curve behind it and an **Add to calendar** button
-  - live readings from the nearest buoy or station (until those arrive in milestone 4, the forecast for the hour now under way)
+  - live readings from the spot's buoy, airport or your own sensors, each with who read it and how long ago, and the forecast for the hour now under way for anything not read
   - official warnings
   - the sailor's automatic calendar setting, and the windows already in their calendars, with a warning when one's forecast gets worse
   - a seven-day calendar, one column per day from dawn to dusk:
