@@ -29,6 +29,8 @@ async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None
             },
         },
     )
+    # Each change reloads the entry; two changes at once can share a reload.
+    await hass.async_block_till_done()
     hass.config_entries.async_update_subentry(
         loaded,
         spot,
