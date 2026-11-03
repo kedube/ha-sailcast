@@ -22,6 +22,7 @@ from pytest_homeassistant_custom_component.typing import (
 
 from custom_components.sailcast.const import DOMAIN, SIGNAL_UPDATED, SUBENTRY_SAILOR
 from custom_components.sailcast.storage import DATA_STORE
+from custom_components.sailcast.wind import STOP_AT
 
 from .conftest import HARBOR_POINT, RECORDED, mock_suggestions, mock_wind
 
@@ -477,6 +478,6 @@ async def test_wind_grid_budget(
 ) -> None:
     """Near the day's limit, a grid that was never fetched can't be shown."""
     mock_wind(aioclient_mock)
-    loaded.runtime_data.budget.add(7000)
+    loaded.runtime_data.budget.add(STOP_AT)
     response = await send("wind_grid", spot="spot_river")
     assert response["error"]["code"] == "budget"

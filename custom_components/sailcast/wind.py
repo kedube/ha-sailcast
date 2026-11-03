@@ -4,7 +4,7 @@ A grid is fetched only when someone opens the wind map, never in the
 background. It covers a spot's wind map circle, or the circles of nearby
 spots that overlap, with at most 15 x 15 points about 2 km apart, and it's
 kept for three hours. Each point costs one of Open-Meteo's 10,000 daily
-calls, so SailCast stops fetching grids at 7,000 calls in a day, leaving the
+calls, so SailCast stops fetching grids at 6,000 calls in a day, leaving the
 rest for the forecast, and shows the last grid it has instead.
 """
 
@@ -35,7 +35,7 @@ MAX_SHARED_SPACING_KM: Final = 3.0
 KEEP: Final = timedelta(hours=3)
 # Old grids are still shown when no new one can be fetched, for this long.
 KEEP_STALE: Final = timedelta(days=1)
-STOP_AT: Final = 7000
+STOP_AT: Final = 6000
 
 DATA_WIND: HassKey[WindGrids] = HassKey(f"{DOMAIN}_wind")
 

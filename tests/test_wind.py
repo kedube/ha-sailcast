@@ -207,7 +207,8 @@ async def test_a_day_with_three_spots(
 
     Each grid is fetched every three hours, 8 times a day: 3 x 8 x 225 =
     5,400 calls. The forecast and marine data use about 300 more, so the
-    day stays well under Open-Meteo's 10,000.
+    day never reaches the 6,000 where grids stop, and stays well under
+    Open-Meteo's 10,000.
     """
     mock_wind(aioclient_mock)
     freezer.move_to(RECORDED.replace(hour=0, minute=0))
@@ -222,7 +223,7 @@ async def test_a_day_with_three_spots(
     assert aioclient_mock.call_count == 3 * 8
     assert budget.today == 3 * 8 * 225
     forecast = 24 * open_meteo.forecast_calls(3) + 8 * open_meteo.marine_calls(3)
-    assert budget.today + forecast < 10_000
+    assert budget.today + forecast < STOP_AT
 
 
 async def test_more_spots_than_the_budget_allows(
@@ -230,7 +231,7 @@ async def test_more_spots_than_the_budget_allows(
     aioclient_mock: AiohttpClientMocker,
     freezer: FrozenDateTimeFactory,
 ) -> None:
-    """With many far-apart spots, fetching stops at 7,000 calls in a day."""
+    """With many far-apart spots, fetching stops at 6,000 calls in a day."""
     mock_wind(aioclient_mock)
     freezer.move_to(RECORDED.replace(hour=0, minute=0))
     grids, budget = WindGrids(), Budget()
