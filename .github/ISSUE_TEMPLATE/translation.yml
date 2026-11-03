@@ -1,0 +1,39 @@
+name: Translation correction
+description: Wording in your language that's wrong or reads badly.
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The translations were written by AI and haven't been checked by native speakers, so corrections are welcome, above all for the safety wording. [docs/translations.md](https://github.com/kedube/ha-sailcast/blob/main/docs/translations.md) has the glossary each language uses.
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - German
+        - French
+        - Dutch
+        - Spanish
+        - Simplified Chinese
+        - Italian
+        - Polish
+        - Swedish
+        - Russian
+        - Czech
+        - Brazilian Portuguese
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: Where it shows, and how it reads now
+    validations:
+      required: true
+  - type: textarea
+    id: better
+    attributes:
+      label: Better wording
+      description: What a sailor who speaks the language would say, and why if it isn't obvious.
+    validations:
+      required: true

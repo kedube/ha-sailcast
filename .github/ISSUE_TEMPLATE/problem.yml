@@ -1,0 +1,51 @@
+name: Problem
+description: Something doesn't work, or a rating doesn't match the conditions.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please don't post where you sail. SailCast's diagnostics leave out locations, names and stations, so attach them instead of screenshots of your settings.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected. For a rating, the conditions you saw and the boat.
+    validations:
+      required: true
+  - type: input
+    id: sailcast
+    attributes:
+      label: SailCast version
+      placeholder: 1.0.0b1
+    validations:
+      required: true
+  - type: input
+    id: home_assistant
+    attributes:
+      label: Home Assistant version
+      placeholder: 2026.11.0
+    validations:
+      required: true
+  - type: dropdown
+    id: region
+    attributes:
+      label: Where your spots are
+      multiple: true
+      options:
+        - US
+        - Canada
+        - Netherlands
+        - Norway
+        - Elsewhere in Europe
+        - Somewhere else
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Download them from SailCast's menu under Settings → Devices & services → SailCast, and drop the file here.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Turn on debug logging from the same menu, try again, then turn it off and drop the downloaded log here.
