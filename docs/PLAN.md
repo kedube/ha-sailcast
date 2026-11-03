@@ -157,9 +157,9 @@ ha-sailcast/
 ├── tests/                     # pytest, with responses recorded at made-up San Diego spots
 ├── blueprints/automation/sailcast/   # windows tomorrow, and a planned sail got worse
 ├── scripts/                   # setup, develop, lint, fixture recorder, privacy hook
-├── docs/
+├── docs/                      # settings, safety limits, translations, brand, this plan
 ├── hacs.json
-└── .github/workflows/
+└── .github/                   # workflows, and issue forms for problems and translations
 ```
 
 ## 4. Configuration
@@ -677,7 +677,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - windows stay inside the sailor's sailing days and hours
 - **Test profiles:** a 20 ft small keelboat and a 34 ft cruiser, at the three test spots, at all three skill levels.
 - **Providers:** tests against recorded responses. They were recorded on November 2 at three made-up spots in San Diego, chosen to cover the same cases as the home spots: a harmonic and a subordinate tide station, a subordinate current station, a pin that's in its marine zone and one that isn't, and a live Small Craft Advisory. Sources abroad were recorded on November 3 in the Solent, the Wadden Sea and on Lake Garda, with Lake Tahoe's Lake Wind Advisory, a Canadian marine area and a KNMI coastal warning. CHS's predictions, WorldTides' and MeteoAlarm's region outlines are made up for the tests, since they can't be passed on or need a key. `scripts/record_fixtures.py` records them again.
-- **Config flow, subentries, entities, the WebSocket API and the calendar:** tested with `pytest-homeassistant-custom-component`, version 0.13.375 (matches 2026.10.4). Home Assistant is moving that package into core as `pytest-home-assistant`, which isn't on PyPI yet, so SailCast switches when it's published.
+- **Config flow, subentries, entities, the WebSocket API and the calendar:** tested with `pytest-homeassistant-custom-component`, version 0.13.375 (matches 2026.10.4). Home Assistant now publishes that package from core as `pytest-homeassistant`, which has a 2026.11 beta on PyPI, so SailCast switches to it with 2026.11.0.
 - **Panel commands:**
   - settings changes are refused for non-administrators and for invalid input, and saved ones show up in the subentries
   - `calendar/add` calls `calendar.create_event` as the requesting user
@@ -744,7 +744,7 @@ Each milestone ends with something you can install and try.
 | 4 | Local accuracy | Buoys, airport reports and your own sensors, with nowcast blending. Exposure and fetch, with fetch worked out from shoreline data. Repairs (pin on land, failed sources). | "Now" readings show at all three test spots, and the river spot's waves come from the sheltered-water estimate. |
 | 5 | Worldwide | Tide providers that need a key, free regional sources, and warning services outside the US. Built: WorldTides; CHS, Rijkswaterstaat and Kartverket tides; the ocean model's rough tide; NWS alerts for lakes; ECCC and MeteoAlarm warnings. | A spot in the UK, the Netherlands and a lake each produce a complete week. |
 | 6 | Languages, AI and notifications | The 11 translations, the AI summary option, and the two notification blueprints. Built: the translations with a glossary, calendar events and notifications in Home Assistant's language, MeteoAlarm's warning names in the reader's, the AI summary through AI Task, and both blueprints. | All 12 languages pass the completeness check. The AI summary appears only when it's turned on. |
-| 7 | Release | Docs, beta through a custom repository, then the default catalog pull request. Version 1.0. | Marketplace validation passes, and the catalog pull request is open. |
+| 7 | Release | Docs, beta through a custom repository, then the default catalog pull request. Version 1.0. Built so far: the settings reference, installing from the Marketplace, troubleshooting, known limitations and removal in the docs, issue forms, and version 1.0.0b1. | Marketplace validation passes, and the catalog pull request is open. |
 
 ## 16. Risks
 
@@ -766,7 +766,7 @@ Each milestone ends with something you can install and try.
 
 ## 17. Review history
 
-On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme, and had the icon and logo redrawn in its blues. On November 3 you asked to go on with milestone 6 rather than wait for Home Assistant 2026.11.0.
+On November 1 you approved the safety limits and the three skill levels, and set sustained wind as the measure for them. On November 2 you approved the mockup's layout, asked for day and night themes and automatic calendar adding, dropped the engine rule, and tried Paper Heart Design's "Under the Wave" palette as SailCast's own look. You also approved the icon and logo, asked that the public repo hold no personal data, and approved this plan. Work on milestone 0 started the same day. Later that day, after comparing the two looks side by side, you went back to the original palette, which follows the Home Assistant theme, and had the icon and logo redrawn in its blues. On November 3 you asked to go on with milestone 6 rather than wait for Home Assistant 2026.11.0, merged it, and asked to continue with milestone 7.
 
 ## 18. Sources
 
