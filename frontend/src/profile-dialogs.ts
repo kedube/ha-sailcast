@@ -10,6 +10,7 @@ import { compassKey, FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
 import { limitBars, skillBars } from "./settings";
 import "./spot-map";
 import type { StationMark } from "./spot-map";
+import { savedSourceText } from "./text";
 import type {
   Comfort,
   SensorKey,
@@ -573,7 +574,7 @@ export class ScSpotDialog extends ProfileDialog {
           id: choice.id,
           label: this.t(`spot.${kind}_mark`, {
             name: choice.name,
-            id: choice.id.split("_")[0],
+            id: (choice.code ?? choice.id).split("_")[0],
           }),
           latitude: choice.latitude,
           longitude: choice.longitude,
@@ -607,15 +608,18 @@ export class ScSpotDialog extends ProfileDialog {
         ${
           chosen && !known.has(chosen)
             ? html`<option value=${chosen} selected>
-                ${spot?.source_names[key] ? `${spot.source_names[key]} (${chosen})` : chosen}
+                ${savedSourceText(chosen, spot?.source_names[key])}
               </option>`
             : nothing
         }
         ${options.map(
           (option, index) =>
             html`<option value=${option.id} ?selected=${option.id === chosen}>
-              ${option.name} (${option.id.split("_")[0]}) ·
-              ${this.distance(option.distance)}${index === 0 ? `, ${t("spot.nearest")}` : ""}
+              ${option.name}${option.code ? ` (${option.code.split("_")[0]})` : ""}${
+                option.distance !== null
+                  ? ` · ${this.distance(option.distance)}${index === 0 ? `, ${t("spot.nearest")}` : ""}`
+                  : ""
+              }
             </option>`,
         )}
       </select>

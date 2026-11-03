@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from custom_components.sailcast import alerts as alert_sources, tides as tide_sources  # noqa: E402
 from custom_components.sailcast.limits import BOAT_LIMITS, SKILL_WIND_LIMITS  # noqa: E402
 from custom_components.sailcast.nowcast import AIRPORT, BUOY, Observation  # noqa: E402
 from custom_components.sailcast.outlook import SpotConditions, compute  # noqa: E402
@@ -282,6 +283,7 @@ def conditions() -> dict[str, SpotConditions]:
             spot=spot,
             hours=tuple(hours),
             days=tuple(days),
+            tides=tides,
             tide_events=tides.events,
             current_events=spot_currents.events if spot_currents else (),
             alerts=spot_alerts,
@@ -389,6 +391,21 @@ def main() -> None:
                     )
                 }
                 | {"sensors": {}},
+                "tide": {
+                    "provider": tide_sources.provider(spot.tide_station),
+                    "datum": found.datum,
+                    "station": found.name,
+                    "notice": found.notice,
+                }
+                if spot.tide_station and (found := spots[spot_id].tides)
+                else None,
+                "warnings": {
+                    "provider": alert_sources.provider(spot.marine_zone),
+                    "at_pin": spot.marine_zone in alert_sources.AT_PIN,
+                    "services": [],
+                }
+                if spot.marine_zone
+                else None,
                 "readings": readings_now(spots[spot_id].observations, NOW),
                 "adjustments": [item.as_dict() for item in spots[spot_id].adjustments],
                 "shoreline": {

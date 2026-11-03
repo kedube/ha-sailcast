@@ -107,6 +107,9 @@ const FAMILIES: Record<string, string[]> = {
     "thunderstorms_possible",
   ],
   "spot.sensor": ["wind", "gust", "wind_direction", "temperature", "water_temperature"],
+  "sources.tide_by": ["noaa", "chs", "rws", "kartverket", "worldtides", "model"],
+  "sources.warnings_by": ["nws", "nws_pin", "eccc", "meteoalarm"],
+  datum: ["MLLW", "CD", "LAT", "MSL", "NAP"],
   reading_source: ["sensors", "buoy", "airport"],
   sources: ["buoy_text", "airport_text"],
   // Errors the settings commands send back (profiles.py and websocket_api.py).

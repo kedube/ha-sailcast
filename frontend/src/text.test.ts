@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { Formatter } from "./format";
 import { localize } from "./localize";
-import { adviceText, ageText, reasonsText, reasonText, sourceText } from "./text";
+import {
+  adviceText,
+  ageText,
+  datumText,
+  reasonsText,
+  reasonText,
+  savedSourceText,
+  sourceText,
+} from "./text";
 import type { Advice, HomeAssistant, Reason } from "./types";
 
 function formatter(units: "us" | "metric"): Formatter {
@@ -145,5 +153,23 @@ describe("readings", () => {
     expect(sourceText(t, "buoy", "46258")).toBe("Buoy 46258");
     expect(sourceText(t, "airport", "KSAN")).toBe("Airport KSAN");
     expect(sourceText(t, "sensors", null)).toBe("Your sensors");
+  });
+});
+
+describe("sources", () => {
+  it("shows a station's code, but not a regional or pin source's ID", () => {
+    expect(savedSourceText("9410170", "SAN DIEGO")).toBe("SAN DIEGO (9410170)");
+    expect(savedSourceText("PCT0056_1", null)).toBe("PCT0056");
+    expect(savedSourceText("rws:harlingen.waddenzee", "Harlingen, Waddenzee")).toBe(
+      "Harlingen, Waddenzee",
+    );
+    expect(savedSourceText("worldtides", "WorldTides at the pin")).toBe("WorldTides at the pin");
+    expect(savedSourceText("model", null)).toBe("model");
+  });
+
+  it("names a tide datum, or shows one it doesn't know", () => {
+    expect(datumText(t, "CD")).toBe("chart datum");
+    expect(datumText(t, null)).toBe("mean lower low water");
+    expect(datumText(t, "NN2000")).toBe("NN2000");
   });
 });

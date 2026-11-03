@@ -8,6 +8,7 @@ import { html, nothing, type TemplateResult } from "lit";
 import type { Ctx } from "./context";
 import { localTime } from "./format";
 import { icon } from "./glyphs";
+import { savedSourceText } from "./text";
 import type { Sailor, SizeClass, Skill, SourceKey } from "./types";
 import { addIcon, autoSummary, daysText, plannedStatus } from "./week";
 
@@ -182,9 +183,8 @@ export function settingsView(ctx: Ctx): TemplateResult {
     const source = (key: SourceKey) => {
       const id = spot[key];
       if (!id) return nothing;
-      const name = spot.source_names[key];
       return html`<dt>${t(`spot.${key}_short`)}</dt>
-        <dd>${name ? `${name} (${id.split("_")[0]})` : id.split("_")[0]}</dd>`;
+        <dd>${savedSourceText(id, spot.source_names[key])}</dd>`;
     };
     const sensors = Object.keys(spot.sensors).length;
     return html`<article class="row">

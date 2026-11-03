@@ -42,6 +42,28 @@ export function ageText(t: Translate, now: string, time: string): string {
     : t("age.hours", { value: Math.round(minutes / 60) });
 }
 
+/** Sources asked about the pin itself, whose IDs say nothing to people. */
+const AT_PIN = new Set(["kartverket", "worldtides", "model", "nws"]);
+
+/**
+ * A spot's saved source, such as "SAN DIEGO (9410170)". Regional sources and
+ * those at the pin show their name alone, since their IDs are long codes or
+ * positions.
+ */
+export function savedSourceText(id: string, name: string | null | undefined): string {
+  if (id.includes(":") || AT_PIN.has(id)) return name ?? id;
+  const code = id.split("_")[0];
+  return name ? `${name} (${code})` : code;
+}
+
+/** What tide heights are measured from, such as "mean lower low water". */
+export function datumText(t: Translate, datum: string | null | undefined): string {
+  if (!datum) return t("datum.MLLW");
+  const key = `datum.${datum}`;
+  const text = t(key);
+  return text === key ? datum : text;
+}
+
 /** Who took a reading, such as "Buoy 46258" or "Your sensors". */
 export function sourceText(t: Translate, kind: ReadingKind, station: string | null): string {
   return t(`reading_source.${kind}`, { id: station ?? "" });
