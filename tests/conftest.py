@@ -396,15 +396,16 @@ async def set_up(
 ) -> None:
     """Set an entry up at the time the fixtures were recorded.
 
-    The pins' shorelines are measured once setup is done, and the results are
-    worked out again with them a moment later; then the clock goes back.
+    The pins' shorelines are measured in the background once setup is done,
+    and the results are worked out again with them. The clock then moves past
+    the refresh's cooldown, so later changes refresh at once, and goes back.
     """
     freezer.move_to(RECORDED)
     assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     freezer.tick(timedelta(seconds=2))
     async_fire_time_changed(hass)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     freezer.move_to(RECORDED)
 
 

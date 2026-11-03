@@ -142,9 +142,10 @@ async def test_pin_on_land(hass: HomeAssistant, observed: MockConfigEntry) -> No
     hass.config_entries.async_update_subentry(
         observed, bay, data={**bay.data, "latitude": 32.715, "longitude": -117.18}
     )
-    await hass.async_block_till_done()
+    # The reload measures the moved pin in the background.
+    await hass.async_block_till_done(wait_background_tasks=True)
     async_fire_time_changed(hass, RECORDED + timedelta(seconds=5))
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert registry.async_get_issue(DOMAIN, "pin_on_land_spot_bay") is None
 
 
