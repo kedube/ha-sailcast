@@ -1,0 +1,569 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast gör om prognoser för vind, vågor, tidvatten och väder till säkerhetsbedömningar och seglingsfönster för dina platser, båtar och seglare.\n\n**SailCast är rådgivande.** Officiella prognoser och varningar har företräde, och det är alltid skepparen som bestämmer.\n\nNär konfigurationen är klar lägger du till platser, båtar och seglare på integrationens sida."
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Plats",
+      "initiate_flow": {
+        "user": "Lägg till plats"
+      },
+      "step": {
+        "user": {
+          "title": "Lägg till en plats",
+          "data": {
+            "name": "Namn",
+            "location": "Position",
+            "water_type": "Vattentyp",
+            "offshore": "Frånlandsvind",
+            "exposed": "Öppen för vågor från",
+            "fetch": "Öppet vatten i lovart"
+          },
+          "data_description": {
+            "name": "Till exempel Hamnen eller Sjön.",
+            "location": "Placera markeringen på vattnet där du seglar. Cirkeln anger området som vindkartan visar.",
+            "offshore": "Vind från de här riktningarna blåser ut från land.",
+            "exposed": "Riktningar med öppet vatten, där vågor kan byggas upp.",
+            "fetch": "Bara för älvar och sjöar. SailCast mäter det öppna vattnet åt varje håll utifrån kartan; ange det här bara för att ersätta mätningen med ett enda avstånd."
+          }
+        },
+        "reconfigure": {
+          "title": "Redigera plats",
+          "data": {
+            "name": "Namn",
+            "location": "Position",
+            "water_type": "Vattentyp",
+            "offshore": "Frånlandsvind",
+            "exposed": "Öppen för vågor från",
+            "fetch": "Öppet vatten i lovart"
+          },
+          "data_description": {
+            "name": "Till exempel Hamnen eller Sjön.",
+            "location": "Placera markeringen på vattnet där du seglar. Cirkeln anger området som vindkartan visar.",
+            "offshore": "Vind från de här riktningarna blåser ut från land.",
+            "exposed": "Riktningar med öppet vatten, där vågor kan byggas upp.",
+            "fetch": "Bara för älvar och sjöar. SailCast mäter det öppna vattnet åt varje håll utifrån kartan; ange det här bara för att ersätta mätningen med ett enda avstånd."
+          }
+        },
+        "sources": {
+          "title": "Datakällor",
+          "description": "SailCast föreslår de närmaste källorna. Tidvatten kommer från NOAA i USA, Canadian Hydrographic Service i Kanada, Rijkswaterstaat i Nederländerna och Kartverket i Norge, och var som helst från WorldTides om du lägger in dess nyckel i SailCasts alternativ. Varningar kommer från National Weather Service i USA, Environment and Climate Change Canada och MeteoAlarm i Europa. Bojar kommer från NDBC och väderrapporter från flygplatser över hela världen.",
+          "data": {
+            "tide_station": "Tidvattenstation",
+            "current_station": "Strömstation",
+            "marine_zone": "Officiella varningar",
+            "buoy": "Boj",
+            "airport": "Flygplats"
+          },
+          "data_description": {
+            "tide_station": "För tidvattenhöjder, högvatten och lågvatten. Havsmodellens tidvatten är ungefärligt och slår ofta fel med en timme eller mer nära kusten, så det finns bara med som ett val för hand när inget annat täcker platsen.",
+            "current_station": "För regeln om vind mot ström. Välj en bara om den ligger nära där du seglar.",
+            "marine_zone": "Officiella varningar, till exempel Small Craft Advisory, kommer härifrån. På en sjö utan havsområde väljer du varningarna från National Weather Service vid markeringen.",
+            "buoy": "Mätvärden för vind, vågor och vattentemperatur från en boj eller kuststation. Varje mätvärde räknas medan det är färskt och justerar de närmaste timmarna.",
+            "airport": "Väderrapporter varje timme med vind, sikt och lufttemperatur. Om du kan välja, ta en nära vattnet."
+          },
+          "sections": {
+            "sensors": {
+              "name": "Dina egna sensorer",
+              "description": "Mätvärden från din egen väderstation eller en båts instrument går först, före boj och flygplats. SailCast utgår från att de mäter på platsen.",
+              "data": {
+                "wind": "Vindhastighet",
+                "gust": "Byar",
+                "wind_direction": "Vindriktning",
+                "temperature": "Lufttemperatur",
+                "water_temperature": "Vattentemperatur"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Ange ett namn.",
+        "name_too_long": "Använd högst 40 tecken.",
+        "name_taken": "En annan plats har redan det här namnet.",
+        "radius_out_of_range": "Cirkelns radie måste vara mellan 2 och 50 km (cirka 1–30 engelska mil).",
+        "suggestions_unavailable": "Det gick inte att hämta källor i närheten. Du kan spara utan dem och lägga till dem senare genom att redigera platsen.",
+        "fetch_out_of_range": "Det öppna vattnet måste vara mellan 0,05 och 100 km (cirka 0,03–60 engelska mil).",
+        "invalid_sensor": "Välj en sensor för varje mätvärde, eller lämna fältet tomt."
+      }
+    },
+    "boat": {
+      "entry_type": "Båt",
+      "initiate_flow": {
+        "user": "Lägg till båt"
+      },
+      "step": {
+        "user": {
+          "title": "Lägg till en båt",
+          "data": {
+            "name": "Namn",
+            "size_class": "Storlek",
+            "length": "Längd"
+          },
+          "data_description": {
+            "name": "Till exempel båtens namn.",
+            "size_class": "Varje storlek har egna säkerhetsgränser för vind, byar och vågor."
+          }
+        },
+        "reconfigure": {
+          "title": "Redigera båt",
+          "data": {
+            "name": "Namn",
+            "size_class": "Storlek",
+            "length": "Längd"
+          },
+          "data_description": {
+            "name": "Till exempel båtens namn.",
+            "size_class": "Varje storlek har egna säkerhetsgränser för vind, byar och vågor."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Ange ett namn.",
+        "name_too_long": "Använd högst 40 tecken.",
+        "name_taken": "En annan båt har redan det här namnet.",
+        "length_out_of_range": "Ange en längd mellan 1 och 50 m (3 och 164 fot)."
+      }
+    },
+    "sailor": {
+      "entry_type": "Seglare",
+      "initiate_flow": {
+        "user": "Lägg till seglare"
+      },
+      "step": {
+        "user": {
+          "title": "Lägg till en seglare",
+          "data": {
+            "name": "Namn",
+            "skill": "Färdighetsnivå",
+            "default_boat": "Ordinarie båt",
+            "other_boats": "Andra båtar",
+            "days": "Seglingsdagar",
+            "start": "Tidigaste start",
+            "end": "Senaste sluttid",
+            "user": "Home Assistant-användare"
+          },
+          "data_description": {
+            "skill": "Varje seglare bedömer sin egen färdighetsnivå. Den bestämmer gränsen för medelvind; byar räknas inte in.",
+            "default_boat": "SailCast bedömer den här båten om inte seglaren väljer en annan.",
+            "other_boats": "Andra båtar som den här seglaren tar ut.",
+            "start": "Lämna tomt för att börja vid soluppgången.",
+            "end": "Lämna tomt för att sluta vid solnedgången.",
+            "user": "Panelen öppnas med den här seglaren för den användaren."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Komfort",
+              "description": "Vad den här seglaren trivs med. Det här påverkar poängen, aldrig en säkerhetsbedömning.",
+              "data": {
+                "ideal_low": "Idealisk vind från",
+                "ideal_high": "Idealisk vind upp till",
+                "coldest": "Lägsta behagliga lufttemperatur",
+                "rain": "Regn"
+              },
+              "data_description": {
+                "ideal_low": "Snävar in den idealiska vinden för var och en av seglarens båtar. Lämna tomt för att använda båtens intervall.",
+                "ideal_high": "Lämna tomt för att använda båtens intervall, upp till gränsen för färdighetsnivån.",
+                "coldest": "Poängen sjunker i kallare luft. Lämna tomt för 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatisk kalender",
+              "description": "Lägg till seglarens bästa fönster varje vald dag i en kalender, högst en händelse per dag. SailCast håller händelsen i takt med prognosen fram till kl. 18:00 kvällen innan och varnar sedan i stället för att flytta den.",
+              "data": {
+                "calendar": "Kalender",
+                "auto_days": "Dagar",
+                "min_score": "Bara fönster med poäng",
+                "ahead": "Hur långt fram",
+                "auto_spots": "Platser"
+              },
+              "data_description": {
+                "calendar": "Lämna tomt för att stänga av automatisk kalender. Kalendrar från Local Calendar, Google Calendar och CalDAV tar emot nya händelser.",
+                "ahead": "Prognoser ändras mest längre fram än tre dagar.",
+                "auto_spots": "När fönster på olika platser överlappar lägger SailCast bara till det bästa."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Redigera seglare",
+          "data": {
+            "name": "Namn",
+            "skill": "Färdighetsnivå",
+            "default_boat": "Ordinarie båt",
+            "other_boats": "Andra båtar",
+            "days": "Seglingsdagar",
+            "start": "Tidigaste start",
+            "end": "Senaste sluttid",
+            "user": "Home Assistant-användare"
+          },
+          "data_description": {
+            "skill": "Varje seglare bedömer sin egen färdighetsnivå. Den bestämmer gränsen för medelvind; byar räknas inte in.",
+            "default_boat": "SailCast bedömer den här båten om inte seglaren väljer en annan.",
+            "other_boats": "Andra båtar som den här seglaren tar ut.",
+            "start": "Lämna tomt för att börja vid soluppgången.",
+            "end": "Lämna tomt för att sluta vid solnedgången.",
+            "user": "Panelen öppnas med den här seglaren för den användaren."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Komfort",
+              "description": "Vad den här seglaren trivs med. Det här påverkar poängen, aldrig en säkerhetsbedömning.",
+              "data": {
+                "ideal_low": "Idealisk vind från",
+                "ideal_high": "Idealisk vind upp till",
+                "coldest": "Lägsta behagliga lufttemperatur",
+                "rain": "Regn"
+              },
+              "data_description": {
+                "ideal_low": "Snävar in den idealiska vinden för var och en av seglarens båtar. Lämna tomt för att använda båtens intervall.",
+                "ideal_high": "Lämna tomt för att använda båtens intervall, upp till gränsen för färdighetsnivån.",
+                "coldest": "Poängen sjunker i kallare luft. Lämna tomt för 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatisk kalender",
+              "description": "Lägg till seglarens bästa fönster varje vald dag i en kalender, högst en händelse per dag. SailCast håller händelsen i takt med prognosen fram till kl. 18:00 kvällen innan och varnar sedan i stället för att flytta den.",
+              "data": {
+                "calendar": "Kalender",
+                "auto_days": "Dagar",
+                "min_score": "Bara fönster med poäng",
+                "ahead": "Hur långt fram",
+                "auto_spots": "Platser"
+              },
+              "data_description": {
+                "calendar": "Lämna tomt för att stänga av automatisk kalender. Kalendrar från Local Calendar, Google Calendar och CalDAV tar emot nya händelser.",
+                "ahead": "Prognoser ändras mest längre fram än tre dagar.",
+                "auto_spots": "När fönster på olika platser överlappar lägger SailCast bara till det bästa."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Ange ett namn.",
+        "name_too_long": "Använd högst 40 tecken.",
+        "name_taken": "En annan seglare har redan det här namnet.",
+        "unknown_boat": "Den båten har tagits bort. Välj en annan.",
+        "no_days": "Välj minst en dag.",
+        "end_before_start": "Senaste sluttid måste vara efter tidigaste start.",
+        "ideal_out_of_range": "Använd 0–40 knop.",
+        "ideal_high_below_low": "Intervallets övre gräns måste vara över den nedre.",
+        "coldest_out_of_range": "Använd −20 till 35 °C (−4 till 95 °F).",
+        "calendar_read_only": "Den kalendern kan inte ta emot nya händelser. Välj en kalender från Local Calendar, Google Calendar eller CalDAV.",
+        "no_spots": "Välj minst en plats.",
+        "invalid_min_score": "Välj ett av alternativen.",
+        "invalid_ahead": "Välj ett av alternativen."
+      },
+      "abort": {
+        "no_boats": "Lägg till en båt först. Varje seglare behöver minst en."
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "Öppen kust",
+        "bay": "Vik",
+        "river": "Flodmynning eller älv",
+        "lake": "Sjö"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "Norr",
+        "ne": "Nordost",
+        "e": "Öster",
+        "se": "Sydost",
+        "s": "Söder",
+        "sw": "Sydväst",
+        "w": "Väster",
+        "nw": "Nordväst"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "Jolle och strandkatamaran, upp till cirka 16 fot (5 m)",
+        "small_keelboat": "Liten kölbåt, 16–25 fot (5–7,5 m)",
+        "cruiser": "Långfärdsbåt, 25–35 fot (7,5–10,5 m)",
+        "large_cruiser": "Stor långfärdsbåt, 35 fot (10,5 m) och större"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "Nybörjare: upp till 10 knop medelvind",
+        "intermediate": "Medelnivå: upp till 16 knop",
+        "advanced": "Avancerad: ingen vindgräns, bara vägledning"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "Måndag",
+        "tue": "Tisdag",
+        "wed": "Onsdag",
+        "thu": "Torsdag",
+        "fri": "Fredag",
+        "sat": "Lördag",
+        "sun": "Söndag"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "Undvik regn",
+        "some": "Lite regn går bra",
+        "any": "Regn spelar ingen roll"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "Bra eller bättre: 60 och uppåt",
+        "80": "Utmärkt: 80 och uppåt"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "I dag och i morgon",
+        "2": "De kommande 3 dagarna",
+        "4": "De kommande 5 dagarna",
+        "6": "Hela veckan"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "Ingen"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot} bra för segling"
+      },
+      "marine_warning": {
+        "name": "Varning till sjöss"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "Segling"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "Nästa högvatten"
+      },
+      "next_low_tide": {
+        "name": "Nästa lågvatten"
+      },
+      "next_window": {
+        "name": "Nästa seglingsfönster"
+      },
+      "rating": {
+        "name": "{spot} säkerhetsbedömning",
+        "state": {
+          "good": "Bra",
+          "caution": "Försiktighet",
+          "not_recommended": "Avråds",
+          "dangerous": "Farligt"
+        }
+      },
+      "score": {
+        "name": "{spot} poäng"
+      },
+      "water_temperature": {
+        "name": "Vattentemperatur"
+      },
+      "wave_height": {
+        "name": "Våghöjd"
+      },
+      "wind_direction": {
+        "name": "Vindriktning"
+      },
+      "wind_gust": {
+        "name": "Byar"
+      },
+      "wind_speed": {
+        "name": "Vind"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "Hämta prognos",
+      "description": "Hämtar en seglares säkerhetsbedömningar, poäng och seglingsfönster för en plats, för varje dag och varje timme från och med nu.",
+      "fields": {
+        "spot": {
+          "name": "Plats",
+          "description": "Platsens namn."
+        },
+        "sailor": {
+          "name": "Seglare",
+          "description": "Seglarens namn. Bedömningarna utgår från seglarens färdighetsnivå."
+        },
+        "boat": {
+          "name": "Båt",
+          "description": "En av seglarens båtar. Lämna tomt för alla."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast har inte konfigurerats."
+    },
+    "unknown_spot": {
+      "message": "Det finns ingen plats som heter {spot}."
+    },
+    "unknown_sailor": {
+      "message": "Det finns ingen seglare som heter {sailor}."
+    },
+    "unknown_boat": {
+      "message": "{sailor} seglar ingen båt som heter {boat}."
+    },
+    "no_forecast": {
+      "message": "Det finns ingen prognos för {spot} än."
+    },
+    "calendar_read_only": {
+      "message": "{calendar} kan inte ta emot nya händelser."
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "Markeringen för {spot} ligger på land",
+      "description": "SailCast beräknar vågor och stryklängd för {spot} utifrån var markeringen sitter, och enligt kartan ligger markeringen på land. Öppna SailCast, gå till Inställningar, redigera {spot} och dra markeringen till vattnet där du seglar."
+    },
+    "quiet_buoy": {
+      "title": "Boj {station} har tystnat",
+      "description": "Boj {station} har inte skickat något mätvärde på 12 timmar, så {spots} använder bara prognosen. Bojar tystnar vid reparationer och i stormar. Om den förblir tyst kan du redigera {spots} i SailCasts inställningar och välja en annan boj, eller ingen."
+    },
+    "quiet_airport": {
+      "title": "Flygplats {station} har tystnat",
+      "description": "Flygplats {station} har inte skickat någon väderrapport på 12 timmar, så {spots} använder bara prognosen. Om den förblir tyst kan du redigera {spots} i SailCasts inställningar och välja en annan flygplats, eller ingen."
+    },
+    "quiet_sensor": {
+      "title": "Sensorn {sensor} har tystnat",
+      "description": "{sensor} har inte rapporterat på 12 timmar, så {spots} använder andra mätvärden eller prognosen. Kontrollera sensorn, eller ta bort den från {spots} i SailCasts inställningar."
+    },
+    "failing_tide": {
+      "title": "Tidvattenprognoserna för {station} uteblir",
+      "description": "{provider} har inte lämnat några tidvattenprognoser för {station} på ett dygn. {spots} använder de prognoser som SailCast sparade tidigare, så länge de fortfarande täcker veckan. Om felet består kan du redigera {spots} i SailCasts inställningar och välja en annan tidvattenkälla."
+    },
+    "failing_current": {
+      "title": "Strömstationen {station} svarar inte",
+      "description": "{provider} har inte lämnat några prognoser för strömstationen {station} på ett dygn. {spots} använder de prognoser som SailCast sparade tidigare, så länge de fortfarande täcker veckan. Om felet består kan du redigera {spots} i SailCasts inställningar och välja en annan station, eller ingen."
+    },
+    "budget_low": {
+      "title": "De kostnadsfria anropen till Open-Meteo håller på att ta slut",
+      "description": "SailCast har använt {calls} av de 10 000 kostnadsfria anropen till Open-Meteo i dag, så prognosen uppdateras nu var tredje timme i stället för varje timme, och vindkartan pausas till i morgon. Allt annat på samma internetanslutning delar på kvoten. Räkningen börjar om vid midnatt UTC."
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides behöver en nyckel",
+      "description": "{spots} hämtar tidvatten från WorldTides, men SailCast har ingen nyckel till WorldTides. Lägg till din nyckel i SailCasts alternativ (Inställningar → Enheter och tjänster → SailCast → Konfigurera), eller redigera {spots} i SailCasts inställningar och välj en annan tidvattenkälla."
+    },
+    "worldtides_key_rejected": {
+      "title": "WorldTides nekade SailCasts nyckel",
+      "description": "WorldTides svarade: ”{error}”. Kontrollera nyckeln i SailCasts alternativ (Inställningar → Enheter och tjänster → SailCast → Konfigurera) och krediterna på ditt konto på worldtides.info. Till dess använder {spots} de tidvattenprognoser som SailCast har sparat, så länge de räcker."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Alternativ för SailCast",
+        "sections": {
+          "keys": {
+            "name": "API-nycklar",
+            "description": "Nycklar för leverantörer som kräver en. De stannar i Home Assistant och når aldrig panelen.",
+            "data": {
+              "worldtides_key": "API-nyckel för WorldTides"
+            },
+            "data_description": {
+              "worldtides_key": "Tidvattenprognoser var som helst, från worldtides.info, med ditt eget konto. En plats som använder den kostar cirka 3 krediter var femte dag. Lämna tomt för att ta bort nyckeln."
+            }
+          },
+          "ai": {
+            "name": "AI-sammanfattning",
+            "description": "Lägger till knappen ”Sammanfatta med AI” i panelens dagvy. Den ber den AI-leverantör du har konfigurerat i Home Assistant om två eller tre meningar om dagen. Säkerhetsbedömningarna kommer alltid från SailCasts egna regler, aldrig från AI.",
+            "data": {
+              "ai_summary": "Erbjud AI-sammanfattningar",
+              "ai_task": "AI-uppgift"
+            },
+            "data_description": {
+              "ai_task": "Lämna tomt för att använda standardvalet i Home Assistant, som ställs in under Inställningar → System → AI."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "no_ai_task": "Konfigurera först en AI-leverantör i Home Assistant. Dess integration lägger till den AI-uppgift som SailCast använder.",
+      "no_default_ai_task": "Välj en AI-uppgift, eller ställ in en standarduppgift under Inställningar → System → AI."
+    }
+  },
+  "common": {
+    "weekday_mon": "måndag",
+    "weekday_tue": "tisdag",
+    "weekday_wed": "onsdag",
+    "weekday_thu": "torsdag",
+    "weekday_fri": "fredag",
+    "weekday_sat": "lördag",
+    "weekday_sun": "söndag",
+    "month_1": "jan.",
+    "month_2": "feb.",
+    "month_3": "mars",
+    "month_4": "apr.",
+    "month_5": "maj",
+    "month_6": "juni",
+    "month_7": "juli",
+    "month_8": "aug.",
+    "month_9": "sep.",
+    "month_10": "okt.",
+    "month_11": "nov.",
+    "month_12": "dec.",
+    "date": "{weekday} {day} {month}",
+    "range": "{low}–{high}",
+    "feet": "{value} fot",
+    "meters": "{value} m",
+    "compass_n": "N",
+    "compass_nne": "NNO",
+    "compass_ne": "NO",
+    "compass_ene": "ONO",
+    "compass_e": "O",
+    "compass_ese": "OSO",
+    "compass_se": "SO",
+    "compass_sse": "SSO",
+    "compass_s": "S",
+    "compass_ssw": "SSV",
+    "compass_sw": "SV",
+    "compass_wsw": "VSV",
+    "compass_w": "V",
+    "compass_wnw": "VNV",
+    "compass_nw": "NV",
+    "compass_nnw": "NNV",
+    "band_great": "utmärkt",
+    "band_good": "bra",
+    "band_fair": "måttligt",
+    "band_poor": "dåligt",
+    "level_good": "bra",
+    "level_caution": "försiktighet",
+    "level_not_recommended": "avråds",
+    "level_dangerous": "farligt",
+    "event_title": "Segling: {spot}",
+    "window": "{start}–{end}, poäng {score} ({band}).",
+    "wind": "{direction} {wind} knop, byar upp till {gust} knop.",
+    "advisory": "SailCast är rådgivande: kontrollera den senaste prognosen och officiella varningar innan du ger dig ut.",
+    "forecast_for": "SailCast-prognos för {sailor} med {boat}, gjord {date} kl. {time}.",
+    "score": "Poäng {score} ({band}).",
+    "waves": "Vågor {waves}.",
+    "high_tide": "Högvatten kl. {time}.",
+    "low_tide": "Lågvatten kl. {time}.",
+    "sunset": "Solnedgång kl. {time}.",
+    "check_again": "SailCast är rådgivande: kontrollera prognosen och officiella varningar igen innan du ger dig ut.",
+    "added_by": "Tillagd av SailCast ({id})",
+    "changed_title": "SailCast: prognosen har ändrats",
+    "changed": "Prognosen för den planerade seglingen vid {spot} {date}, {start}–{end}, har blivit sämre för {sailor}. Säkerhetsbedömning nu: {level}, poäng {score}. Kontrollera SailCast innan du ger dig ut."
+  }
+}

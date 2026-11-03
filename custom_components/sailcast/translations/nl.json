@@ -1,0 +1,569 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast zet verwachtingen voor wind, golven, getij en weer om in veiligheidsbeoordelingen en zeilvensters voor je vaargebieden, boten en zeilers.\n\n**SailCast geeft alleen advies.** Officiële verwachtingen en waarschuwingen gaan voor, en de schipper beslist altijd.\n\nVoeg na het instellen je vaargebieden, boten en zeilers toe via de pagina van deze integratie."
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Vaargebied",
+      "initiate_flow": {
+        "user": "Vaargebied toevoegen"
+      },
+      "step": {
+        "user": {
+          "title": "Vaargebied toevoegen",
+          "data": {
+            "name": "Naam",
+            "location": "Locatie",
+            "water_type": "Soort water",
+            "offshore": "Aflandige wind",
+            "exposed": "Open voor golven uit",
+            "fetch": "Open water aan loefzijde"
+          },
+          "data_description": {
+            "name": "Bijvoorbeeld Haven of Meer.",
+            "location": "Zet de speld op het water waar je zeilt. De cirkel bepaalt het gebied dat de windkaart toont.",
+            "offshore": "Wind uit deze richtingen waait van het land af.",
+            "exposed": "Richtingen met open water, waar golven zich kunnen opbouwen.",
+            "fetch": "Alleen voor rivieren en meren. SailCast meet het open water in elke richting op de kaart; vul dit alleen in om dat te vervangen door één afstand."
+          }
+        },
+        "reconfigure": {
+          "title": "Vaargebied bewerken",
+          "data": {
+            "name": "Naam",
+            "location": "Locatie",
+            "water_type": "Soort water",
+            "offshore": "Aflandige wind",
+            "exposed": "Open voor golven uit",
+            "fetch": "Open water aan loefzijde"
+          },
+          "data_description": {
+            "name": "Bijvoorbeeld Haven of Meer.",
+            "location": "Zet de speld op het water waar je zeilt. De cirkel bepaalt het gebied dat de windkaart toont.",
+            "offshore": "Wind uit deze richtingen waait van het land af.",
+            "exposed": "Richtingen met open water, waar golven zich kunnen opbouwen.",
+            "fetch": "Alleen voor rivieren en meren. SailCast meet het open water in elke richting op de kaart; vul dit alleen in om dat te vervangen door één afstand."
+          }
+        },
+        "sources": {
+          "title": "Gegevensbronnen",
+          "description": "SailCast stelt de dichtstbijzijnde bronnen voor. Getijden komen van NOAA in de VS, de Canadian Hydrographic Service in Canada, Rijkswaterstaat in Nederland en Kartverket in Noorwegen, en overal ter wereld van WorldTides als je daarvoor een sleutel toevoegt in de opties van SailCast. Waarschuwingen komen van de National Weather Service in de VS, Environment and Climate Change Canada en MeteoAlarm in Europa. Boeien komen van NDBC, en weerrapporten van vliegvelden van overal.",
+          "data": {
+            "tide_station": "Getijstation",
+            "current_station": "Stroomstation",
+            "marine_zone": "Officiële waarschuwingen",
+            "buoy": "Boei",
+            "airport": "Vliegveld"
+          },
+          "data_description": {
+            "tide_station": "Voor waterstanden, hoogwater en laagwater. Het getij uit het oceaanmodel is grof en zit dicht bij de kust vaak een uur of meer ernaast. Je kunt het daarom alleen zelf kiezen, voor als niets anders dit vaargebied dekt.",
+            "current_station": "Voor de regel wind tegen stroom. Kies er alleen een als die dicht bij de plek ligt waar je zeilt.",
+            "marine_zone": "Officiële waarschuwingen, zoals een Small Craft Advisory, komen hiervandaan. Kies op een meer zonder zeegebied de waarschuwingen van de National Weather Service voor de plek van de speld.",
+            "buoy": "Metingen van wind, golven en watertemperatuur van een boei of kuststation. Elke meting telt zolang die vers is, en stuurt de komende uren bij.",
+            "airport": "Elk uur een weerrapport met wind, zicht en luchttemperatuur. Kies als het kan een vliegveld dicht bij het water."
+          },
+          "sections": {
+            "sensors": {
+              "name": "Je eigen sensoren",
+              "description": "Metingen van je eigen weerstation of van de instrumenten van een boot gaan vóór die van de boei en het vliegveld. SailCast gaat ervan uit dat ze in het vaargebied worden gemeten.",
+              "data": {
+                "wind": "Windsnelheid",
+                "gust": "Windstoten",
+                "wind_direction": "Windrichting",
+                "temperature": "Luchttemperatuur",
+                "water_temperature": "Watertemperatuur"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Vul een naam in.",
+        "name_too_long": "Gebruik maximaal 40 tekens.",
+        "name_taken": "Een ander vaargebied heeft deze naam al.",
+        "radius_out_of_range": "Kies voor de cirkel een straal tussen 2 en 50 km (ongeveer 1 tot 30 mijl).",
+        "suggestions_unavailable": "Kon geen bronnen in de buurt opzoeken. Je kunt zonder bronnen opslaan en ze later toevoegen door het vaargebied te bewerken.",
+        "fetch_out_of_range": "Kies voor het open water een afstand tussen 0,05 en 100 km (ongeveer 0,03 tot 60 mijl).",
+        "invalid_sensor": "Kies voor elke meting een sensor, of laat het veld leeg."
+      }
+    },
+    "boat": {
+      "entry_type": "Boot",
+      "initiate_flow": {
+        "user": "Boot toevoegen"
+      },
+      "step": {
+        "user": {
+          "title": "Boot toevoegen",
+          "data": {
+            "name": "Naam",
+            "size_class": "Grootte",
+            "length": "Lengte"
+          },
+          "data_description": {
+            "name": "Bijvoorbeeld de naam van de boot.",
+            "size_class": "Elke grootte heeft eigen veiligheidsgrenzen voor wind, windstoten en golven."
+          }
+        },
+        "reconfigure": {
+          "title": "Boot bewerken",
+          "data": {
+            "name": "Naam",
+            "size_class": "Grootte",
+            "length": "Lengte"
+          },
+          "data_description": {
+            "name": "Bijvoorbeeld de naam van de boot.",
+            "size_class": "Elke grootte heeft eigen veiligheidsgrenzen voor wind, windstoten en golven."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Vul een naam in.",
+        "name_too_long": "Gebruik maximaal 40 tekens.",
+        "name_taken": "Een andere boot heeft deze naam al.",
+        "length_out_of_range": "Vul een lengte in tussen 1 en 50 m (3 en 164 ft)."
+      }
+    },
+    "sailor": {
+      "entry_type": "Zeiler",
+      "initiate_flow": {
+        "user": "Zeiler toevoegen"
+      },
+      "step": {
+        "user": {
+          "title": "Zeiler toevoegen",
+          "data": {
+            "name": "Naam",
+            "skill": "Niveau",
+            "default_boat": "Vaste boot",
+            "other_boats": "Andere boten",
+            "days": "Zeildagen",
+            "start": "Vroegste begintijd",
+            "end": "Laatste eindtijd",
+            "user": "Home Assistant-gebruiker"
+          },
+          "data_description": {
+            "skill": "Elke zeiler schat zelf het eigen niveau in. Dat bepaalt de grens voor gemiddelde wind; windstoten tellen daarvoor niet mee.",
+            "default_boat": "SailCast beoordeelt deze boot, tenzij de zeiler een andere kiest.",
+            "other_boats": "Andere boten waarmee deze zeiler het water op gaat.",
+            "start": "Laat leeg om bij zonsopkomst te beginnen.",
+            "end": "Laat leeg om bij zonsondergang te stoppen.",
+            "user": "Voor deze gebruiker opent het paneel met deze zeiler."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Comfort",
+              "description": "Waar deze zeiler van houdt. Dit verandert de scores, nooit een veiligheidsbeoordeling.",
+              "data": {
+                "ideal_low": "Ideale wind vanaf",
+                "ideal_high": "Ideale wind tot",
+                "coldest": "Koudste lucht die nog prettig is",
+                "rain": "Regen"
+              },
+              "data_description": {
+                "ideal_low": "Beperkt de ideale wind voor elke boot van deze zeiler. Laat leeg om het bereik van de boot te gebruiken.",
+                "ideal_high": "Laat leeg om het bereik van de boot te gebruiken, tot aan de grens van het niveau.",
+                "coldest": "Scores dalen bij koudere lucht. Laat leeg voor 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatische agenda",
+              "description": "Zet het beste zeilvenster van deze zeiler op elke gekozen dag in een agenda, hoogstens één afspraak per dag. SailCast past de afspraak aan de verwachting aan tot 18:00 op de avond ervoor, en waarschuwt daarna in plaats van de afspraak te verplaatsen.",
+              "data": {
+                "calendar": "Agenda",
+                "auto_days": "Dagen",
+                "min_score": "Alleen vensters met score",
+                "ahead": "Hoe ver vooruit",
+                "auto_spots": "Vaargebieden"
+              },
+              "data_description": {
+                "calendar": "Laat leeg om automatisch toevoegen uit te zetten. Agenda's van Local Calendar, Google Calendar en CalDAV accepteren nieuwe afspraken.",
+                "ahead": "Verwachtingen voor meer dan drie dagen vooruit veranderen het meest.",
+                "auto_spots": "Als vensters in verschillende vaargebieden overlappen, voegt SailCast alleen het beste toe."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Zeiler bewerken",
+          "data": {
+            "name": "Naam",
+            "skill": "Niveau",
+            "default_boat": "Vaste boot",
+            "other_boats": "Andere boten",
+            "days": "Zeildagen",
+            "start": "Vroegste begintijd",
+            "end": "Laatste eindtijd",
+            "user": "Home Assistant-gebruiker"
+          },
+          "data_description": {
+            "skill": "Elke zeiler schat zelf het eigen niveau in. Dat bepaalt de grens voor gemiddelde wind; windstoten tellen daarvoor niet mee.",
+            "default_boat": "SailCast beoordeelt deze boot, tenzij de zeiler een andere kiest.",
+            "other_boats": "Andere boten waarmee deze zeiler het water op gaat.",
+            "start": "Laat leeg om bij zonsopkomst te beginnen.",
+            "end": "Laat leeg om bij zonsondergang te stoppen.",
+            "user": "Voor deze gebruiker opent het paneel met deze zeiler."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Comfort",
+              "description": "Waar deze zeiler van houdt. Dit verandert de scores, nooit een veiligheidsbeoordeling.",
+              "data": {
+                "ideal_low": "Ideale wind vanaf",
+                "ideal_high": "Ideale wind tot",
+                "coldest": "Koudste lucht die nog prettig is",
+                "rain": "Regen"
+              },
+              "data_description": {
+                "ideal_low": "Beperkt de ideale wind voor elke boot van deze zeiler. Laat leeg om het bereik van de boot te gebruiken.",
+                "ideal_high": "Laat leeg om het bereik van de boot te gebruiken, tot aan de grens van het niveau.",
+                "coldest": "Scores dalen bij koudere lucht. Laat leeg voor 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatische agenda",
+              "description": "Zet het beste zeilvenster van deze zeiler op elke gekozen dag in een agenda, hoogstens één afspraak per dag. SailCast past de afspraak aan de verwachting aan tot 18:00 op de avond ervoor, en waarschuwt daarna in plaats van de afspraak te verplaatsen.",
+              "data": {
+                "calendar": "Agenda",
+                "auto_days": "Dagen",
+                "min_score": "Alleen vensters met score",
+                "ahead": "Hoe ver vooruit",
+                "auto_spots": "Vaargebieden"
+              },
+              "data_description": {
+                "calendar": "Laat leeg om automatisch toevoegen uit te zetten. Agenda's van Local Calendar, Google Calendar en CalDAV accepteren nieuwe afspraken.",
+                "ahead": "Verwachtingen voor meer dan drie dagen vooruit veranderen het meest.",
+                "auto_spots": "Als vensters in verschillende vaargebieden overlappen, voegt SailCast alleen het beste toe."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Vul een naam in.",
+        "name_too_long": "Gebruik maximaal 40 tekens.",
+        "name_taken": "Een andere zeiler heeft deze naam al.",
+        "unknown_boat": "Die boot is verwijderd. Kies een andere.",
+        "no_days": "Kies minstens één dag.",
+        "end_before_start": "De laatste eindtijd moet na de vroegste begintijd liggen.",
+        "ideal_out_of_range": "Gebruik 0 tot 40 kn.",
+        "ideal_high_below_low": "De bovengrens moet hoger zijn dan de ondergrens.",
+        "coldest_out_of_range": "Gebruik −20 tot 35 °C (−4 tot 95 °F).",
+        "calendar_read_only": "Die agenda kan geen nieuwe afspraken aannemen. Kies een agenda van Local Calendar, Google Calendar of CalDAV.",
+        "no_spots": "Kies minstens één vaargebied.",
+        "invalid_min_score": "Kies een van de opties.",
+        "invalid_ahead": "Kies een van de opties."
+      },
+      "abort": {
+        "no_boats": "Voeg eerst een boot toe. Elke zeiler heeft er minstens één nodig."
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "Open kust",
+        "bay": "Baai",
+        "river": "Riviermonding of rivier",
+        "lake": "Meer"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "Noord",
+        "ne": "Noordoost",
+        "e": "Oost",
+        "se": "Zuidoost",
+        "s": "Zuid",
+        "sw": "Zuidwest",
+        "w": "West",
+        "nw": "Noordwest"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "Jol of strandcatamaran, tot ongeveer 16 ft (5 m)",
+        "small_keelboat": "Kleine kielboot, 16–25 ft (5–7,5 m)",
+        "cruiser": "Kajuitjacht, 25–35 ft (7,5–10,5 m)",
+        "large_cruiser": "Groot kajuitjacht, 35 ft (10,5 m) en groter"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "Beginner: tot 10 kn gemiddelde wind",
+        "intermediate": "Gevorderd: tot 16 kn",
+        "advanced": "Ervaren: geen windgrens, alleen advies"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "Maandag",
+        "tue": "Dinsdag",
+        "wed": "Woensdag",
+        "thu": "Donderdag",
+        "fri": "Vrijdag",
+        "sat": "Zaterdag",
+        "sun": "Zondag"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "Regen vermijden",
+        "some": "Een beetje regen is prima",
+        "any": "Regen maakt niet uit"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "Goed of beter: 60 en hoger",
+        "80": "Uitstekend: 80 en hoger"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "Vandaag en morgen",
+        "2": "De komende 3 dagen",
+        "4": "De komende 5 dagen",
+        "6": "De hele week"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "Geen"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot} goed om te zeilen"
+      },
+      "marine_warning": {
+        "name": "Officiële waarschuwing"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "Zeilen"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "Volgend hoogwater"
+      },
+      "next_low_tide": {
+        "name": "Volgend laagwater"
+      },
+      "next_window": {
+        "name": "Volgend zeilvenster"
+      },
+      "rating": {
+        "name": "{spot} beoordeling",
+        "state": {
+          "good": "Goed",
+          "caution": "Voorzichtig",
+          "not_recommended": "Afgeraden",
+          "dangerous": "Gevaarlijk"
+        }
+      },
+      "score": {
+        "name": "{spot} score"
+      },
+      "water_temperature": {
+        "name": "Watertemperatuur"
+      },
+      "wave_height": {
+        "name": "Golfhoogte"
+      },
+      "wind_direction": {
+        "name": "Windrichting"
+      },
+      "wind_gust": {
+        "name": "Windstoten"
+      },
+      "wind_speed": {
+        "name": "Wind"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "Verwachting ophalen",
+      "description": "Haalt de veiligheidsbeoordelingen, scores en zeilvensters van een zeiler in een vaargebied op, voor elke dag en elk uur vanaf nu.",
+      "fields": {
+        "spot": {
+          "name": "Vaargebied",
+          "description": "De naam van het vaargebied."
+        },
+        "sailor": {
+          "name": "Zeiler",
+          "description": "De naam van de zeiler. De beoordelingen gaan uit van het niveau van deze zeiler."
+        },
+        "boat": {
+          "name": "Boot",
+          "description": "Een van de boten van de zeiler. Laat leeg voor alle boten."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast is niet ingesteld."
+    },
+    "unknown_spot": {
+      "message": "Er is geen vaargebied met de naam {spot}."
+    },
+    "unknown_sailor": {
+      "message": "Er is geen zeiler met de naam {sailor}."
+    },
+    "unknown_boat": {
+      "message": "{sailor} zeilt geen boot met de naam {boat}."
+    },
+    "no_forecast": {
+      "message": "Er is nog geen verwachting voor {spot}."
+    },
+    "calendar_read_only": {
+      "message": "{calendar} kan geen nieuwe afspraken aannemen."
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "De speld van {spot} staat op het land",
+      "description": "SailCast berekent de golven en de strijklengte van {spot} vanaf de plek van de speld, en volgens de kaart staat de speld op het land. Open SailCast, ga naar Instellingen, bewerk {spot} en sleep de speld naar het water waar je zeilt."
+    },
+    "quiet_buoy": {
+      "title": "Boei {station} is stilgevallen",
+      "description": "Boei {station} heeft al 12 uur geen meting gestuurd, dus SailCast gebruikt voor {spots} alleen de verwachting. Boeien vallen stil bij reparaties en in stormen. Blijft de boei stil, bewerk dan {spots} in de instellingen van SailCast en kies een andere boei, of geen."
+    },
+    "quiet_airport": {
+      "title": "Vliegveld {station} is stilgevallen",
+      "description": "Vliegveld {station} heeft al 12 uur geen weerrapport gestuurd, dus SailCast gebruikt voor {spots} alleen de verwachting. Blijft het stil, bewerk dan {spots} in de instellingen van SailCast en kies een ander vliegveld, of geen."
+    },
+    "quiet_sensor": {
+      "title": "Sensor {sensor} is stilgevallen",
+      "description": "{sensor} heeft al 12 uur niets gemeld, dus SailCast gebruikt voor {spots} andere metingen of de verwachting. Controleer de sensor, of haal de sensor weg bij {spots} in de instellingen van SailCast."
+    },
+    "failing_tide": {
+      "title": "Getijvoorspellingen voor {station} komen niet binnen",
+      "description": "{provider} heeft al een dag geen getijvoorspellingen voor {station} geleverd. Voor {spots} gebruikt SailCast de eerder opgeslagen voorspellingen, zolang die de week nog dekken. Blijft het mislukken, bewerk dan {spots} in de instellingen van SailCast en kies een andere getijbron."
+    },
+    "failing_current": {
+      "title": "Stroomstation {station} reageert niet",
+      "description": "{provider} heeft al een dag geen voorspellingen voor stroomstation {station} geleverd. Voor {spots} gebruikt SailCast de eerder opgeslagen voorspellingen, zolang die de week nog dekken. Blijft het mislukken, bewerk dan {spots} in de instellingen van SailCast en kies een ander station, of geen."
+    },
+    "budget_low": {
+      "title": "De gratis aanroepen bij Open-Meteo raken op",
+      "description": "SailCast heeft vandaag {calls} van de 10.000 gratis aanroepen bij Open-Meteo gebruikt. Daarom werkt het de verwachting nu elke drie uur bij in plaats van elk uur, en pauzeert de windkaart tot morgen. Alles op dezelfde internetverbinding telt mee voor dit tegoed. De telling begint opnieuw om middernacht UTC."
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides heeft een sleutel nodig",
+      "description": "Voor {spots} komen de getijden van WorldTides, maar SailCast heeft geen sleutel voor WorldTides. Voeg je sleutel toe in de opties van SailCast (Instellingen → Apparaten en diensten → SailCast → Configureer), of bewerk {spots} in de instellingen van SailCast en kies een andere getijbron."
+    },
+    "worldtides_key_rejected": {
+      "title": "WorldTides heeft de sleutel van SailCast geweigerd",
+      "description": "WorldTides antwoordde: “{error}”. Controleer de sleutel in de opties van SailCast (Instellingen → Apparaten en diensten → SailCast → Configureer) en het tegoed van je account op worldtides.info. Tot die tijd gebruikt SailCast voor {spots} de opgeslagen getijvoorspellingen, zolang die strekken."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opties van SailCast",
+        "sections": {
+          "keys": {
+            "name": "API-sleutels",
+            "description": "Sleutels voor aanbieders die er een vereisen. Ze blijven in Home Assistant en komen nooit in het paneel terecht.",
+            "data": {
+              "worldtides_key": "API-sleutel voor WorldTides"
+            },
+            "data_description": {
+              "worldtides_key": "Getijvoorspellingen overal ter wereld, van worldtides.info, met je eigen account. Een vaargebied dat het gebruikt, kost ongeveer 3 credits per vijf dagen. Laat leeg om de sleutel te verwijderen."
+            }
+          },
+          "ai": {
+            "name": "AI-samenvatting",
+            "description": "Voegt een knop ‘Samenvatten met AI’ toe aan de dagweergave van het paneel. Die vraagt de AI-aanbieder die je in Home Assistant hebt ingesteld om twee of drie zinnen over de dag. Veiligheidsbeoordelingen komen altijd uit de eigen regels van SailCast, nooit van AI.",
+            "data": {
+              "ai_summary": "AI-samenvattingen aanbieden",
+              "ai_task": "AI-taak"
+            },
+            "data_description": {
+              "ai_task": "Laat leeg om de standaardtaak van Home Assistant te gebruiken, in te stellen onder Instellingen → Systeem → AI."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "no_ai_task": "Stel eerst een AI-aanbieder in Home Assistant in. De integratie daarvan voegt de AI-taak toe die SailCast gebruikt.",
+      "no_default_ai_task": "Kies een AI-taak, of stel een standaardtaak in onder Instellingen → Systeem → AI."
+    }
+  },
+  "common": {
+    "weekday_mon": "maandag",
+    "weekday_tue": "dinsdag",
+    "weekday_wed": "woensdag",
+    "weekday_thu": "donderdag",
+    "weekday_fri": "vrijdag",
+    "weekday_sat": "zaterdag",
+    "weekday_sun": "zondag",
+    "month_1": "jan",
+    "month_2": "feb",
+    "month_3": "mrt",
+    "month_4": "apr",
+    "month_5": "mei",
+    "month_6": "jun",
+    "month_7": "jul",
+    "month_8": "aug",
+    "month_9": "sep",
+    "month_10": "okt",
+    "month_11": "nov",
+    "month_12": "dec",
+    "date": "{weekday} {day} {month}",
+    "range": "{low} tot {high}",
+    "feet": "{value} ft",
+    "meters": "{value} m",
+    "compass_n": "N",
+    "compass_nne": "NNO",
+    "compass_ne": "NO",
+    "compass_ene": "ONO",
+    "compass_e": "O",
+    "compass_ese": "OZO",
+    "compass_se": "ZO",
+    "compass_sse": "ZZO",
+    "compass_s": "Z",
+    "compass_ssw": "ZZW",
+    "compass_sw": "ZW",
+    "compass_wsw": "WZW",
+    "compass_w": "W",
+    "compass_wnw": "WNW",
+    "compass_nw": "NW",
+    "compass_nnw": "NNW",
+    "band_great": "uitstekend",
+    "band_good": "goed",
+    "band_fair": "matig",
+    "band_poor": "slecht",
+    "level_good": "goed",
+    "level_caution": "voorzichtig",
+    "level_not_recommended": "afgeraden",
+    "level_dangerous": "gevaarlijk",
+    "event_title": "Zeilen: {spot}",
+    "window": "{start} tot {end}, score {score} ({band}).",
+    "wind": "{direction} {wind} kn, windstoten tot {gust} kn.",
+    "advisory": "SailCast geeft alleen advies: controleer de laatste verwachting en de officiële waarschuwingen voordat je vertrekt.",
+    "forecast_for": "SailCast-verwachting voor {sailor} met de {boat}, gemaakt op {date} om {time}.",
+    "score": "Score {score} ({band}).",
+    "waves": "Golven {waves}.",
+    "high_tide": "Hoogwater {time}.",
+    "low_tide": "Laagwater {time}.",
+    "sunset": "Zonsondergang {time}.",
+    "check_again": "SailCast geeft alleen advies: controleer de verwachting en de officiële waarschuwingen opnieuw voordat je vertrekt.",
+    "added_by": "Toegevoegd door SailCast ({id})",
+    "changed_title": "SailCast: verwachting gewijzigd",
+    "changed": "De verwachting voor de geplande zeiltocht van {sailor} bij {spot} op {date}, {start} tot {end}, is verslechterd. Beoordeling nu: {level}, score {score}. Kijk in SailCast voordat je vertrekt."
+  }
+}

@@ -51,7 +51,7 @@
         },
         "sources": {
           "title": "Data sources",
-          "description": "SailCast suggests the nearest sources. Tides come from NOAA in the US, the Canadian Hydrographic Service in Canada, Rijkswaterstaat in the Netherlands and Kartverket in Norway, and anywhere from WorldTides if you add its key in SailCast's options. Warnings come from the National Weather Service in the US and Environment and Climate Change Canada. Buoys come from NDBC, and airport reports from anywhere.",
+          "description": "SailCast suggests the nearest sources. Tides come from NOAA in the US, the Canadian Hydrographic Service in Canada, Rijkswaterstaat in the Netherlands and Kartverket in Norway, and anywhere from WorldTides if you add its key in SailCast's options. Warnings come from the National Weather Service in the US, Environment and Climate Change Canada, and MeteoAlarm in Europe. Buoys come from NDBC, and airport reports from anywhere.",
           "data": {
             "tide_station": "Tide station",
             "current_station": "Current station",
@@ -438,23 +438,23 @@
     },
     "quiet_buoy": {
       "title": "Buoy {station} has gone quiet",
-      "description": "Buoy {station} hasn't sent a reading for 12 hours, so {spots} use the forecast alone. Buoys go quiet for repairs and in storms. If it stays quiet, edit {spots} in SailCast's settings and pick another buoy, or none."
+      "description": "Buoy {station} hasn't sent a reading for 12 hours, so SailCast uses the forecast alone for {spots}. Buoys go quiet for repairs and in storms. If it stays quiet, edit {spots} in SailCast's settings and pick another buoy, or none."
     },
     "quiet_airport": {
       "title": "Airport {station} has gone quiet",
-      "description": "Airport {station} hasn't sent a weather report for 12 hours, so {spots} use the forecast alone. If it stays quiet, edit {spots} in SailCast's settings and pick another airport, or none."
+      "description": "Airport {station} hasn't sent a weather report for 12 hours, so SailCast uses the forecast alone for {spots}. If it stays quiet, edit {spots} in SailCast's settings and pick another airport, or none."
     },
     "quiet_sensor": {
       "title": "Sensor {sensor} has gone quiet",
-      "description": "{sensor} hasn't reported for 12 hours, so {spots} use other readings or the forecast. Check the sensor, or take it out of {spots} in SailCast's settings."
+      "description": "{sensor} hasn't reported for 12 hours, so SailCast uses other readings or the forecast for {spots}. Check the sensor, or take it out of {spots} in SailCast's settings."
     },
     "failing_tide": {
       "title": "Tide predictions for {station} aren't coming",
-      "description": "{provider} hasn't returned tide predictions for {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another tide source."
+      "description": "{provider} hasn't returned tide predictions for {station} for a day. SailCast uses the predictions it saved earlier for {spots} while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another tide source."
     },
     "failing_current": {
       "title": "Current station {station} isn't answering",
-      "description": "{provider} hasn't returned predictions for current station {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station, or none."
+      "description": "{provider} hasn't returned predictions for current station {station} for a day. SailCast uses the predictions it saved earlier for {spots} while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station, or none."
     },
     "budget_low": {
       "title": "Open-Meteo's free calls are running low",
@@ -462,25 +462,108 @@
     },
     "worldtides_key_missing": {
       "title": "WorldTides needs a key",
-      "description": "{spots} get their tides from WorldTides, but SailCast has no WorldTides key. Add your key in SailCast's options (Settings → Devices & services → SailCast → Configure), or edit {spots} in SailCast's settings and pick another tide source."
+      "description": "SailCast gets the tides for {spots} from WorldTides, but has no WorldTides key. Add your key in SailCast's options (Settings → Devices & services → SailCast → Configure), or edit {spots} in SailCast's settings and pick another tide source."
     },
     "worldtides_key_rejected": {
       "title": "WorldTides refused SailCast's key",
-      "description": "WorldTides answered: \"{error}\". Check the key in SailCast's options (Settings → Devices & services → SailCast → Configure) and your account's credits at worldtides.info. Until then, {spots} use the tide predictions SailCast saved while they last."
+      "description": "WorldTides answered: \"{error}\". Check the key in SailCast's options (Settings → Devices & services → SailCast → Configure) and your account's credits at worldtides.info. Until then, SailCast uses the tide predictions it saved for {spots} while they last."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "API keys",
-        "description": "Keys for providers that need one. They stay in Home Assistant and never reach the panel.",
-        "data": {
-          "worldtides_key": "WorldTides API key"
-        },
-        "data_description": {
-          "worldtides_key": "Tide predictions anywhere, from worldtides.info, with your own account. A spot that uses it costs about 3 credits every five days. Leave empty to remove the key."
+        "title": "SailCast options",
+        "sections": {
+          "keys": {
+            "name": "API keys",
+            "description": "Keys for providers that need one. They stay in Home Assistant and never reach the panel.",
+            "data": {
+              "worldtides_key": "WorldTides API key"
+            },
+            "data_description": {
+              "worldtides_key": "Tide predictions anywhere, from worldtides.info, with your own account. A spot that uses it costs about 3 credits every five days. Leave empty to remove the key."
+            }
+          },
+          "ai": {
+            "name": "AI summary",
+            "description": "Adds a Summarize with AI button to the panel's day view. It asks the AI provider you've set up in Home Assistant for two or three sentences about the day. Safety ratings always come from SailCast's own rules, never from AI.",
+            "data": {
+              "ai_summary": "Offer AI summaries",
+              "ai_task": "AI task"
+            },
+            "data_description": {
+              "ai_task": "Leave empty to use Home Assistant's default, set under Settings → System → AI."
+            }
+          }
         }
       }
+    },
+    "error": {
+      "no_ai_task": "Set up an AI provider in Home Assistant first. Its integration adds the AI task SailCast uses.",
+      "no_default_ai_task": "Pick an AI task, or set a default one under Settings → System → AI."
     }
+  },
+  "common": {
+    "weekday_mon": "Monday",
+    "weekday_tue": "Tuesday",
+    "weekday_wed": "Wednesday",
+    "weekday_thu": "Thursday",
+    "weekday_fri": "Friday",
+    "weekday_sat": "Saturday",
+    "weekday_sun": "Sunday",
+    "month_1": "Jan",
+    "month_2": "Feb",
+    "month_3": "Mar",
+    "month_4": "Apr",
+    "month_5": "May",
+    "month_6": "Jun",
+    "month_7": "Jul",
+    "month_8": "Aug",
+    "month_9": "Sep",
+    "month_10": "Oct",
+    "month_11": "Nov",
+    "month_12": "Dec",
+    "date": "{weekday}, {month} {day}",
+    "range": "{low} to {high}",
+    "feet": "{value} ft",
+    "meters": "{value} m",
+    "compass_n": "N",
+    "compass_nne": "NNE",
+    "compass_ne": "NE",
+    "compass_ene": "ENE",
+    "compass_e": "E",
+    "compass_ese": "ESE",
+    "compass_se": "SE",
+    "compass_sse": "SSE",
+    "compass_s": "S",
+    "compass_ssw": "SSW",
+    "compass_sw": "SW",
+    "compass_wsw": "WSW",
+    "compass_w": "W",
+    "compass_wnw": "WNW",
+    "compass_nw": "NW",
+    "compass_nnw": "NNW",
+    "band_great": "great",
+    "band_good": "good",
+    "band_fair": "fair",
+    "band_poor": "poor",
+    "level_good": "good",
+    "level_caution": "caution",
+    "level_not_recommended": "not recommended",
+    "level_dangerous": "dangerous",
+    "event_title": "Sailing: {spot}",
+    "window": "{start} to {end}, score {score} ({band}).",
+    "wind": "{direction} {wind} kt, gusts to {gust} kt.",
+    "advisory": "SailCast is advisory: check the latest forecast and official warnings before you go.",
+    "forecast_for": "SailCast forecast for {sailor} in the {boat}, made {date} at {time}.",
+    "score": "Score {score} ({band}).",
+    "waves": "Waves {waves}.",
+    "high_tide": "High tide {time}.",
+    "low_tide": "Low tide {time}.",
+    "sunset": "Sunset {time}.",
+    "check_again": "SailCast is advisory: check the forecast and official warnings again before you go.",
+    "added_by": "Added by SailCast ({id})",
+    "changed_title": "SailCast: forecast changed",
+    "changed": "The forecast for {sailor}'s sail at {spot} on {date}, {start} to {end}, has got worse. It's now {level}, score {score}. Check SailCast before you go."
   }
 }

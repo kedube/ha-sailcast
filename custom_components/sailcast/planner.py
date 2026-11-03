@@ -12,7 +12,8 @@ Every planned sail is watched. When its forecast gets worse (any hour below
 good, or the score under 60), SailCast posts a notification and fires a
 sailcast_planned_sail_changed event.
 
-Event text is in English until the translations arrive.
+Events and notifications are written in Home Assistant's language, except an
+event someone adds from the panel, which is in theirs.
 """
 
 from __future__ import annotations
@@ -39,24 +40,23 @@ from homeassistant.components.calendar.const import (
     EVENT_START,
     EVENT_SUMMARY,
 )
-from homeassistant.const import WEEKDAYS, UnitOfLength
+from homeassistant.const import WEEKDAYS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util import dt as dt_util
 from homeassistant.util.ulid import ulid_now
-from homeassistant.util.unit_conversion import DistanceConverter
 
 from .const import DOMAIN, SIGNAL_UPDATED
-from .geo import compass_point
 from .limits import Level
 from .outlook import BoatOutlook, Results
 from .profiles import AutoCalendar, Profiles, Sailor
 from .rating import Reason
-from .scoring import WINDOW_SCORE, Window, band, round_half_up
+from .scoring import WINDOW_SCORE, Window, round_half_up
 from .storage import PlannedSail, SailCastStore
 from .summary import hours_between, summarize
 from .timeline import HOUR
+from .wording import Wording
 
 if TYPE_CHECKING:
     from .coordinator import ResultsCoordinator
@@ -73,15 +73,6 @@ KEEP_PAST: Final = timedelta(days=1)
 LOOK_AROUND: Final = timedelta(hours=12)
 
 EVENT_PLANNED_SAIL_CHANGED: Final = "sailcast_planned_sail_changed"
-# The last line of every event's description, so SailCast can find it again.
-MARKER: Final = "Added by SailCast"
-
-_LEVELS: Final = {
-    Level.GOOD: "good",
-    Level.CAUTION: "caution",
-    Level.NOT_RECOMMENDED: "not recommended",
-    Level.DANGEROUS: "dangerous",
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,9 +186,14 @@ class Planner:
         title: str,
         watch: bool,
         user: str | None,
+        language: str | None = None,
     ) -> PlannedSail:
-        """Add an event to a calendar and start watching its forecast."""
+        """Add an event to a calendar and start watching its forecast.
+
+        Its description is in `language`, or Home Assistant's.
+        """
         entity = self.writable(calendar)
+        wording = await Wording.async_load(self.hass, language)
         sail = PlannedSail(
             id=ulid_now(),
             sailor=sailor,
@@ -214,7 +210,7 @@ class Planner:
         status = self.status(sail)
         sail.score, sail.worse = status.score, status.worse
         async with self._lock:
-            await self._async_create_event(entity, sail)
+            await self._async_create_event(entity, sail, wording)
             self.store.add(sail)
         self._async_signal()
         return sail
@@ -237,6 +233,7 @@ class Planner:
 
     async def async_sync(self) -> None:
         """Keep automatic events in step and check every sail's forecast."""
+        wording = await Wording.async_load(self.hass)
         async with self._lock:
             now = dt_util.utcnow()
             changed = self._forget_stale(now)
@@ -244,7 +241,7 @@ class Planner:
                 if sailor.auto_calendar and sailor.boats:
                     try:
                         changed |= await self._async_sync_auto(
-                            sailor, sailor.auto_calendar, now
+                            sailor, sailor.auto_calendar, now, wording
                         )
                     except HomeAssistantError as err:
                         _LOGGER.warning(
@@ -252,7 +249,7 @@ class Planner:
                             sailor.name,
                             err,
                         )
-            changed |= self._watch(now)
+            changed |= self._watch(now, wording)
         if changed:
             self._async_signal()
 
@@ -274,7 +271,7 @@ class Planner:
         return bool(gone)
 
     async def _async_sync_auto(
-        self, sailor: Sailor, auto: AutoCalendar, now: datetime
+        self, sailor: Sailor, auto: AutoCalendar, now: datetime, wording: Wording
     ) -> bool:
         """Add, move or take out a sailor's automatic events."""
         entity = calendar_entity(self.hass, auto.calendar)
@@ -311,11 +308,11 @@ class Planner:
                         calendar=auto.calendar,
                         start=window.start,
                         end=window.end,
-                        title=self._title(spot),
+                        title=self._title(spot, wording),
                         auto=True,
                         score=window.score,
                     )
-                    await self._async_create_event(entity, sail)
+                    await self._async_create_event(entity, sail, wording)
                     self.store.add(sail)
                     changed = True
                 continue
@@ -343,7 +340,9 @@ class Planner:
                 or abs(window.start - existing.start) >= MOVE_AFTER
                 or abs(window.end - existing.end) >= MOVE_AFTER
             ):
-                changed |= await self._async_move(entity, existing, spot, window)
+                changed |= await self._async_move(
+                    entity, existing, spot, window, wording
+                )
         return changed
 
     def _best_window(
@@ -369,19 +368,25 @@ class Planner:
         return best
 
     async def _async_move(
-        self, entity: CalendarEntity, sail: PlannedSail, spot: str, window: Window
+        self,
+        entity: CalendarEntity,
+        sail: PlannedSail,
+        spot: str,
+        window: Window,
+        wording: Wording,
     ) -> bool:
         """Move an automatic event to a new window, if the calendar allows."""
         old = (sail.start, sail.end, sail.spot, sail.title)
         sail.start, sail.end, sail.spot = window.start, window.end, spot
-        sail.title, sail.score, sail.worse = self._title(spot), window.score, False
+        sail.title = self._title(spot, wording)
+        sail.score, sail.worse = window.score, False
         if sail.uid and supports(entity, CalendarEntityFeature.UPDATE_EVENT):
             await entity.async_update_event(
-                sail.uid, self._event(sail), recurrence_id=sail.recurrence_id
+                sail.uid, self._event(sail, wording), recurrence_id=sail.recurrence_id
             )
         elif sail.uid and supports(entity, CalendarEntityFeature.DELETE_EVENT):
             await entity.async_delete_event(sail.uid, recurrence_id=sail.recurrence_id)
-            await self._async_create_event(entity, sail)
+            await self._async_create_event(entity, sail, wording)
         else:
             sail.start, sail.end, sail.spot, sail.title = old
             return False
@@ -389,7 +394,7 @@ class Planner:
         self.store.async_changed()
         return True
 
-    def _watch(self, now: datetime) -> bool:
+    def _watch(self, now: datetime, wording: Wording) -> bool:
         """Notice planned sails whose forecast got worse, or better again."""
         changed = False
         for sail in self.store.planned:
@@ -403,7 +408,7 @@ class Planner:
             if not sail.watch:
                 continue
             if status.worse:
-                self._async_notify(sail, status)
+                self._async_notify(sail, status, wording)
             else:
                 self._async_dismiss(sail)
         if changed:
@@ -411,10 +416,10 @@ class Planner:
         return changed
 
     async def _async_create_event(
-        self, entity: CalendarEntity, sail: PlannedSail
+        self, entity: CalendarEntity, sail: PlannedSail, wording: Wording
     ) -> None:
         """Add a sail's event, then find it again to learn its ID."""
-        await entity.async_create_event(**self._event(sail))
+        await entity.async_create_event(**self._event(sail, wording))
         try:
             events = await _async_events(self.hass, entity, sail, timedelta(minutes=1))
         except HomeAssistantError:
@@ -449,27 +454,32 @@ class Planner:
             return True
         return _find(events, sail) is not None
 
-    def _event(self, sail: PlannedSail) -> dict[str, Any]:
+    def _event(self, sail: PlannedSail, wording: Wording) -> dict[str, Any]:
         """Return a sail's event, as the calendar's create and update take it."""
         return {
             EVENT_START: dt_util.as_local(sail.start),
             EVENT_END: dt_util.as_local(sail.end),
             EVENT_SUMMARY: sail.title,
-            EVENT_DESCRIPTION: self._describe(sail),
+            EVENT_DESCRIPTION: self._describe(sail, wording),
             EVENT_LOCATION: self.profiles.spots[sail.spot].name,
         }
 
-    def _title(self, spot: str) -> str:
-        return f"Sailing: {self.profiles.spots[spot].name}"
+    def _title(self, spot: str, wording: Wording) -> str:
+        return wording.text("event_title", spot=self.profiles.spots[spot].name)
 
-    def _describe(self, sail: PlannedSail) -> str:
+    def _describe(self, sail: PlannedSail, wording: Wording) -> str:
         """Describe a sail's forecast as it is now, and how to find it again."""
         profiles = self.profiles
         sailor, boat = profiles.sailors[sail.sailor], profiles.boats[sail.boat]
-        made = dt_util.as_local(dt_util.utcnow())
+        made = dt_util.utcnow()
         lines = [
-            f"SailCast forecast for {sailor.name} in the {boat.name}, made "
-            f"{_day(made)} at {_clock(made)}."
+            wording.text(
+                "forecast_for",
+                sailor=sailor.name,
+                boat=boat.name,
+                date=wording.date(made),
+                time=wording.clock(made),
+            )
         ]
         conditions = self.results.data.conditions.get(sail.spot)
         hours = (
@@ -478,19 +488,29 @@ class Planner:
         if (summary := summarize(hours)) is not None:
             status = self.status(sail)
             if status.score is not None:
-                lines.append(f"Score {status.score} ({band(status.score)}).")
-            low, high = round(summary.wind_low), round(summary.wind_high)
-            wind = f"{low}" if low == high else f"{low} to {high}"
+                lines.append(
+                    wording.text(
+                        "score", score=status.score, band=wording.band(status.score)
+                    )
+                )
             lines.append(
-                f"{compass_point(summary.direction).upper()} {wind} kt, gusts to "
-                f"{round(summary.gust)} kt."
+                wording.text(
+                    "wind",
+                    direction=wording.compass(summary.direction),
+                    wind=wording.range(summary.wind_low, summary.wind_high),
+                    gust=wording.number(summary.gust),
+                )
             )
             if summary.waves is not None:
-                lines.append(f"Waves {self._height(*summary.waves)}.")
+                lines.append(
+                    wording.text("waves", waves=wording.heights(*summary.waves))
+                )
         if conditions is not None:
             lines.extend(
-                f"{'High' if event.high else 'Low'} tide "
-                f"{_clock(dt_util.as_local(event.time))}."
+                wording.text(
+                    "high_tide" if event.high else "low_tide",
+                    time=wording.clock(event.time),
+                )
                 for event in conditions.tide_events
                 if sail.start <= event.time <= sail.end
             )
@@ -502,45 +522,31 @@ class Planner:
                 ),
                 None,
             ):
-                lines.append(f"Sunset {_clock(dt_util.as_local(day.sunset))}.")
-        lines.append(
-            "SailCast is advisory: check the forecast and official warnings again "
-            "before you go."
-        )
-        return " ".join(lines) + f"\n\n{MARKER} ({sail.id})"
-
-    def _height(self, low: float, high: float) -> str:
-        """Return a wave height range in the user's units."""
-        unit = (
-            UnitOfLength.FEET
-            if self.hass.config.units.length_unit == UnitOfLength.MILES
-            else UnitOfLength.METERS
-        )
-        low, high = (
-            DistanceConverter.convert(value, UnitOfLength.METERS, unit)
-            for value in (low, high)
-        )
-        text = (
-            f"{low:.1f}"
-            if f"{low:.1f}" == f"{high:.1f}"
-            else f"{low:.1f} to {high:.1f}"
-        )
-        return f"{text} {unit}"
+                lines.append(wording.text("sunset", time=wording.clock(day.sunset)))
+        lines.append(wording.text("check_again"))
+        return wording.join(lines) + "\n\n" + wording.text("added_by", id=sail.id)
 
     @callback
-    def _async_notify(self, sail: PlannedSail, status: SailStatus) -> None:
+    def _async_notify(
+        self, sail: PlannedSail, status: SailStatus, wording: Wording
+    ) -> None:
         """Tell everyone a planned sail's forecast got worse."""
         profiles = self.profiles
         sailor, spot = profiles.sailors[sail.sailor], profiles.spots[sail.spot]
-        start, end = dt_util.as_local(sail.start), dt_util.as_local(sail.end)
-        level = _LEVELS[status.level] if status.level is not None else "worse"
-        score = f", score {status.score}" if status.score is not None else ""
+        message = wording.text(
+            "changed",
+            sailor=sailor.name,
+            spot=spot.name,
+            date=wording.date(sail.start),
+            start=wording.clock(sail.start),
+            end=wording.clock(sail.end),
+            level=wording.level(status.level or Level.CAUTION),
+            score=status.score,
+        )
         persistent_notification.async_create(
             self.hass,
-            f"The forecast for {sailor.name}'s sail at {spot.name} on "
-            f"{_day(start)}, {_clock(start)} to {_clock(end)}, has got worse. "
-            f"It's now {level}{score}. Check SailCast before you go.",
-            title="SailCast: forecast changed",
+            message,
+            title=wording.text("changed_title"),
             notification_id=f"{DOMAIN}_{sail.id}",
         )
         self.hass.bus.async_fire(
@@ -556,6 +562,7 @@ class Planner:
                 "rating": status.level.key if status.level is not None else None,
                 "score": status.score,
                 "automatic": sail.auto,
+                "message": message,
             },
         )
 
@@ -588,23 +595,11 @@ async def _async_events(
 
 
 def _find(events: Sequence[CalendarEvent], sail: PlannedSail) -> CalendarEvent | None:
-    """Return a sail's event: the one with its ID, or its marker."""
-    marker = f"{MARKER} ({sail.id})"
+    """Return a sail's event: the one with its ID, or with SailCast's in its text.
+
+    The description's last line names the sail's ID in any language.
+    """
     for event in events:
-        if (sail.uid and event.uid == sail.uid) or marker in (event.description or ""):
+        if (sail.uid and event.uid == sail.uid) or sail.id in (event.description or ""):
             return event
     return None
-
-
-def _clock(when: datetime) -> str:
-    """Return a time such as "9 AM" or "4:30 PM"."""
-    hour = when.hour % 12 or 12
-    suffix = "AM" if when.hour < 12 else "PM"
-    return (
-        f"{hour} {suffix}" if when.minute == 0 else f"{hour}:{when.minute:02d} {suffix}"
-    )
-
-
-def _day(when: datetime) -> str:
-    """Return a date such as "Saturday, Nov 7"."""
-    return f"{when:%A}, {when:%b} {when.day}"

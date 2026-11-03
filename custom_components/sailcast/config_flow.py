@@ -31,6 +31,7 @@ from homeassistant.const import (
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     EntitySelector,
     EntitySelectorConfig,
     EntityWithDeviceFilterSelectorConfig,
@@ -51,9 +52,11 @@ from homeassistant.helpers.selector import (
 from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
 import probatio
 
-from . import profiles
+from . import ai, profiles
 from .const import (
     CONF_AHEAD,
+    CONF_AI_SUMMARY,
+    CONF_AI_TASK,
     CONF_AIRPORT,
     CONF_AUTO_CALENDAR,
     CONF_AUTO_DAYS,
@@ -100,6 +103,9 @@ from .sources import Choice, async_suggest, suggested
 
 # The "no source" choice in the sources step.
 NONE = "none"
+# The options dialog's sections.
+SECTION_KEYS = "keys"
+SECTION_AI = "ai"
 SOURCES = (
     CONF_TIDE_STATION,
     CONF_CURRENT_STATION,
@@ -150,33 +156,77 @@ class SailCastConfigFlow(ConfigFlow, domain=DOMAIN):
         return SailCastOptionsFlow()
 
 
+def _options_schema() -> probatio.Schema:
+    """Return the options form: API keys, then the AI summary."""
+    keys = {
+        probatio.Optional(CONF_WORLDTIDES_KEY): TextSelector(
+            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+        )
+    }
+    ai_summary = {
+        probatio.Optional(CONF_AI_SUMMARY, default=False): BooleanSelector(),
+        probatio.Optional(CONF_AI_TASK): EntitySelector(
+            EntitySelectorConfig(
+                filter=EntityWithDeviceFilterSelectorConfig(
+                    domain=ai.AI_TASK,
+                    supported_features=["ai_task.AITaskEntityFeature.GENERATE_DATA"],
+                )
+            )
+        ),
+    }
+    return probatio.Schema(
+        {
+            probatio.Required(SECTION_KEYS): section(probatio.Schema(keys)),
+            probatio.Required(SECTION_AI): section(probatio.Schema(ai_summary)),
+        }
+    )
+
+
 class SailCastOptionsFlow(OptionsFlow):
-    """Set the API keys for optional providers. Saving reloads SailCast."""
+    """Set API keys for optional providers and the AI summary. Saving reloads."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the keys. An empty field removes a key."""
+        """Ask for the keys and the AI summary. An empty key field removes a key."""
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(
-                data={
-                    key: value.strip()
-                    for key, value in user_input.items()
-                    if value and value.strip()
-                }
-            )
+            options: dict[str, Any] = {
+                key: value.strip()
+                for key, value in user_input.get(SECTION_KEYS, {}).items()
+                if value and value.strip()
+            }
+            ai_options = user_input.get(SECTION_AI, {})
+            if ai_options.get(CONF_AI_SUMMARY):
+                task = ai_options.get(CONF_AI_TASK) or None
+                options[CONF_AI_SUMMARY] = True
+                if task:
+                    options[CONF_AI_TASK] = task
+                if error := ai.problem(self.hass, task):
+                    errors["base"] = error
+            if not errors:
+                return self.async_create_entry(data=options)
+        current = self.config_entry.options
+        if user_input is None:
+            user_input = {
+                SECTION_KEYS: {
+                    key: current[key]
+                    for key in (CONF_WORLDTIDES_KEY,)
+                    if key in current
+                },
+                SECTION_AI: {
+                    key: current[key]
+                    for key in (CONF_AI_SUMMARY, CONF_AI_TASK)
+                    if key in current
+                },
+            }
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                probatio.Schema(
-                    {
-                        probatio.Optional(CONF_WORLDTIDES_KEY): TextSelector(
-                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                        )
-                    }
-                ),
-                dict(self.config_entry.options),
+                _options_schema(),
+                user_input,
             ),
+            errors=errors,
         )
 
 

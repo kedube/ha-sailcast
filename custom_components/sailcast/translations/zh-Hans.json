@@ -1,0 +1,569 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast 将风、浪、潮汐和天气预报转化为您的地点、船和帆船手的安全评级与航行窗口。\n\n**SailCast 仅供参考**。官方预报和预警优先，最终始终由船长决定。\n\n设置完成后，请在此集成的页面中添加您的地点、船和帆船手。"
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "地点",
+      "initiate_flow": {
+        "user": "添加地点"
+      },
+      "step": {
+        "user": {
+          "title": "添加地点",
+          "data": {
+            "name": "名称",
+            "location": "位置",
+            "water_type": "水域",
+            "offshore": "离岸风",
+            "exposed": "受浪方向",
+            "fetch": "上风开阔水面（风区）"
+          },
+          "data_description": {
+            "name": "例如“港湾”或“湖区”。",
+            "location": "将图钉放在您航行的水面上。圆圈决定风场图显示的范围。",
+            "offshore": "来自这些方向的风会吹离岸边。",
+            "exposed": "这些方向有开阔水面，浪会逐渐增大。",
+            "fetch": "仅适用于河流和湖泊。SailCast 会根据地图测量各个方向的开阔水面；只有需要用一个固定距离替代测量结果时，才设置此项。"
+          }
+        },
+        "reconfigure": {
+          "title": "编辑地点",
+          "data": {
+            "name": "名称",
+            "location": "位置",
+            "water_type": "水域",
+            "offshore": "离岸风",
+            "exposed": "受浪方向",
+            "fetch": "上风开阔水面（风区）"
+          },
+          "data_description": {
+            "name": "例如“港湾”或“湖区”。",
+            "location": "将图钉放在您航行的水面上。圆圈决定风场图显示的范围。",
+            "offshore": "来自这些方向的风会吹离岸边。",
+            "exposed": "这些方向有开阔水面，浪会逐渐增大。",
+            "fetch": "仅适用于河流和湖泊。SailCast 会根据地图测量各个方向的开阔水面；只有需要用一个固定距离替代测量结果时，才设置此项。"
+          }
+        },
+        "sources": {
+          "title": "数据来源",
+          "description": "SailCast 会推荐最近的数据来源。潮汐数据在美国来自 NOAA，在加拿大来自 Canadian Hydrographic Service，在荷兰来自 Rijkswaterstaat，在挪威来自 Kartverket；如果您在 SailCast 的选项中添加了 WorldTides 密钥，任何地方都可以使用 WorldTides。预警在美国来自 National Weather Service，在加拿大来自 Environment and Climate Change Canada，在欧洲来自 MeteoAlarm。浮标数据来自 NDBC，机场报告则不限地区。",
+          "data": {
+            "tide_station": "潮汐站",
+            "current_station": "潮流站",
+            "marine_zone": "官方预警",
+            "buoy": "浮标",
+            "airport": "机场"
+          },
+          "data_description": {
+            "tide_station": "用于潮高以及高潮和低潮。海洋模型的潮汐只是粗略值，在近岸处常有一小时或更大的偏差，因此仅在没有其他来源覆盖该地点时供手动选择。",
+            "current_station": "用于“风与潮流相逆”规则。仅当站点靠近您航行的水域时才选择。",
+            "marine_zone": "官方预警（例如 Small Craft Advisory）来自这里。如果湖泊没有海区，请选择 National Weather Service 针对图钉位置发布的预警。",
+            "buoy": "来自浮标或沿岸站的风、浪和水温读数。每个读数在仍然较新时计入，并会修正接下来几个小时的预报。",
+            "airport": "每小时的风、能见度和气温报告。如有多个可选，请选择靠近水边的机场。"
+          },
+          "sections": {
+            "sensors": {
+              "name": "您自己的传感器",
+              "description": "来自您自己的气象站或船上仪表的读数优先于浮标和机场。SailCast 将这些读数视为该地点的数据。",
+              "data": {
+                "wind": "风速",
+                "gust": "阵风",
+                "wind_direction": "风向",
+                "temperature": "气温",
+                "water_temperature": "水温"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "请输入名称。",
+        "name_too_long": "请使用不超过 40 个字符。",
+        "name_taken": "已有其他地点使用此名称。",
+        "radius_out_of_range": "请将圆圈半径设为 2 至 50 公里（约 1 至 30 英里）。",
+        "suggestions_unavailable": "无法查找附近的数据来源。您可以先保存，稍后通过编辑地点再添加。",
+        "fetch_out_of_range": "请将开阔水面设为 0.05 至 100 公里（约 0.03 至 60 英里）。",
+        "invalid_sensor": "请为每项读数选择一个传感器，或留空。"
+      }
+    },
+    "boat": {
+      "entry_type": "船",
+      "initiate_flow": {
+        "user": "添加船"
+      },
+      "step": {
+        "user": {
+          "title": "添加船",
+          "data": {
+            "name": "名称",
+            "size_class": "尺寸",
+            "length": "长度"
+          },
+          "data_description": {
+            "name": "例如船名。",
+            "size_class": "每种尺寸都有各自的风、阵风和浪的安全限值。"
+          }
+        },
+        "reconfigure": {
+          "title": "编辑船",
+          "data": {
+            "name": "名称",
+            "size_class": "尺寸",
+            "length": "长度"
+          },
+          "data_description": {
+            "name": "例如船名。",
+            "size_class": "每种尺寸都有各自的风、阵风和浪的安全限值。"
+          }
+        }
+      },
+      "error": {
+        "name_required": "请输入名称。",
+        "name_too_long": "请使用不超过 40 个字符。",
+        "name_taken": "已有其他船使用此名称。",
+        "length_out_of_range": "请输入 1 至 50 米（3 至 164 英尺）之间的长度。"
+      }
+    },
+    "sailor": {
+      "entry_type": "帆船手",
+      "initiate_flow": {
+        "user": "添加帆船手"
+      },
+      "step": {
+        "user": {
+          "title": "添加帆船手",
+          "data": {
+            "name": "名称",
+            "skill": "技能水平",
+            "default_boat": "常用船",
+            "other_boats": "其他船",
+            "days": "航行日",
+            "start": "最早出发时间",
+            "end": "最晚结束时间",
+            "user": "Home Assistant 用户"
+          },
+          "data_description": {
+            "skill": "每位帆船手自行评定自己的技能水平。它决定该帆船手的平均风速上限；阵风不计入此上限。",
+            "default_boat": "除非帆船手另选一条船，否则 SailCast 按这条船进行评级。",
+            "other_boats": "该帆船手驾驶的其他船。",
+            "start": "留空则从日出开始。",
+            "end": "留空则在日落时结束。",
+            "user": "该用户打开面板时，会默认显示此帆船手。"
+          },
+          "sections": {
+            "comfort": {
+              "name": "舒适度",
+              "description": "该帆船手喜欢的条件。这些设置只影响评分，绝不影响安全评级。",
+              "data": {
+                "ideal_low": "理想风速下限",
+                "ideal_high": "理想风速上限",
+                "coldest": "感到舒适的最低气温",
+                "rain": "降雨"
+              },
+              "data_description": {
+                "ideal_low": "收窄其每条船的理想风速范围。留空则使用船的默认范围。",
+                "ideal_high": "留空则使用船的默认范围，最高不超过技能水平的上限。",
+                "coldest": "气温更低时评分会下降。留空则为 10 °C（50 °F）。"
+              }
+            },
+            "auto_calendar": {
+              "name": "自动日历",
+              "description": "在每个选定的日子，将该帆船手的最佳窗口添加到日历中，每天最多一个事件。SailCast 会让事件随预报同步更新，直到前一天 18:00；此后不再移动事件，而是发出警告。",
+              "data": {
+                "calendar": "日历",
+                "auto_days": "星期",
+                "min_score": "仅添加评分达到",
+                "ahead": "提前多久",
+                "auto_spots": "地点"
+              },
+              "data_description": {
+                "calendar": "留空则关闭自动添加。Local Calendar、Google Calendar 和 CalDAV 日历可以接受新事件。",
+                "ahead": "三天以后的预报变化最大。",
+                "auto_spots": "当不同地点的窗口时间重叠时，SailCast 只添加最好的一个。"
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "编辑帆船手",
+          "data": {
+            "name": "名称",
+            "skill": "技能水平",
+            "default_boat": "常用船",
+            "other_boats": "其他船",
+            "days": "航行日",
+            "start": "最早出发时间",
+            "end": "最晚结束时间",
+            "user": "Home Assistant 用户"
+          },
+          "data_description": {
+            "skill": "每位帆船手自行评定自己的技能水平。它决定该帆船手的平均风速上限；阵风不计入此上限。",
+            "default_boat": "除非帆船手另选一条船，否则 SailCast 按这条船进行评级。",
+            "other_boats": "该帆船手驾驶的其他船。",
+            "start": "留空则从日出开始。",
+            "end": "留空则在日落时结束。",
+            "user": "该用户打开面板时，会默认显示此帆船手。"
+          },
+          "sections": {
+            "comfort": {
+              "name": "舒适度",
+              "description": "该帆船手喜欢的条件。这些设置只影响评分，绝不影响安全评级。",
+              "data": {
+                "ideal_low": "理想风速下限",
+                "ideal_high": "理想风速上限",
+                "coldest": "感到舒适的最低气温",
+                "rain": "降雨"
+              },
+              "data_description": {
+                "ideal_low": "收窄其每条船的理想风速范围。留空则使用船的默认范围。",
+                "ideal_high": "留空则使用船的默认范围，最高不超过技能水平的上限。",
+                "coldest": "气温更低时评分会下降。留空则为 10 °C（50 °F）。"
+              }
+            },
+            "auto_calendar": {
+              "name": "自动日历",
+              "description": "在每个选定的日子，将该帆船手的最佳窗口添加到日历中，每天最多一个事件。SailCast 会让事件随预报同步更新，直到前一天 18:00；此后不再移动事件，而是发出警告。",
+              "data": {
+                "calendar": "日历",
+                "auto_days": "星期",
+                "min_score": "仅添加评分达到",
+                "ahead": "提前多久",
+                "auto_spots": "地点"
+              },
+              "data_description": {
+                "calendar": "留空则关闭自动添加。Local Calendar、Google Calendar 和 CalDAV 日历可以接受新事件。",
+                "ahead": "三天以后的预报变化最大。",
+                "auto_spots": "当不同地点的窗口时间重叠时，SailCast 只添加最好的一个。"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "请输入名称。",
+        "name_too_long": "请使用不超过 40 个字符。",
+        "name_taken": "已有其他帆船手使用此名称。",
+        "unknown_boat": "这条船已被移除。请另选一条。",
+        "no_days": "请至少选择一天。",
+        "end_before_start": "最晚结束时间必须晚于最早出发时间。",
+        "ideal_out_of_range": "请设为 0 至 40 节。",
+        "ideal_high_below_low": "范围上限必须高于下限。",
+        "coldest_out_of_range": "请设为 −20 至 35 °C（−4 至 95 °F）。",
+        "calendar_read_only": "该日历无法添加新事件。请选择 Local Calendar、Google Calendar 或 CalDAV 日历。",
+        "no_spots": "请至少选择一个地点。",
+        "invalid_min_score": "请从选项中选择一项。",
+        "invalid_ahead": "请从选项中选择一项。"
+      },
+      "abort": {
+        "no_boats": "请先添加一条船。每位帆船手至少需要一条船。"
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "开阔海岸",
+        "bay": "海湾",
+        "river": "河口或河流",
+        "lake": "湖泊"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "北",
+        "ne": "东北",
+        "e": "东",
+        "se": "东南",
+        "s": "南",
+        "sw": "西南",
+        "w": "西",
+        "nw": "西北"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "稳向板艇或沙滩双体船，约 16 英尺（5 米）以内",
+        "small_keelboat": "小型龙骨艇，16–25 英尺（5–7.5 米）",
+        "cruiser": "巡航帆船，25–35 英尺（7.5–10.5 米）",
+        "large_cruiser": "大型巡航帆船，35 英尺（10.5 米）及以上"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "初级：平均风速不超过 10 节",
+        "intermediate": "中级：不超过 16 节",
+        "advanced": "高级：无风速上限，仅提供指导"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "星期一",
+        "tue": "星期二",
+        "wed": "星期三",
+        "thu": "星期四",
+        "fri": "星期五",
+        "sat": "星期六",
+        "sun": "星期日"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "避开雨天",
+        "some": "小雨无妨",
+        "any": "下雨也无所谓"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "良好或更高：60 及以上",
+        "80": "极佳：80 及以上"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "今天和明天",
+        "2": "未来 3 天",
+        "4": "未来 5 天",
+        "6": "整周"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "无"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot} 适合航行"
+      },
+      "marine_warning": {
+        "name": "海上预警"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "航行"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "下次高潮"
+      },
+      "next_low_tide": {
+        "name": "下次低潮"
+      },
+      "next_window": {
+        "name": "下一个航行窗口"
+      },
+      "rating": {
+        "name": "{spot} 安全评级",
+        "state": {
+          "good": "良好",
+          "caution": "注意",
+          "not_recommended": "不建议",
+          "dangerous": "危险"
+        }
+      },
+      "score": {
+        "name": "{spot} 评分"
+      },
+      "water_temperature": {
+        "name": "水温"
+      },
+      "wave_height": {
+        "name": "浪高"
+      },
+      "wind_direction": {
+        "name": "风向"
+      },
+      "wind_gust": {
+        "name": "阵风"
+      },
+      "wind_speed": {
+        "name": "风速"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "获取预报",
+      "description": "获取帆船手在某个地点从现在起每天和每小时的安全评级、评分和航行窗口。",
+      "fields": {
+        "spot": {
+          "name": "地点",
+          "description": "地点的名称。"
+        },
+        "sailor": {
+          "name": "帆船手",
+          "description": "帆船手的名称。评级依据其技能水平。"
+        },
+        "boat": {
+          "name": "船",
+          "description": "该帆船手的某一条船。留空则包括其所有船。"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast 尚未设置。"
+    },
+    "unknown_spot": {
+      "message": "没有名为 {spot} 的地点。"
+    },
+    "unknown_sailor": {
+      "message": "没有名为 {sailor} 的帆船手。"
+    },
+    "unknown_boat": {
+      "message": "{sailor} 没有名为 {boat} 的船。"
+    },
+    "no_forecast": {
+      "message": "{spot} 暂无预报。"
+    },
+    "calendar_read_only": {
+      "message": "{calendar} 无法添加新事件。"
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "{spot} 的图钉位于陆地上",
+      "description": "SailCast 根据图钉的位置推算 {spot} 的浪和风区，而地图显示该图钉位于陆地上。请打开 SailCast，进入“设置”，编辑 {spot}，然后将图钉拖到您航行的水面上。"
+    },
+    "quiet_buoy": {
+      "title": "浮标 {station} 已停止更新",
+      "description": "浮标 {station} 已有 12 小时未发送读数，因此 {spots} 仅使用预报。浮标在维修期间或遇到风暴时会停止发送数据。如果它一直没有恢复，请在 SailCast 的设置中编辑 {spots}，另选一个浮标，或选择“无”。"
+    },
+    "quiet_airport": {
+      "title": "机场 {station} 已停止更新",
+      "description": "机场 {station} 已有 12 小时未发送天气报告，因此 {spots} 仅使用预报。如果它一直没有恢复，请在 SailCast 的设置中编辑 {spots}，另选一个机场，或选择“无”。"
+    },
+    "quiet_sensor": {
+      "title": "传感器 {sensor} 已停止更新",
+      "description": "{sensor} 已有 12 小时未报告读数，因此 {spots} 改用其他读数或预报。请检查该传感器，或在 SailCast 的设置中将其从 {spots} 中移除。"
+    },
+    "failing_tide": {
+      "title": "无法获取 {station} 的潮汐预测",
+      "description": "{provider} 已有一天未返回 {station} 的潮汐预测。只要 SailCast 之前保存的预测仍覆盖本周，{spots} 就会继续使用这些预测。如果持续失败，请在 SailCast 的设置中编辑 {spots}，另选一个潮汐来源。"
+    },
+    "failing_current": {
+      "title": "潮流站 {station} 无响应",
+      "description": "{provider} 已有一天未返回潮流站 {station} 的预测。只要 SailCast 之前保存的预测仍覆盖本周，{spots} 就会继续使用这些预测。如果持续失败，请在 SailCast 的设置中编辑 {spots}，另选一个站点，或选择“无”。"
+    },
+    "budget_low": {
+      "title": "Open-Meteo 免费调用次数即将用完",
+      "description": "SailCast 今天已使用 Open-Meteo 每日 10,000 次免费调用中的 {calls} 次，因此现在改为每三小时更新一次预报（而不是每小时），风场图也暂停到明天。同一网络连接上的其他任何程序都共用此额度。计数在 UTC 时间 0:00 重新开始。"
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides 需要密钥",
+      "description": "{spots} 的潮汐数据来自 WorldTides，但 SailCast 没有 WorldTides 密钥。请在 SailCast 的选项中添加您的密钥（设置 → 设备与服务 → SailCast → 配置），或在 SailCast 的设置中编辑 {spots}，另选一个潮汐来源。"
+    },
+    "worldtides_key_rejected": {
+      "title": "WorldTides 拒绝了 SailCast 的密钥",
+      "description": "WorldTides 的回复：“{error}”。请检查 SailCast 选项中的密钥（设置 → 设备与服务 → SailCast → 配置），并在 worldtides.info 查看您账户的额度。在此之前，{spots} 会继续使用 SailCast 已保存的潮汐预测，直到用完为止。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SailCast 选项",
+        "sections": {
+          "keys": {
+            "name": "API 密钥",
+            "description": "需要密钥的数据提供商所用的密钥。密钥只保存在 Home Assistant 中，绝不会发送到面板。",
+            "data": {
+              "worldtides_key": "WorldTides API 密钥"
+            },
+            "data_description": {
+              "worldtides_key": "使用您自己的 worldtides.info 账户获取任何地方的潮汐预测。每个使用它的地点大约每五天消耗 3 个额度。留空则移除密钥。"
+            }
+          },
+          "ai": {
+            "name": "AI 摘要",
+            "description": "在面板的日视图中添加“用 AI 总结”按钮。它会请您在 Home Assistant 中设置的 AI 提供商用两三句话概括当天情况。安全评级始终来自 SailCast 自己的规则，绝不来自 AI。",
+            "data": {
+              "ai_summary": "提供 AI 摘要",
+              "ai_task": "AI 任务"
+            },
+            "data_description": {
+              "ai_task": "留空则使用 Home Assistant 的默认 AI 任务，可在“设置 → 系统 → AI”中设置。"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "no_ai_task": "请先在 Home Assistant 中设置 AI 提供商。其集成会添加 SailCast 使用的 AI 任务。",
+      "no_default_ai_task": "请选择一个 AI 任务，或在“设置 → 系统 → AI”中设置默认 AI 任务。"
+    }
+  },
+  "common": {
+    "weekday_mon": "星期一",
+    "weekday_tue": "星期二",
+    "weekday_wed": "星期三",
+    "weekday_thu": "星期四",
+    "weekday_fri": "星期五",
+    "weekday_sat": "星期六",
+    "weekday_sun": "星期日",
+    "month_1": "1月",
+    "month_2": "2月",
+    "month_3": "3月",
+    "month_4": "4月",
+    "month_5": "5月",
+    "month_6": "6月",
+    "month_7": "7月",
+    "month_8": "8月",
+    "month_9": "9月",
+    "month_10": "10月",
+    "month_11": "11月",
+    "month_12": "12月",
+    "date": "{month}{day}日 {weekday}",
+    "range": "{low}–{high}",
+    "feet": "{value} 英尺",
+    "meters": "{value} 米",
+    "compass_n": "北",
+    "compass_nne": "北东北",
+    "compass_ne": "东北",
+    "compass_ene": "东东北",
+    "compass_e": "东",
+    "compass_ese": "东东南",
+    "compass_se": "东南",
+    "compass_sse": "南东南",
+    "compass_s": "南",
+    "compass_ssw": "南西南",
+    "compass_sw": "西南",
+    "compass_wsw": "西西南",
+    "compass_w": "西",
+    "compass_wnw": "西西北",
+    "compass_nw": "西北",
+    "compass_nnw": "北西北",
+    "band_great": "极佳",
+    "band_good": "良好",
+    "band_fair": "一般",
+    "band_poor": "较差",
+    "level_good": "良好",
+    "level_caution": "注意",
+    "level_not_recommended": "不建议",
+    "level_dangerous": "危险",
+    "event_title": "航行：{spot}",
+    "window": "{start}–{end}，评分 {score}（{band}）。",
+    "wind": "{direction}风 {wind} 节，阵风可达 {gust} 节。",
+    "advisory": "SailCast 仅供参考：出航前请查看最新预报和官方预警。",
+    "forecast_for": "SailCast 为驾驶 {boat} 的 {sailor} 所做的预报，生成于 {date} {time}。",
+    "score": "评分 {score}（{band}）。",
+    "waves": "浪高 {waves}。",
+    "high_tide": "高潮 {time}。",
+    "low_tide": "低潮 {time}。",
+    "sunset": "日落 {time}。",
+    "check_again": "SailCast 仅供参考：出航前请再次查看预报和官方预警。",
+    "added_by": "由 SailCast 添加 ({id})",
+    "changed_title": "SailCast：预报有变",
+    "changed": "{sailor} 于 {date} {start}–{end} 在 {spot} 的计划出航，预报已变差：安全评级现为“{level}”，评分 {score}。出航前请查看 SailCast。"
+  }
+}

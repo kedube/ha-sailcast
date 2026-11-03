@@ -1,0 +1,569 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast trasforma le previsioni di vento, onde, maree e meteo in valutazioni di sicurezza e finestre di navigazione per le tue zone, barche e velisti.\n\n**SailCast ha solo valore indicativo.** Le previsioni e gli avvisi ufficiali vengono prima, e la decisione spetta sempre allo skipper.\n\nDopo la configurazione, aggiungi zone, barche e velisti dalla pagina di questa integrazione."
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Zona",
+      "initiate_flow": {
+        "user": "Aggiungi zona"
+      },
+      "step": {
+        "user": {
+          "title": "Aggiungi una zona",
+          "data": {
+            "name": "Nome",
+            "location": "Posizione",
+            "water_type": "Tipo di acque",
+            "offshore": "Vento di terra",
+            "exposed": "Esposta alle onde da",
+            "fetch": "Specchio d'acqua libero sopravvento"
+          },
+          "data_description": {
+            "name": "Per esempio, Porto o Lago.",
+            "location": "Metti il segnaposto sull'acqua dove navighi. Il cerchio stabilisce l'area mostrata dalla mappa del vento.",
+            "offshore": "Da queste direzioni il vento soffia da terra verso il largo.",
+            "exposed": "Direzioni con acque aperte, dove le onde possono crescere.",
+            "fetch": "Solo per fiumi e laghi. SailCast misura dalla mappa lo specchio d'acqua libero in ogni direzione; imposta questo valore solo per sostituire quella misura con un'unica distanza."
+          }
+        },
+        "reconfigure": {
+          "title": "Modifica zona",
+          "data": {
+            "name": "Nome",
+            "location": "Posizione",
+            "water_type": "Tipo di acque",
+            "offshore": "Vento di terra",
+            "exposed": "Esposta alle onde da",
+            "fetch": "Specchio d'acqua libero sopravvento"
+          },
+          "data_description": {
+            "name": "Per esempio, Porto o Lago.",
+            "location": "Metti il segnaposto sull'acqua dove navighi. Il cerchio stabilisce l'area mostrata dalla mappa del vento.",
+            "offshore": "Da queste direzioni il vento soffia da terra verso il largo.",
+            "exposed": "Direzioni con acque aperte, dove le onde possono crescere.",
+            "fetch": "Solo per fiumi e laghi. SailCast misura dalla mappa lo specchio d'acqua libero in ogni direzione; imposta questo valore solo per sostituire quella misura con un'unica distanza."
+          }
+        },
+        "sources": {
+          "title": "Fonti dei dati",
+          "description": "SailCast suggerisce le fonti più vicine. Le maree arrivano da NOAA negli Stati Uniti, dal Canadian Hydrographic Service in Canada, da Rijkswaterstaat nei Paesi Bassi e da Kartverket in Norvegia, e ovunque da WorldTides se aggiungi la sua chiave nelle opzioni di SailCast. Gli avvisi arrivano dal National Weather Service negli Stati Uniti, da Environment and Climate Change Canada e da MeteoAlarm in Europa. Le boe arrivano da NDBC, e i bollettini degli aeroporti da tutto il mondo.",
+          "data": {
+            "tide_station": "Stazione di marea",
+            "current_station": "Stazione di corrente",
+            "marine_zone": "Avvisi ufficiali",
+            "buoy": "Boa",
+            "airport": "Aeroporto"
+          },
+          "data_description": {
+            "tide_station": "Per altezze di marea, alte e basse maree. La marea del modello oceanico è approssimativa, spesso sbagliata di un'ora o più vicino alla costa, quindi è disponibile solo come scelta manuale quando nessun'altra fonte copre la zona.",
+            "current_station": "Per la regola del vento contro corrente. Sceglila solo se è vicina a dove navighi.",
+            "marine_zone": "Da qui arrivano gli avvisi ufficiali, come uno Small Craft Advisory. Su un lago senza zona marina, scegli gli avvisi del National Weather Service al segnaposto.",
+            "buoy": "Rilevazioni di vento, onde e temperatura dell'acqua da una boa o da una stazione costiera. Ogni rilevazione vale finché è recente e corregge le ore successive.",
+            "airport": "Bollettini orari di vento, visibilità e temperatura dell'aria. Se puoi scegliere, prendine uno vicino all'acqua."
+          },
+          "sections": {
+            "sensors": {
+              "name": "I tuoi sensori",
+              "description": "Le rilevazioni della tua stazione meteo o degli strumenti di una barca hanno la precedenza su boa e aeroporto. SailCast le considera rilevate nella zona.",
+              "data": {
+                "wind": "Velocità del vento",
+                "gust": "Raffiche",
+                "wind_direction": "Direzione del vento",
+                "temperature": "Temperatura dell'aria",
+                "water_temperature": "Temperatura dell'acqua"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Inserisci un nome.",
+        "name_too_long": "Usa al massimo 40 caratteri.",
+        "name_taken": "Un'altra zona ha già questo nome.",
+        "radius_out_of_range": "Imposta un raggio del cerchio tra 2 e 50 km (circa tra 1 e 30 miglia).",
+        "suggestions_unavailable": "Impossibile cercare le fonti vicine. Puoi salvare senza e aggiungerle più tardi modificando la zona.",
+        "fetch_out_of_range": "Imposta uno specchio d'acqua libero tra 0,05 e 100 km (circa tra 0,03 e 60 miglia).",
+        "invalid_sensor": "Scegli un sensore per ogni rilevazione, oppure lascia il campo vuoto."
+      }
+    },
+    "boat": {
+      "entry_type": "Barca",
+      "initiate_flow": {
+        "user": "Aggiungi barca"
+      },
+      "step": {
+        "user": {
+          "title": "Aggiungi una barca",
+          "data": {
+            "name": "Nome",
+            "size_class": "Dimensione",
+            "length": "Lunghezza"
+          },
+          "data_description": {
+            "name": "Per esempio, il nome della barca.",
+            "size_class": "Ogni dimensione ha i propri limiti di sicurezza per vento, raffiche e onde."
+          }
+        },
+        "reconfigure": {
+          "title": "Modifica barca",
+          "data": {
+            "name": "Nome",
+            "size_class": "Dimensione",
+            "length": "Lunghezza"
+          },
+          "data_description": {
+            "name": "Per esempio, il nome della barca.",
+            "size_class": "Ogni dimensione ha i propri limiti di sicurezza per vento, raffiche e onde."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Inserisci un nome.",
+        "name_too_long": "Usa al massimo 40 caratteri.",
+        "name_taken": "Un'altra barca ha già questo nome.",
+        "length_out_of_range": "Inserisci una lunghezza tra 1 e 50 m (tra 3 e 164 ft)."
+      }
+    },
+    "sailor": {
+      "entry_type": "Velista",
+      "initiate_flow": {
+        "user": "Aggiungi velista"
+      },
+      "step": {
+        "user": {
+          "title": "Aggiungi un velista",
+          "data": {
+            "name": "Nome",
+            "skill": "Livello",
+            "default_boat": "Barca abituale",
+            "other_boats": "Altre barche",
+            "days": "Giorni di navigazione",
+            "start": "Partenza non prima delle",
+            "end": "Rientro entro le",
+            "user": "Utente Home Assistant"
+          },
+          "data_description": {
+            "skill": "Ogni velista valuta da sé il proprio livello. Il livello fissa il suo limite di vento medio; le raffiche non contano per questo limite.",
+            "default_boat": "SailCast valuta questa barca, a meno che il velista non ne scelga un'altra.",
+            "other_boats": "Altre barche che questo velista usa.",
+            "start": "Lascia vuoto per partire all'alba.",
+            "end": "Lascia vuoto per rientrare al tramonto.",
+            "user": "Per quell'utente, il pannello si apre su questo velista."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Comfort",
+              "description": "Cosa piace a questo velista. Queste preferenze cambiano il punteggio, mai la valutazione di sicurezza.",
+              "data": {
+                "ideal_low": "Vento ideale da",
+                "ideal_high": "Vento ideale fino a",
+                "coldest": "Aria più fredda gradita",
+                "rain": "Pioggia"
+              },
+              "data_description": {
+                "ideal_low": "Restringe il vento ideale per ciascuna delle sue barche. Lascia vuoto per usare l'intervallo della barca.",
+                "ideal_high": "Lascia vuoto per usare l'intervallo della barca, fino al limite del livello.",
+                "coldest": "Con aria più fredda il punteggio scende. Lascia vuoto per 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Calendario automatico",
+              "description": "Aggiunge a un calendario la finestra migliore di questo velista in ogni giorno scelto, al massimo un evento al giorno. SailCast mantiene l'evento allineato alla previsione fino alle 18:00 della sera prima, poi invia una notifica invece di spostarlo.",
+              "data": {
+                "calendar": "Calendario",
+                "auto_days": "Giorni",
+                "min_score": "Solo finestre con punteggio",
+                "ahead": "Quanti giorni avanti",
+                "auto_spots": "Zone"
+              },
+              "data_description": {
+                "calendar": "Lascia vuoto per disattivare l'aggiunta automatica. I calendari Local Calendar, Google Calendar e CalDAV accettano nuovi eventi.",
+                "ahead": "Oltre i tre giorni le previsioni cambiano di più.",
+                "auto_spots": "Quando finestre in zone diverse si sovrappongono, SailCast aggiunge solo la migliore."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Modifica velista",
+          "data": {
+            "name": "Nome",
+            "skill": "Livello",
+            "default_boat": "Barca abituale",
+            "other_boats": "Altre barche",
+            "days": "Giorni di navigazione",
+            "start": "Partenza non prima delle",
+            "end": "Rientro entro le",
+            "user": "Utente Home Assistant"
+          },
+          "data_description": {
+            "skill": "Ogni velista valuta da sé il proprio livello. Il livello fissa il suo limite di vento medio; le raffiche non contano per questo limite.",
+            "default_boat": "SailCast valuta questa barca, a meno che il velista non ne scelga un'altra.",
+            "other_boats": "Altre barche che questo velista usa.",
+            "start": "Lascia vuoto per partire all'alba.",
+            "end": "Lascia vuoto per rientrare al tramonto.",
+            "user": "Per quell'utente, il pannello si apre su questo velista."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Comfort",
+              "description": "Cosa piace a questo velista. Queste preferenze cambiano il punteggio, mai la valutazione di sicurezza.",
+              "data": {
+                "ideal_low": "Vento ideale da",
+                "ideal_high": "Vento ideale fino a",
+                "coldest": "Aria più fredda gradita",
+                "rain": "Pioggia"
+              },
+              "data_description": {
+                "ideal_low": "Restringe il vento ideale per ciascuna delle sue barche. Lascia vuoto per usare l'intervallo della barca.",
+                "ideal_high": "Lascia vuoto per usare l'intervallo della barca, fino al limite del livello.",
+                "coldest": "Con aria più fredda il punteggio scende. Lascia vuoto per 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Calendario automatico",
+              "description": "Aggiunge a un calendario la finestra migliore di questo velista in ogni giorno scelto, al massimo un evento al giorno. SailCast mantiene l'evento allineato alla previsione fino alle 18:00 della sera prima, poi invia una notifica invece di spostarlo.",
+              "data": {
+                "calendar": "Calendario",
+                "auto_days": "Giorni",
+                "min_score": "Solo finestre con punteggio",
+                "ahead": "Quanti giorni avanti",
+                "auto_spots": "Zone"
+              },
+              "data_description": {
+                "calendar": "Lascia vuoto per disattivare l'aggiunta automatica. I calendari Local Calendar, Google Calendar e CalDAV accettano nuovi eventi.",
+                "ahead": "Oltre i tre giorni le previsioni cambiano di più.",
+                "auto_spots": "Quando finestre in zone diverse si sovrappongono, SailCast aggiunge solo la migliore."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Inserisci un nome.",
+        "name_too_long": "Usa al massimo 40 caratteri.",
+        "name_taken": "Un altro velista ha già questo nome.",
+        "unknown_boat": "Quella barca è stata rimossa. Scegline un'altra.",
+        "no_days": "Scegli almeno un giorno.",
+        "end_before_start": "L'orario di rientro deve essere dopo quello di partenza.",
+        "ideal_out_of_range": "Usa un valore tra 0 e 40 kn.",
+        "ideal_high_below_low": "Il valore massimo deve essere superiore al minimo.",
+        "coldest_out_of_range": "Usa un valore tra −20 e 35 °C (tra −4 e 95 °F).",
+        "calendar_read_only": "Quel calendario non accetta nuovi eventi. Scegli un calendario Local Calendar, Google Calendar o CalDAV.",
+        "no_spots": "Scegli almeno una zona.",
+        "invalid_min_score": "Scegli una delle opzioni.",
+        "invalid_ahead": "Scegli una delle opzioni."
+      },
+      "abort": {
+        "no_boats": "Aggiungi prima una barca. Ogni velista ne ha bisogno di almeno una."
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "Costa aperta",
+        "bay": "Baia",
+        "river": "Estuario o fiume",
+        "lake": "Lago"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "Nord",
+        "ne": "Nord-est",
+        "e": "Est",
+        "se": "Sud-est",
+        "s": "Sud",
+        "sw": "Sud-ovest",
+        "w": "Ovest",
+        "nw": "Nord-ovest"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "Deriva o catamarano da spiaggia, fino a circa 5 m (16 ft)",
+        "small_keelboat": "Piccola barca a chiglia, 5–7,5 m (16–25 ft)",
+        "cruiser": "Cabinato, 7,5–10,5 m (25–35 ft)",
+        "large_cruiser": "Cabinato grande, da 10,5 m (35 ft) in su"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "Principiante: vento medio fino a 10 kn",
+        "intermediate": "Intermedio: fino a 16 kn",
+        "advanced": "Esperto: nessun limite di vento, solo indicazioni"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "Lunedì",
+        "tue": "Martedì",
+        "wed": "Mercoledì",
+        "thu": "Giovedì",
+        "fri": "Venerdì",
+        "sat": "Sabato",
+        "sun": "Domenica"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "Evita la pioggia",
+        "some": "Un po' di pioggia va bene",
+        "any": "La pioggia non è un problema"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "Buono o migliore: da 60 in su",
+        "80": "Ottimo: da 80 in su"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "Oggi e domani",
+        "2": "I prossimi 3 giorni",
+        "4": "I prossimi 5 giorni",
+        "6": "Tutta la settimana"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "Nessuna"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot}: buono per uscire"
+      },
+      "marine_warning": {
+        "name": "Avviso marino"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "Vela"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "Prossima alta marea"
+      },
+      "next_low_tide": {
+        "name": "Prossima bassa marea"
+      },
+      "next_window": {
+        "name": "Prossima finestra di navigazione"
+      },
+      "rating": {
+        "name": "Valutazione {spot}",
+        "state": {
+          "good": "Buono",
+          "caution": "Attenzione",
+          "not_recommended": "Sconsigliato",
+          "dangerous": "Pericoloso"
+        }
+      },
+      "score": {
+        "name": "Punteggio {spot}"
+      },
+      "water_temperature": {
+        "name": "Temperatura dell'acqua"
+      },
+      "wave_height": {
+        "name": "Altezza delle onde"
+      },
+      "wind_direction": {
+        "name": "Direzione del vento"
+      },
+      "wind_gust": {
+        "name": "Raffiche"
+      },
+      "wind_speed": {
+        "name": "Vento"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "Ottieni previsione",
+      "description": "Ottiene le valutazioni di sicurezza, i punteggi e le finestre di navigazione di un velista in una zona, per ogni giorno e ogni ora da adesso in poi.",
+      "fields": {
+        "spot": {
+          "name": "Zona",
+          "description": "Il nome della zona."
+        },
+        "sailor": {
+          "name": "Velista",
+          "description": "Il nome del velista. Le valutazioni usano il suo livello."
+        },
+        "boat": {
+          "name": "Barca",
+          "description": "Una delle barche del velista. Lascia vuoto per tutte."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast non è configurato."
+    },
+    "unknown_spot": {
+      "message": "Non esiste una zona chiamata {spot}."
+    },
+    "unknown_sailor": {
+      "message": "Non esiste un velista chiamato {sailor}."
+    },
+    "unknown_boat": {
+      "message": "{sailor} non usa una barca chiamata {boat}."
+    },
+    "no_forecast": {
+      "message": "Non c'è ancora una previsione per {spot}."
+    },
+    "calendar_read_only": {
+      "message": "{calendar} non accetta nuovi eventi."
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "Il segnaposto di {spot} è sulla terraferma",
+      "description": "SailCast calcola le onde e il fetch di {spot} dalla posizione del suo segnaposto, e secondo la mappa il segnaposto è sulla terraferma. Apri SailCast, vai in Impostazioni, modifica {spot} e trascina il segnaposto sull'acqua dove navighi."
+    },
+    "quiet_buoy": {
+      "title": "La boa {station} non trasmette più",
+      "description": "La boa {station} non invia rilevazioni da 12 ore, quindi per {spots} si usa solo la previsione. Le boe smettono di trasmettere per riparazioni e durante le tempeste. Se continua a non trasmettere, modifica {spots} nelle impostazioni di SailCast e scegli un'altra boa, o nessuna."
+    },
+    "quiet_airport": {
+      "title": "L'aeroporto {station} non trasmette più",
+      "description": "L'aeroporto {station} non invia bollettini meteo da 12 ore, quindi per {spots} si usa solo la previsione. Se continua a non trasmettere, modifica {spots} nelle impostazioni di SailCast e scegli un altro aeroporto, o nessuno."
+    },
+    "quiet_sensor": {
+      "title": "Il sensore {sensor} non trasmette più",
+      "description": "{sensor} non invia dati da 12 ore, quindi per {spots} si usano altre rilevazioni o la previsione. Controlla il sensore, oppure toglilo da {spots} nelle impostazioni di SailCast."
+    },
+    "failing_tide": {
+      "title": "Le previsioni di marea per {station} non arrivano",
+      "description": "{provider} non restituisce previsioni di marea per {station} da un giorno. Per {spots} si usano le previsioni salvate in precedenza da SailCast, finché coprono ancora la settimana. Se il problema continua, modifica {spots} nelle impostazioni di SailCast e scegli un'altra fonte di marea."
+    },
+    "failing_current": {
+      "title": "La stazione di corrente {station} non risponde",
+      "description": "{provider} non restituisce previsioni per la stazione di corrente {station} da un giorno. Per {spots} si usano le previsioni salvate in precedenza da SailCast, finché coprono ancora la settimana. Se il problema continua, modifica {spots} nelle impostazioni di SailCast e scegli un'altra stazione, o nessuna."
+    },
+    "budget_low": {
+      "title": "Le chiamate gratuite di Open-Meteo stanno finendo",
+      "description": "Oggi SailCast ha usato {calls} delle 10.000 chiamate gratuite di Open-Meteo, quindi ora aggiorna la previsione ogni tre ore invece che ogni ora, e la mappa del vento si ferma fino a domani. Tutto ciò che usa la stessa connessione Internet condivide questo limite. Il conteggio riparte a mezzanotte UTC."
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides richiede una chiave",
+      "description": "Per {spots} le maree arrivano da WorldTides, ma SailCast non ha una chiave WorldTides. Aggiungi la tua chiave nelle opzioni di SailCast (Impostazioni → Dispositivi e servizi → SailCast → Configura), oppure modifica {spots} nelle impostazioni di SailCast e scegli un'altra fonte di marea."
+    },
+    "worldtides_key_rejected": {
+      "title": "WorldTides ha rifiutato la chiave di SailCast",
+      "description": "WorldTides ha risposto: «{error}». Controlla la chiave nelle opzioni di SailCast (Impostazioni → Dispositivi e servizi → SailCast → Configura) e i crediti del tuo account su worldtides.info. Nel frattempo, per {spots} si usano le previsioni di marea salvate da SailCast, finché durano."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni di SailCast",
+        "sections": {
+          "keys": {
+            "name": "Chiavi API",
+            "description": "Chiavi per i fornitori che ne richiedono una. Restano in Home Assistant e non arrivano mai al pannello.",
+            "data": {
+              "worldtides_key": "Chiave API WorldTides"
+            },
+            "data_description": {
+              "worldtides_key": "Previsioni di marea ovunque, da worldtides.info, con il tuo account. Una zona che la usa costa circa 3 crediti ogni cinque giorni. Lascia vuoto per rimuovere la chiave."
+            }
+          },
+          "ai": {
+            "name": "Riepilogo IA",
+            "description": "Aggiunge il pulsante «Riassumi con l'IA» alla vista del giorno del pannello. Chiede al fornitore di IA che hai configurato in Home Assistant due o tre frasi sulla giornata. Le valutazioni di sicurezza vengono sempre dalle regole di SailCast, mai dall'IA.",
+            "data": {
+              "ai_summary": "Offri riepiloghi IA",
+              "ai_task": "Attività IA"
+            },
+            "data_description": {
+              "ai_task": "Lascia vuoto per usare quella predefinita di Home Assistant, impostata in Impostazioni → Sistema → IA."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "no_ai_task": "Configura prima un fornitore di IA in Home Assistant. La sua integrazione aggiunge l'attività IA usata da SailCast.",
+      "no_default_ai_task": "Scegli un'attività IA, oppure impostane una predefinita in Impostazioni → Sistema → IA."
+    }
+  },
+  "common": {
+    "weekday_mon": "lunedì",
+    "weekday_tue": "martedì",
+    "weekday_wed": "mercoledì",
+    "weekday_thu": "giovedì",
+    "weekday_fri": "venerdì",
+    "weekday_sat": "sabato",
+    "weekday_sun": "domenica",
+    "month_1": "gen",
+    "month_2": "feb",
+    "month_3": "mar",
+    "month_4": "apr",
+    "month_5": "mag",
+    "month_6": "giu",
+    "month_7": "lug",
+    "month_8": "ago",
+    "month_9": "set",
+    "month_10": "ott",
+    "month_11": "nov",
+    "month_12": "dic",
+    "date": "{weekday} {day} {month}",
+    "range": "{low}–{high}",
+    "feet": "{value} ft",
+    "meters": "{value} m",
+    "compass_n": "N",
+    "compass_nne": "NNE",
+    "compass_ne": "NE",
+    "compass_ene": "ENE",
+    "compass_e": "E",
+    "compass_ese": "ESE",
+    "compass_se": "SE",
+    "compass_sse": "SSE",
+    "compass_s": "S",
+    "compass_ssw": "SSO",
+    "compass_sw": "SO",
+    "compass_wsw": "OSO",
+    "compass_w": "O",
+    "compass_wnw": "ONO",
+    "compass_nw": "NO",
+    "compass_nnw": "NNO",
+    "band_great": "ottimo",
+    "band_good": "buono",
+    "band_fair": "discreto",
+    "band_poor": "scarso",
+    "level_good": "buono",
+    "level_caution": "attenzione",
+    "level_not_recommended": "sconsigliato",
+    "level_dangerous": "pericoloso",
+    "event_title": "Vela: {spot}",
+    "window": "Dalle {start} alle {end}, punteggio {score} ({band}).",
+    "wind": "{direction} {wind} kn, raffiche fino a {gust} kn.",
+    "advisory": "SailCast ha solo valore indicativo: controlla la previsione più recente e gli avvisi ufficiali prima di uscire.",
+    "forecast_for": "Previsione SailCast per {sailor} a bordo di {boat}, elaborata {date} alle {time}.",
+    "score": "Punteggio {score} ({band}).",
+    "waves": "Onde {waves}.",
+    "high_tide": "Alta marea alle {time}.",
+    "low_tide": "Bassa marea alle {time}.",
+    "sunset": "Tramonto alle {time}.",
+    "check_again": "SailCast ha solo valore indicativo: ricontrolla la previsione e gli avvisi ufficiali prima di uscire.",
+    "added_by": "Aggiunto da SailCast ({id})",
+    "changed_title": "SailCast: previsione cambiata",
+    "changed": "La previsione per l'uscita di {sailor} ({spot}, {date}, dalle {start} alle {end}) è peggiorata. Valutazione attuale: {level}, punteggio {score}. Controlla SailCast prima di uscire."
+  }
+}

@@ -664,12 +664,12 @@ async def test_options_keep_the_worldtides_key(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"worldtides_key": "  a-key  "}
+        result["flow_id"], {"keys": {"worldtides_key": "  a-key  "}, "ai": {}}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options == {"worldtides_key": "a-key"}
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"worldtides_key": ""}
+        result["flow_id"], {"keys": {"worldtides_key": ""}, "ai": {}}
     )
     assert entry.options == {}

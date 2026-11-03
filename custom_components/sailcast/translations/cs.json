@@ -1,0 +1,569 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast převádí předpovědi větru, vln, přílivu a odlivu i počasí na hodnocení bezpečnosti a okna pro plavbu pro vaše místa, lodě a jachtaře.\n\n**SailCast jen radí.** Oficiální předpovědi a výstrahy mají přednost a rozhodnutí je vždy na kapitánovi.\n\nPo nastavení přidejte svá místa, lodě a jachtaře na stránce této integrace."
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Místo",
+      "initiate_flow": {
+        "user": "Přidat místo"
+      },
+      "step": {
+        "user": {
+          "title": "Přidat místo",
+          "data": {
+            "name": "Název",
+            "location": "Poloha",
+            "water_type": "Vodní plocha",
+            "offshore": "Vítr od břehu",
+            "exposed": "Otevřeno vlnám ze směrů",
+            "fetch": "Volná voda na návětrné straně"
+          },
+          "data_description": {
+            "name": "Například Přístav nebo Jezero.",
+            "location": "Umístěte špendlík na vodu, kde plujete. Kruh určuje oblast, kterou ukazuje mapa větru.",
+            "offshore": "Vítr z těchto směrů fouká od břehu.",
+            "exposed": "Směry s volnou vodou, kde se mohou vytvořit vlny.",
+            "fetch": "Jen pro řeky a jezera. SailCast měří volnou vodu v každém směru z mapy; vyplňte jen tehdy, chcete-li měření nahradit jednou vzdáleností."
+          }
+        },
+        "reconfigure": {
+          "title": "Upravit místo",
+          "data": {
+            "name": "Název",
+            "location": "Poloha",
+            "water_type": "Vodní plocha",
+            "offshore": "Vítr od břehu",
+            "exposed": "Otevřeno vlnám ze směrů",
+            "fetch": "Volná voda na návětrné straně"
+          },
+          "data_description": {
+            "name": "Například Přístav nebo Jezero.",
+            "location": "Umístěte špendlík na vodu, kde plujete. Kruh určuje oblast, kterou ukazuje mapa větru.",
+            "offshore": "Vítr z těchto směrů fouká od břehu.",
+            "exposed": "Směry s volnou vodou, kde se mohou vytvořit vlny.",
+            "fetch": "Jen pro řeky a jezera. SailCast měří volnou vodu v každém směru z mapy; vyplňte jen tehdy, chcete-li měření nahradit jednou vzdáleností."
+          }
+        },
+        "sources": {
+          "title": "Zdroje dat",
+          "description": "SailCast navrhne nejbližší zdroje. Data o přílivu a odlivu poskytuje v USA NOAA, v Kanadě Canadian Hydrographic Service, v Nizozemsku Rijkswaterstaat a v Norsku Kartverket, a kdekoli na světě WorldTides, pokud v možnostech SailCast zadáte jeho klíč. Výstrahy poskytuje v USA National Weather Service, v Kanadě Environment and Climate Change Canada a v Evropě MeteoAlarm. Bóje poskytuje NDBC a zprávy z letišť jsou k dispozici odkudkoli.",
+          "data": {
+            "tide_station": "Stanice přílivu a odlivu",
+            "current_station": "Stanice proudů",
+            "marine_zone": "Oficiální výstrahy",
+            "buoy": "Bóje",
+            "airport": "Letiště"
+          },
+          "data_description": {
+            "tide_station": "Pro výšky hladiny a časy vysoké a nízké vody. Příliv a odliv z oceánského modelu jsou jen přibližné, u pobřeží často posunuté o hodinu i víc, proto je model k dispozici jen k ručnímu výběru, když místo nepokrývá nic jiného.",
+            "current_station": "Pro pravidlo větru proti proudu. Vyberte ji, jen pokud je blízko místa, kde plujete.",
+            "marine_zone": "Odtud přicházejí oficiální výstrahy, například Small Craft Advisory. Na jezeře bez mořské oblasti vyberte výstrahy National Weather Service pro polohu špendlíku.",
+            "buoy": "Měření větru, vln a teploty vody z bóje nebo pobřežní stanice. Každé měření platí, dokud je čerstvé, a mírně posune několik následujících hodin.",
+            "airport": "Hodinové zprávy o větru, viditelnosti a teplotě vzduchu. Máte-li na výběr, zvolte letiště blízko vody."
+          },
+          "sections": {
+            "sensors": {
+              "name": "Vlastní senzory",
+              "description": "Měření z vaší vlastní meteostanice nebo z přístrojů lodi mají přednost před bójí a letištěm. SailCast je bere jako měření přímo v místě.",
+              "data": {
+                "wind": "Rychlost větru",
+                "gust": "Nárazy větru",
+                "wind_direction": "Směr větru",
+                "temperature": "Teplota vzduchu",
+                "water_temperature": "Teplota vody"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Zadejte název.",
+        "name_too_long": "Použijte nejvýše 40 znaků.",
+        "name_taken": "Tento název už má jiné místo.",
+        "radius_out_of_range": "Poloměr kruhu musí být 2 až 50 km (asi 1 až 30 mil).",
+        "suggestions_unavailable": "Nepodařilo se vyhledat zdroje v okolí. Můžete uložit bez nich a přidat je později úpravou místa.",
+        "fetch_out_of_range": "Volná voda musí být 0,05 až 100 km (asi 0,03 až 60 mil).",
+        "invalid_sensor": "Pro každé měření vyberte senzor, nebo pole nechte prázdné."
+      }
+    },
+    "boat": {
+      "entry_type": "Loď",
+      "initiate_flow": {
+        "user": "Přidat loď"
+      },
+      "step": {
+        "user": {
+          "title": "Přidat loď",
+          "data": {
+            "name": "Jméno",
+            "size_class": "Velikost",
+            "length": "Délka"
+          },
+          "data_description": {
+            "name": "Například jméno lodi.",
+            "size_class": "Každá velikost má vlastní bezpečnostní limity pro vítr, nárazy větru a vlny."
+          }
+        },
+        "reconfigure": {
+          "title": "Upravit loď",
+          "data": {
+            "name": "Jméno",
+            "size_class": "Velikost",
+            "length": "Délka"
+          },
+          "data_description": {
+            "name": "Například jméno lodi.",
+            "size_class": "Každá velikost má vlastní bezpečnostní limity pro vítr, nárazy větru a vlny."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Zadejte jméno.",
+        "name_too_long": "Použijte nejvýše 40 znaků.",
+        "name_taken": "Toto jméno už má jiná loď.",
+        "length_out_of_range": "Zadejte délku od 1 do 50 m (3 až 164 ft)."
+      }
+    },
+    "sailor": {
+      "entry_type": "Jachtař",
+      "initiate_flow": {
+        "user": "Přidat jachtaře"
+      },
+      "step": {
+        "user": {
+          "title": "Přidat jachtaře",
+          "data": {
+            "name": "Jméno",
+            "skill": "Úroveň",
+            "default_boat": "Obvyklá loď",
+            "other_boats": "Další lodě",
+            "days": "Dny plavby",
+            "start": "Nejčasnější začátek",
+            "end": "Nejpozdější konec",
+            "user": "Uživatel Home Assistant"
+          },
+          "data_description": {
+            "skill": "Každý jachtař si svou úroveň určuje sám. Úroveň určuje jeho limit průměrného větru; nárazy větru se do něj nepočítají.",
+            "default_boat": "SailCast hodnotí tuto loď, pokud jachtař nevybere jinou.",
+            "other_boats": "Další lodě, na kterých tento jachtař vyplouvá.",
+            "start": "Necháte-li prázdné, začátek bude při východu slunce.",
+            "end": "Necháte-li prázdné, konec bude při západu slunce.",
+            "user": "Tomuto uživateli se panel otevře s tímto jachtařem."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Pohodlí",
+              "description": "Co má tento jachtař rád. Mění to skóre, nikdy hodnocení bezpečnosti.",
+              "data": {
+                "ideal_low": "Ideální vítr od",
+                "ideal_high": "Ideální vítr do",
+                "coldest": "Nejnižší příjemná teplota vzduchu",
+                "rain": "Déšť"
+              },
+              "data_description": {
+                "ideal_low": "Zúží ideální vítr pro každou z jeho lodí. Necháte-li prázdné, použije se rozsah lodi.",
+                "ideal_high": "Necháte-li prázdné, použije se rozsah lodi až do limitu dané úrovně.",
+                "coldest": "V chladnějším vzduchu skóre klesá. Necháte-li prázdné, použije se 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatický kalendář",
+              "description": "Každý zvolený den přidá nejlepší okno tohoto jachtaře do kalendáře, nejvýše jednu událost denně. SailCast událost průběžně upravuje podle předpovědi až do 18:00 předchozího večera; potom ji už nepřesouvá a místo toho upozorní.",
+              "data": {
+                "calendar": "Kalendář",
+                "auto_days": "Dny",
+                "min_score": "Jen okna se skóre",
+                "ahead": "Jak daleko dopředu",
+                "auto_spots": "Místa"
+              },
+              "data_description": {
+                "calendar": "Necháte-li prázdné, automatické přidávání se vypne. Nové události přijímají kalendáře Local Calendar, Google Calendar a CalDAV.",
+                "ahead": "Za hranicí tří dnů se předpovědi mění nejvíc.",
+                "auto_spots": "Když se okna na různých místech překrývají, SailCast přidá jen to nejlepší."
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Upravit jachtaře",
+          "data": {
+            "name": "Jméno",
+            "skill": "Úroveň",
+            "default_boat": "Obvyklá loď",
+            "other_boats": "Další lodě",
+            "days": "Dny plavby",
+            "start": "Nejčasnější začátek",
+            "end": "Nejpozdější konec",
+            "user": "Uživatel Home Assistant"
+          },
+          "data_description": {
+            "skill": "Každý jachtař si svou úroveň určuje sám. Úroveň určuje jeho limit průměrného větru; nárazy větru se do něj nepočítají.",
+            "default_boat": "SailCast hodnotí tuto loď, pokud jachtař nevybere jinou.",
+            "other_boats": "Další lodě, na kterých tento jachtař vyplouvá.",
+            "start": "Necháte-li prázdné, začátek bude při východu slunce.",
+            "end": "Necháte-li prázdné, konec bude při západu slunce.",
+            "user": "Tomuto uživateli se panel otevře s tímto jachtařem."
+          },
+          "sections": {
+            "comfort": {
+              "name": "Pohodlí",
+              "description": "Co má tento jachtař rád. Mění to skóre, nikdy hodnocení bezpečnosti.",
+              "data": {
+                "ideal_low": "Ideální vítr od",
+                "ideal_high": "Ideální vítr do",
+                "coldest": "Nejnižší příjemná teplota vzduchu",
+                "rain": "Déšť"
+              },
+              "data_description": {
+                "ideal_low": "Zúží ideální vítr pro každou z jeho lodí. Necháte-li prázdné, použije se rozsah lodi.",
+                "ideal_high": "Necháte-li prázdné, použije se rozsah lodi až do limitu dané úrovně.",
+                "coldest": "V chladnějším vzduchu skóre klesá. Necháte-li prázdné, použije se 10 °C (50 °F)."
+              }
+            },
+            "auto_calendar": {
+              "name": "Automatický kalendář",
+              "description": "Každý zvolený den přidá nejlepší okno tohoto jachtaře do kalendáře, nejvýše jednu událost denně. SailCast událost průběžně upravuje podle předpovědi až do 18:00 předchozího večera; potom ji už nepřesouvá a místo toho upozorní.",
+              "data": {
+                "calendar": "Kalendář",
+                "auto_days": "Dny",
+                "min_score": "Jen okna se skóre",
+                "ahead": "Jak daleko dopředu",
+                "auto_spots": "Místa"
+              },
+              "data_description": {
+                "calendar": "Necháte-li prázdné, automatické přidávání se vypne. Nové události přijímají kalendáře Local Calendar, Google Calendar a CalDAV.",
+                "ahead": "Za hranicí tří dnů se předpovědi mění nejvíc.",
+                "auto_spots": "Když se okna na různých místech překrývají, SailCast přidá jen to nejlepší."
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "name_required": "Zadejte jméno.",
+        "name_too_long": "Použijte nejvýše 40 znaků.",
+        "name_taken": "Toto jméno už má jiný jachtař.",
+        "unknown_boat": "Tato loď byla odebrána. Vyberte jinou.",
+        "no_days": "Vyberte alespoň jeden den.",
+        "end_before_start": "Nejpozdější konec musí být po nejčasnějším začátku.",
+        "ideal_out_of_range": "Použijte 0 až 40 kn.",
+        "ideal_high_below_low": "Horní mez rozsahu musí být vyšší než dolní.",
+        "coldest_out_of_range": "Použijte −20 až 35 °C (−4 až 95 °F).",
+        "calendar_read_only": "Do tohoto kalendáře nelze přidávat nové události. Vyberte kalendář Local Calendar, Google Calendar nebo CalDAV.",
+        "no_spots": "Vyberte alespoň jedno místo.",
+        "invalid_min_score": "Vyberte jednu z možností.",
+        "invalid_ahead": "Vyberte jednu z možností."
+      },
+      "abort": {
+        "no_boats": "Nejdřív přidejte loď. Každý jachtař potřebuje alespoň jednu."
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "Otevřené pobřeží",
+        "bay": "Zátoka",
+        "river": "Ústí nebo řeka",
+        "lake": "Jezero"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "Sever",
+        "ne": "Severovýchod",
+        "e": "Východ",
+        "se": "Jihovýchod",
+        "s": "Jih",
+        "sw": "Jihozápad",
+        "w": "Západ",
+        "nw": "Severozápad"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "Dinghy nebo plážový katamarán, asi do 16 ft (5 m)",
+        "small_keelboat": "Malá kýlová loď, 16–25 ft (5–7,5 m)",
+        "cruiser": "Kajutová plachetnice, 25–35 ft (7,5–10,5 m)",
+        "large_cruiser": "Velká kajutová plachetnice, 35 ft (10,5 m) a více"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "Začátečník: průměrný vítr do 10 kn",
+        "intermediate": "Pokročilý: do 16 kn",
+        "advanced": "Zkušený: bez limitu větru, jen rady"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "Pondělí",
+        "tue": "Úterý",
+        "wed": "Středa",
+        "thu": "Čtvrtek",
+        "fri": "Pátek",
+        "sat": "Sobota",
+        "sun": "Neděle"
+      }
+    },
+    "rain": {
+      "options": {
+        "avoid": "Vyhýbat se dešti",
+        "some": "Trocha deště nevadí",
+        "any": "Déšť nevadí"
+      }
+    },
+    "min_score": {
+      "options": {
+        "60": "Dobré nebo lepší: 60 a více",
+        "80": "Výborné: 80 a více"
+      }
+    },
+    "ahead": {
+      "options": {
+        "1": "Dnes a zítra",
+        "2": "Příští 3 dny",
+        "4": "Příštích 5 dní",
+        "6": "Celý týden"
+      }
+    },
+    "source": {
+      "options": {
+        "none": "Žádné"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "good_to_sail": {
+        "name": "{spot} – vhodné k plavbě"
+      },
+      "marine_warning": {
+        "name": "Námořní výstraha"
+      }
+    },
+    "calendar": {
+      "sailing": {
+        "name": "Plachtění"
+      }
+    },
+    "sensor": {
+      "next_high_tide": {
+        "name": "Další vysoká voda"
+      },
+      "next_low_tide": {
+        "name": "Další nízká voda"
+      },
+      "next_window": {
+        "name": "Další okno pro plavbu"
+      },
+      "rating": {
+        "name": "{spot} – hodnocení",
+        "state": {
+          "good": "Dobré",
+          "caution": "Opatrně",
+          "not_recommended": "Nedoporučeno",
+          "dangerous": "Nebezpečné"
+        }
+      },
+      "score": {
+        "name": "{spot} – skóre"
+      },
+      "water_temperature": {
+        "name": "Teplota vody"
+      },
+      "wave_height": {
+        "name": "Výška vln"
+      },
+      "wind_direction": {
+        "name": "Směr větru"
+      },
+      "wind_gust": {
+        "name": "Nárazy větru"
+      },
+      "wind_speed": {
+        "name": "Vítr"
+      }
+    }
+  },
+  "services": {
+    "get_forecast": {
+      "name": "Získat předpověď",
+      "description": "Získá hodnocení bezpečnosti, skóre a okna pro plavbu jachtaře v daném místě, pro každý den a každou hodinu od teď.",
+      "fields": {
+        "spot": {
+          "name": "Místo",
+          "description": "Název místa."
+        },
+        "sailor": {
+          "name": "Jachtař",
+          "description": "Jméno jachtaře. Hodnocení vychází z jeho úrovně."
+        },
+        "boat": {
+          "name": "Loď",
+          "description": "Jedna z lodí jachtaře. Necháte-li prázdné, použijí se všechny."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "SailCast není nastaven."
+    },
+    "unknown_spot": {
+      "message": "Místo s názvem {spot} neexistuje."
+    },
+    "unknown_sailor": {
+      "message": "Jachtař se jménem {sailor} neexistuje."
+    },
+    "unknown_boat": {
+      "message": "{sailor} nepluje na lodi se jménem {boat}."
+    },
+    "no_forecast": {
+      "message": "Pro místo {spot} zatím není předpověď."
+    },
+    "calendar_read_only": {
+      "message": "Do kalendáře {calendar} nelze přidávat nové události."
+    }
+  },
+  "issues": {
+    "pin_on_land": {
+      "title": "Špendlík místa {spot} je na souši",
+      "description": "SailCast počítá vlny a délku rozběhu pro místo {spot} podle polohy jeho špendlíku a podle mapy je špendlík na souši. Otevřete SailCast, přejděte do Nastavení, upravte místo {spot} a přetáhněte špendlík na vodu, kde plujete."
+    },
+    "quiet_buoy": {
+      "title": "Bóje {station} přestala vysílat",
+      "description": "Bóje {station} už 12 hodin neposlala žádné měření, takže dotčená místa ({spots}) používají jen předpověď. Bóje se odmlčují kvůli opravám a během bouří. Pokud bude mlčet dál, upravte tato místa ({spots}) v nastavení SailCast a vyberte jinou bóji, nebo žádnou."
+    },
+    "quiet_airport": {
+      "title": "Letiště {station} přestalo posílat zprávy",
+      "description": "Letiště {station} už 12 hodin neposlalo zprávu o počasí, takže dotčená místa ({spots}) používají jen předpověď. Pokud bude mlčet dál, upravte tato místa ({spots}) v nastavení SailCast a vyberte jiné letiště, nebo žádné."
+    },
+    "quiet_sensor": {
+      "title": "Senzor {sensor} přestal hlásit hodnoty",
+      "description": "Senzor {sensor} už 12 hodin nic nehlásí, takže dotčená místa ({spots}) používají jiná měření nebo předpověď. Zkontrolujte senzor, nebo ho v nastavení SailCast z těchto míst ({spots}) odeberte."
+    },
+    "failing_tide": {
+      "title": "Předpovědi přílivu a odlivu pro stanici {station} nepřicházejí",
+      "description": "{provider} už den nevrací předpovědi přílivu a odlivu pro stanici {station}. Dotčená místa ({spots}) používají předpovědi, které SailCast uložil dříve, dokud ještě pokrývají týden. Pokud selhání potrvá, upravte tato místa ({spots}) v nastavení SailCast a vyberte jiný zdroj dat o přílivu a odlivu."
+    },
+    "failing_current": {
+      "title": "Stanice proudů {station} neodpovídá",
+      "description": "{provider} už den nevrací předpovědi pro stanici proudů {station}. Dotčená místa ({spots}) používají předpovědi, které SailCast uložil dříve, dokud ještě pokrývají týden. Pokud selhání potrvá, upravte tato místa ({spots}) v nastavení SailCast a vyberte jinou stanici, nebo žádnou."
+    },
+    "budget_low": {
+      "title": "Docházejí bezplatná volání Open-Meteo",
+      "description": "SailCast dnes využil {calls} z 10 000 bezplatných volání Open-Meteo, takže teď aktualizuje předpověď každé tři hodiny místo každou hodinu a mapa větru se do zítřka pozastaví. Tento limit sdílí i vše ostatní na stejném internetovém připojení. Počítadlo se vynuluje o půlnoci UTC."
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides potřebuje klíč",
+      "description": "Dotčená místa ({spots}) berou data o přílivu a odlivu z WorldTides, ale SailCast nemá klíč k WorldTides. Přidejte klíč v možnostech SailCast (Nastavení → Zařízení a služby → SailCast → Nastavit), nebo upravte tato místa ({spots}) v nastavení SailCast a vyberte jiný zdroj dat o přílivu a odlivu."
+    },
+    "worldtides_key_rejected": {
+      "title": "Služba WorldTides odmítla klíč SailCast",
+      "description": "Služba WorldTides odpověděla: „{error}“. Zkontrolujte klíč v možnostech SailCast (Nastavení → Zařízení a služby → SailCast → Nastavit) a kredity svého účtu na worldtides.info. Do té doby dotčená místa ({spots}) používají předpovědi přílivu a odlivu, které SailCast uložil, dokud vystačí."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti SailCast",
+        "sections": {
+          "keys": {
+            "name": "Klíče API",
+            "description": "Klíče pro poskytovatele, kteří je vyžadují. Zůstávají v Home Assistant a nikdy se nedostanou do panelu.",
+            "data": {
+              "worldtides_key": "Klíč API pro WorldTides"
+            },
+            "data_description": {
+              "worldtides_key": "Předpovědi přílivu a odlivu kdekoli na světě z worldtides.info, s vaším vlastním účtem. Místo, které ho používá, spotřebuje asi 3 kredity každých pět dní. Necháte-li prázdné, klíč se odstraní."
+            }
+          },
+          "ai": {
+            "name": "Shrnutí od AI",
+            "description": "Přidá do zobrazení dne v panelu tlačítko „Shrnout pomocí AI“. To požádá poskytovatele AI, kterého máte nastaveného v Home Assistant, o dvě nebo tři věty o daném dni. Hodnocení bezpečnosti vždy vychází z vlastních pravidel SailCast, nikdy z AI.",
+            "data": {
+              "ai_summary": "Nabízet shrnutí od AI",
+              "ai_task": "Úloha AI"
+            },
+            "data_description": {
+              "ai_task": "Necháte-li prázdné, použije se výchozí úloha Home Assistant nastavená v Nastavení → Systém → AI."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "no_ai_task": "Nejdřív v Home Assistant nastavte poskytovatele AI. Jeho integrace přidá úlohu AI, kterou SailCast používá.",
+      "no_default_ai_task": "Vyberte úlohu AI, nebo nastavte výchozí v Nastavení → Systém → AI."
+    }
+  },
+  "common": {
+    "weekday_mon": "v pondělí",
+    "weekday_tue": "v úterý",
+    "weekday_wed": "ve středu",
+    "weekday_thu": "ve čtvrtek",
+    "weekday_fri": "v pátek",
+    "weekday_sat": "v sobotu",
+    "weekday_sun": "v neděli",
+    "month_1": "ledna",
+    "month_2": "února",
+    "month_3": "března",
+    "month_4": "dubna",
+    "month_5": "května",
+    "month_6": "června",
+    "month_7": "července",
+    "month_8": "srpna",
+    "month_9": "září",
+    "month_10": "října",
+    "month_11": "listopadu",
+    "month_12": "prosince",
+    "date": "{weekday} {day}. {month}",
+    "range": "{low} až {high}",
+    "feet": "{value} ft",
+    "meters": "{value} m",
+    "compass_n": "S",
+    "compass_nne": "SSV",
+    "compass_ne": "SV",
+    "compass_ene": "VSV",
+    "compass_e": "V",
+    "compass_ese": "VJV",
+    "compass_se": "JV",
+    "compass_sse": "JJV",
+    "compass_s": "J",
+    "compass_ssw": "JJZ",
+    "compass_sw": "JZ",
+    "compass_wsw": "ZJZ",
+    "compass_w": "Z",
+    "compass_wnw": "ZSZ",
+    "compass_nw": "SZ",
+    "compass_nnw": "SSZ",
+    "band_great": "výborné",
+    "band_good": "dobré",
+    "band_fair": "průměrné",
+    "band_poor": "slabé",
+    "level_good": "dobré",
+    "level_caution": "opatrně",
+    "level_not_recommended": "nedoporučeno",
+    "level_dangerous": "nebezpečné",
+    "event_title": "Plachtění: {spot}",
+    "window": "Od {start} do {end}, skóre {score} ({band}).",
+    "wind": "Vítr {direction} {wind} kn, v nárazech až {gust} kn.",
+    "advisory": "SailCast jen radí: před vyplutím si zkontrolujte nejnovější předpověď a oficiální výstrahy.",
+    "forecast_for": "{sailor} na lodi {boat}: předpověď SailCast vytvořená {date}, {time}.",
+    "score": "Skóre {score} ({band}).",
+    "waves": "Vlny {waves}.",
+    "high_tide": "Vysoká voda {time}.",
+    "low_tide": "Nízká voda {time}.",
+    "sunset": "Západ slunce {time}.",
+    "check_again": "SailCast jen radí: před vyplutím si znovu zkontrolujte předpověď a oficiální výstrahy.",
+    "added_by": "Přidal SailCast ({id})",
+    "changed_title": "SailCast: předpověď se změnila",
+    "changed": "Předpověď pro plánovanou plavbu ({sailor}, {spot}) {date} od {start} do {end} se zhoršila. Hodnocení je nyní „{level}“, skóre {score}. Před vyplutím zkontrolujte SailCast."
+  }
+}

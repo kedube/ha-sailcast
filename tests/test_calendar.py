@@ -42,7 +42,10 @@ async def test_weekend_sailor(hass: HomeAssistant, loaded: MockConfigEntry) -> N
     assert days <= {"Sat", "Sun"}
     assert {event["summary"] for event in week} >= {"River: Keelboat"}
     saturday = next(event for event in week if event["start"].startswith("2026-11-07"))
-    assert saturday["description"].startswith("Sailing score 80 (great). Wind ")
-    assert "SailCast is advisory" in saturday["description"]
+    assert saturday["description"] == (
+        "1 PM to 4:53 PM, score 80 (great). NW 5 to 6 kt, gusts to 15 kt.\n\n"
+        "SailCast is advisory: check the latest forecast and official warnings "
+        "before you go."
+    )
     # Windows end at sunset.
     assert saturday["end"] == "2026-11-07T16:53:00-08:00"
