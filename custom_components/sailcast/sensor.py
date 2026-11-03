@@ -33,6 +33,9 @@ from .profiles import Sailor, Spot
 from .scoring import Window
 from .timeline import Hour
 
+# Every entity reads the shared coordinator, so updates needn't be limited.
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
