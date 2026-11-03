@@ -130,12 +130,15 @@ ha-sailcast/
 │   ├── rating.py              # safety rating rules
 │   ├── scoring.py             # score, windows, confidence
 │   ├── outlook.py             # ratings, scores and windows for each sailor at each spot
-│   ├── services.py            # the get_forecast action
+│   ├── summary.py             # a day's or a window's conditions in a few numbers
 │   ├── advice.py              # rule-based advice as translation keys
+│   ├── week.py                # the week the panel shows, from now on
+│   ├── planner.py             # windows in your own calendars: added, moved, watched
+│   ├── services.py            # the get_forecast action
 │   ├── ai.py                  # optional AI summary through AI Task
 │   ├── sensor.py, binary_sensor.py, calendar.py
 │   ├── websocket_api.py       # panel commands, settings, planned sails and subscriptions
-│   ├── storage.py             # per-user preferences and planned sails, cached predictions
+│   ├── storage.py             # per-user preferences, planned sails and skipped days
 │   ├── diagnostics.py, repairs.py
 │   ├── translations/          # en.json plus 11 languages
 │   ├── icons.json
@@ -175,7 +178,7 @@ The pencil next to each picker in the toolbar opens that spot, sailor or boat, s
 
 How it works:
 
-- The panel sends WebSocket commands (`sailcast/settings/get`, `save` and `delete`). They check the input with the same schemas as the setup dialogs (`profiles.py`), then save it with `hass.config_entries.async_add_subentry`, `async_update_subentry` or `async_remove_subentry`. Settings → Devices & services always shows the same data.
+- The panel reads the settings with `sailcast/config` and changes them with `sailcast/settings/save` and `delete`. These check the input with the same checks as the setup dialogs (`profiles.py`), then save it with `hass.config_entries.async_add_subentry`, `async_update_subentry` or `async_remove_subentry`. Settings → Devices & services always shows the same data. `sailcast/settings/sources` looks up the stations and zones near a pin as it moves.
 - Only administrators can change settings: the commands use `@websocket_api.require_admin`, like Home Assistant's own settings pages. Other users see the Settings tab read-only. They can still pick their own sailor and boat, which are stored as per-user preferences.
 - A change reloads the SailCast entry through its update listener, so ratings and entities follow straight away.
 
@@ -448,6 +451,12 @@ So a "caution" hour can never be part of a good window. Bands: 80 and up is grea
 
 Ideal wind ranges by boat size and skill, in knots. All levels share the light-air end. Each range tops out at the boat's ideal top or the skill's wind limit, whichever is lower, so a higher skill level never lowers a score. Sailors can narrow them.
 
+A sailor's comfort settings change their scores, never a safety rating:
+
+- **Ideal wind:** their own range narrows each boat's. A range that doesn't overlap the boat's is ignored.
+- **Coldest air they enjoy:** cold costs 1.2 points for each °F below it, from 50 °F (10 °C) unless they set it.
+- **Rain:** each percent chance of rain costs 0.5 points if they avoid rain, 0.35 if a little is fine (the default), or 0.15 if it doesn't bother them.
+
 | Boat size | Beginner | Intermediate | Advanced |
 | --- | --- | --- | --- |
 | Dinghy and beach cat | 5–10 | 5–14 | 5–14 |
@@ -524,7 +533,7 @@ SailCast adds at most one event a day for each sailor and keeps it in step with 
 **What Home Assistant allows.** Adding an event is a public action. Moving or deleting one needs the event's ID, which Home Assistant only exposes through its calendar interface:
 
 - `calendar.create_event` doesn't return the new event's ID, and `calendar.get_events` returns the times, summary, description, location and status, but no ID. SailCast can still tell whether its event is there, because it marks each description.
-- To take out an event you added, the panel makes the same calls as Home Assistant's Calendar page: it lists the events with their IDs and deletes with the `calendar/event/delete` WebSocket command, so your permissions apply.
+- To take out an event you added, SailCast deletes it after checking that you can change that calendar, the same check Home Assistant's own `calendar/event/delete` command makes. SailCast learns each event's ID right after adding it, by finding it again through the calendar.
 - Automatic changes happen in the background, without the panel open, so SailCast calls the calendar entity's own update and delete methods. That interface isn't documented for other integrations. If it changes, SailCast falls back to adding events and warning about changes.
 - Calendars differ. Local Calendar can update and delete events. Google Calendar can delete them, so SailCast moves an event by deleting it and adding it again. CalDAV can only add them, so SailCast warns instead of changing anything, and you take events out in your calendar app.
 
@@ -550,8 +559,8 @@ The panel is a single JavaScript module that ships inside the integration and is
 | Look | Home Assistant theme variables (`--primary-background-color`, `--card-background-color`, `--primary-text-color` and so on), so it follows the user's theme and dark mode, and Roboto and Material Design Icons like the rest of Home Assistant. SailCast's own day and night palettes fill in anything a theme doesn't set. Deep sea blue marks sailing windows; green, amber, orange and red only ever mean safety ratings. |
 | Day and night | A switch in the toolbar. Auto, the default, follows Home Assistant's light or dark mode. Day and Night override it for SailCast only, like a chart plotter's day and night palettes. The choice is saved per user, and Home Assistant's own sidebar keeps its theme. |
 | Charts | Small hand-written SVG charts, as in the mockup, rather than a large charting library. |
-| Data | WebSocket commands: `sailcast/config`, `sailcast/forecast` (week and hours for a spot and sailor), `sailcast/subscribe` (pushes updates after each refresh), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/get`, `save` and `delete` (saving and deleting are for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list`, and `sailcast/ai_summary`. |
-| Per-user settings | The default spot, sailor and last view are stored server-side, keyed by Home Assistant user, in SailCast's own store. They follow you across devices, and the backend can use them for notifications. |
+| Data | WebSocket commands: `sailcast/config` (settings, limits and the calendars that accept events), `sailcast/forecast` (week and hours for a spot, sailor and boat), `sailcast/subscribe` (says when results, planned sails or settings change), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/save`, `delete` and `sources` (for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list` and `skipped`, and `sailcast/ai_summary`. |
+| Per-user settings | The spot, sailor, boat, last view, day or night choice and calendar are stored server-side, keyed by Home Assistant user, in SailCast's own store. They follow you across devices. A user with no choice yet starts on the sailor linked to them. |
 | Phones | The week calendar becomes one row per day, with the day's timeline running across. Wide tables scroll inside their own card. The map fits the screen. |
 | Accessibility | Keyboard navigation and labeled controls. The particle animation turns into static arrows when the device asks for reduced motion. |
 
@@ -559,7 +568,7 @@ The four views follow the mockup:
 
 - **Week:**
   - the best window this week, with that day's tide curve behind it and an **Add to calendar** button
-  - live readings from the nearest buoy or station
+  - live readings from the nearest buoy or station (until those arrive in milestone 4, the forecast for the hour now under way)
   - official warnings
   - the sailor's automatic calendar setting, and the windows already in their calendars, with a warning when one's forecast gets worse
   - a seven-day calendar, one column per day from dawn to dusk:
@@ -641,7 +650,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - a day you take out isn't added again, including when you delete the event in your calendar app
   - an event moves or goes when its window does, but not from 6 PM the evening before
   - calendars that can't update or delete events get warnings only
-- **Frontend:** unit tests (Vitest) for interpolation, formatting and time handling, a contrast check on the day and night palettes, and a demo page that renders the panel from recorded data. The mockup grows into this page.
+- **Frontend:** unit tests (Vitest) for formatting, time handling and the advice and reasons as sentences, a contrast check on the day and night palettes, a check that every string the panel uses exists, and a demo page that renders the panel from the integration's own replies for the recorded week.
 
 **CI on GitHub Actions** runs:
 

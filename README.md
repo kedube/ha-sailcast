@@ -19,7 +19,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 
 ## Status
 
-SailCast is in early development. Milestones 0 and 1 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats, finds sailing windows, and shares them as entities, a calendar and an action. The panel lists your spots, boats and sailors; its week and day views come in milestone 2. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
+SailCast is in early development. Milestones 0 to 2 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. The sidebar panel shows the week as a calendar, each day hour by hour, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. The wind map comes in milestone 3. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
 
 ## Install
 
@@ -28,13 +28,23 @@ SailCast needs Home Assistant 2026.11 or newer. It isn't in the Marketplace's de
 ## Set up
 
 1. Go to **Settings → Devices & services → Add integration** and pick **SailCast**.
-2. On SailCast's page, add your spots, boats and sailors:
+2. Open **SailCast** in the sidebar, and add your spots, boats and sailors on its **Settings** tab. SailCast's page under Devices & services edits the same settings.
    - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station and marine warning zone. These come from NOAA and the National Weather Service, so for now they cover US waters only.
    - **Boat:** a name, a size and a length.
-   - **Sailor:** their skill, their usual boat and others, and when they can sail.
-3. Open **SailCast** in the sidebar.
+   - **Sailor:** their skill, their usual boat and others, and when they can sail. Optionally, what they enjoy (an ideal wind range, the coldest air they like, and how much rain they mind), and the Home Assistant user the panel opens on them for.
+
+Only administrators can change settings. Everyone can pick their own spot, sailor and boat at the top of the panel, and SailCast remembers the choice on every device.
 
 Each sailor rates their own skill, which sets their limit for sustained wind: up to 10 kt for Beginner, 16 kt for Intermediate, and no limit for Advanced. Gusts don't count toward it.
+
+## Your own calendar
+
+To keep the time free, put sailing windows into a calendar of your own: any Home Assistant calendar that accepts new events, such as Local Calendar, Google Calendar or CalDAV.
+
+- **One at a time.** Select a window in the week or day view, then **Add to calendar**. SailCast adds the event as you, so the calendar's own permissions apply. Select the window again to take it out.
+- **Automatically.** Turn on automatic adding for a sailor, in Settings or from the week view. SailCast then adds that sailor's best window each chosen day, at most one a day, and keeps it in step with the forecast: it moves the event when the window shifts by 30 minutes or more and takes it out if the window goes away. From 6 PM the evening before, it leaves the event alone. A day you take an automatic event out of isn't added again.
+
+SailCast watches every window it added. If one's forecast gets worse, it posts a notification and fires a `sailcast_planned_sail_changed` event, which an automation can turn into a phone notification. Calendars that can't change events, such as CalDAV, keep what was added; SailCast only warns.
 
 ## Entities and actions
 
@@ -71,7 +81,8 @@ You need [uv](https://docs.astral.sh/uv/) and Node 24 or newer.
 | `scripts/lint` | Formats and lints the Python and TypeScript. |
 | `.venv/bin/pytest` | Runs the integration's tests. |
 | `npm run dev` in `frontend/` | Rebuilds the panel on save. |
-| `npm run demo` in `frontend/` | Serves the panel with made-up data. Add `?mode=night`, `?units=metric`, `?admin=0` or `?empty`. |
+| `.venv/bin/python scripts/demo_data.py` | Writes the demo's data: the integration's own replies for the recorded San Diego week. |
+| `npm run demo` in `frontend/` | Serves the panel with that data. Add `?mode=night`, `?units=metric`, `?view=day`, `?admin=0` or `?empty`. |
 | `npm test` in `frontend/` | Runs the panel's tests. |
 | `.venv/bin/python scripts/record_fixtures.py` | Records the provider responses the tests run on. |
 | `.venv/bin/python scripts/safety_limits_doc.py` | Writes [docs/safety-limits.md](docs/safety-limits.md) from the limits table. A test fails if it's out of date. |
@@ -86,6 +97,7 @@ The repository holds no personal data. Tests run on responses recorded at made-u
 
 - Weather and marine data: [Open-Meteo](https://open-meteo.com), under CC BY 4.0. SailCast stays within its free tier for non-commercial use.
 - Tide and current predictions: [NOAA CO-OPS](https://tidesandcurrents.noaa.gov). Marine warnings: the [National Weather Service](https://www.weather.gov). Neither is for navigation.
+- Maps: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through Home Assistant's own map tiles, with [OpenFreeMap](https://openfreemap.org) as a fallback; seamarks from [OpenSeaMap](https://www.openseamap.org) (CC BY-SA 2.0). Drawn with [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause).
 - Wordmark: [Outfit](https://github.com/Outfitio/Outfit-Fonts), under the SIL Open Font License 1.1. More in [docs/brand](docs/brand/README.md).
 
 ## License
