@@ -14,7 +14,14 @@ export interface HomeAssistant {
     time_zone: string;
     unit_system: { length: string; temperature: string };
   };
+  states?: Record<string, EntityState>;
   connection: Connection;
+}
+
+export interface EntityState {
+  entity_id: string;
+  state: string;
+  attributes: { friendly_name?: string; device_class?: string; [key: string]: unknown };
 }
 
 export interface Connection {
@@ -32,7 +39,12 @@ export type Skill = "beginner" | "intermediate" | "advanced";
 export type WaterType = "open_coast" | "bay" | "river" | "lake";
 export type Theme = "auto" | "day" | "night";
 export type View = "week" | "day" | "map" | "settings";
-export type SourceKey = "tide_station" | "current_station" | "marine_zone";
+export type SourceKey = "tide_station" | "current_station" | "marine_zone" | "buoy" | "airport";
+/** Readings a spot can take from your own sensors. */
+export type SensorKey = "wind" | "gust" | "wind_direction" | "temperature" | "water_temperature";
+export type ReadingKind = "sensors" | "buoy" | "airport";
+/** Where an hour's waves come from: the ocean model, the model from a sheltered direction, or worked out from the fetch. */
+export type WaveSource = "model" | "sheltered" | "estimate";
 
 export interface Spot {
   id: string;
@@ -47,7 +59,14 @@ export interface Spot {
   tide_station: string | null;
   current_station: string | null;
   marine_zone: string | null;
+  buoy: string | null;
+  airport: string | null;
+  sensors: Partial<Record<SensorKey, string>>;
+  /** The open water upwind set by hand, in km, overriding the shoreline. */
+  fetch: number | null;
   source_names: Partial<Record<SourceKey, string>>;
+  /** Where the buoy and airport are. */
+  source_points: Partial<Record<"buoy" | "airport", [number, number]>>;
 }
 
 export interface Boat {
@@ -145,8 +164,15 @@ export interface Hour {
   rain_chance: number | null;
   weather_code: number | null;
   visibility: number | null;
+  /** Whether the visibility was measured nearby, not forecast. */
+  visibility_measured: boolean;
   wave_height: number | null;
   wave_period: number | null;
+  wave_source: WaveSource | null;
+  /** The ECMWF ensemble's spread: one standard deviation, in knots. */
+  wind_spread: number | null;
+  /** Fields that readings have nudged this hour. */
+  adjusted: string[];
   water_temperature: number | null;
   tide_height: number | null;
   tide_rising: boolean | null;
@@ -262,7 +288,46 @@ export interface Forecast {
   current_events: { time: string; speed: number }[];
   alerts: { event: string; start: string; end: string; headline: string | null }[];
   planned: PlannedSail[];
-  sources: Record<SourceKey, { id: string; name: string | null } | null>;
+  sources: Record<SourceKey, { id: string; name: string | null } | null> & {
+    sensors: Partial<Record<SensorKey, string>>;
+  };
+  readings: Readings;
+  adjustments: Adjustment[];
+  shoreline: { on_water: boolean; measured: string } | null;
+}
+
+/** One field's freshest reading, and who read it. */
+export interface Reading {
+  /** Knots for wind, degrees for directions, and SI units for the rest. */
+  value: number;
+  time: string;
+  kind: ReadingKind;
+  station: string | null;
+}
+
+/** What's been read at a spot: each field's freshest reading, and each source's newest. */
+export interface Readings {
+  fields: Partial<Record<string, Reading>>;
+  sources: { kind: ReadingKind; station: string | null; newest: string | null }[];
+}
+
+/** How a reading moved the forecast: by its difference from the forecast there. */
+export interface Adjustment {
+  field: string;
+  kind: ReadingKind;
+  station: string | null;
+  reading: number;
+  time: string;
+  difference: number;
+}
+
+/** The reply to `sailcast/settings/shoreline`: how far open water reaches each way. */
+export interface Shoreline {
+  on_water: boolean;
+  /** Kilometers, every 3° clockwise from north. */
+  rays: number[];
+  measured: string;
+  exposed: string[];
 }
 
 export interface PlannedList {
@@ -284,6 +349,8 @@ export interface SourceSuggestions {
   tide_station: SourceChoice[];
   current_station: SourceChoice[];
   marine_zone: SourceChoice[];
+  buoy: SourceChoice[];
+  airport: SourceChoice[];
   suggested: Record<SourceKey, string | null>;
   failed: boolean;
 }

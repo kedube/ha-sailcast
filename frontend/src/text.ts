@@ -3,8 +3,8 @@
  * and the day's advice. Values arrive in knots, meters and °C, and come out
  * in the user's units and language.
  */
-import { compassKey, METERS_PER_NAUTICAL_MILE, type Formatter } from "./format";
-import type { Advice, Reason } from "./types";
+import { compassKey, METERS_PER_NAUTICAL_MILE, ms, type Formatter } from "./format";
+import type { Advice, ReadingKind, Reason } from "./types";
 
 export type Translate = (key: string, values?: Record<string, string | number>) => string;
 
@@ -31,6 +31,20 @@ export function temperatureText(fmt: Formatter, t: Translate, celsius: number): 
   return t(fmt.fahrenheit ? "unit.fahrenheit" : "unit.celsius", {
     value: fmt.number(fmt.temperature(celsius)),
   });
+}
+
+/** How long ago something was read, such as "12 min ago". */
+export function ageText(t: Translate, now: string, time: string): string {
+  const minutes = Math.max(0, Math.round((ms(now) - ms(time)) / 60_000));
+  if (minutes < 1) return t("age.now");
+  return minutes < 60
+    ? t("age.minutes", { value: minutes })
+    : t("age.hours", { value: Math.round(minutes / 60) });
+}
+
+/** Who took a reading, such as "Buoy 46258" or "Your sensors". */
+export function sourceText(t: Translate, kind: ReadingKind, station: string | null): string {
+  return t(`reading_source.${kind}`, { id: station ?? "" });
 }
 
 /** A compass point, such as "WSW". */
@@ -68,7 +82,8 @@ export function reasonText(fmt: Formatter, t: Translate, reason: Reason): string
         temperature: temperatureText(fmt, t, num(values.temperature)),
       });
     case "visibility":
-      return t("reason.visibility", {
+    case "visibility_measured":
+      return t(`reason.${reason.key}`, {
         visibility: fmt.number(num(values.visibility) / METERS_PER_NAUTICAL_MILE, 1),
       });
     case "warning":

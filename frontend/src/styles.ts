@@ -709,6 +709,11 @@ export const styles = css`
   .kv dd {
     margin: 0;
   }
+  .src {
+    color: var(--sc-fg2);
+    font-size: 12px;
+    white-space: nowrap;
+  }
   .warn-status {
     display: flex;
     align-items: center;

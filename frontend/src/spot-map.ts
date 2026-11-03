@@ -15,7 +15,7 @@ type MarkerInstance = InstanceType<typeof import("maplibre-gl").Marker>;
 
 /** A station to show on the map. */
 export interface StationMark {
-  kind: "tide" | "current";
+  kind: "tide" | "current" | "buoy" | "airport";
   id: string;
   /** What a pointer over it reads, such as "Tide station: San Diego". */
   label: string;
@@ -117,7 +117,10 @@ export class ScSpotMap extends LitElement {
     });
   }
 
-  /** Put a marker on each station: a triangle for tides, a diamond for currents. */
+  /**
+   * Put a marker on each station: a triangle for tides, a diamond for
+   * currents, a circle for buoys and a square for airports.
+   */
   private showStations(): void {
     const { map, maplibre } = this;
     if (!map || !maplibre) return;
@@ -242,6 +245,15 @@ export class ScSpotMap extends LitElement {
       width: 9px;
       height: 9px;
       transform: rotate(45deg);
+    }
+    .station .buoy {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .station .airport {
+      width: 9px;
+      height: 9px;
     }
     .failed {
       position: absolute;

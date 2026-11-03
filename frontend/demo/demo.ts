@@ -7,11 +7,13 @@
  */
 import "../src/sailcast-panel";
 import type {
+  EntityState,
   Forecast,
   HomeAssistant,
   PlannedList,
   PlannedSail,
   SailCastConfig,
+  Shoreline,
   WindGrid,
 } from "../src/types";
 
@@ -22,7 +24,24 @@ interface DemoData {
   forecasts: Record<string, Forecast>;
   planned: PlannedList;
   wind_grid: WindGrid;
+  /** Each spot's shoreline, measured from the recorded map tiles. */
+  shorelines: (Shoreline & { latitude: number; longitude: number })[];
 }
+
+// A weather station on the dock, for the spot editor's sensor pickers.
+const STATES: Record<string, EntityState> = Object.fromEntries(
+  (
+    [
+      ["sensor.dock_wind_speed", "Dock wind speed", "wind_speed"],
+      ["sensor.dock_wind_gust", "Dock wind gust", "wind_speed"],
+      ["sensor.dock_wind_direction", "Dock wind direction", "wind_direction"],
+      ["sensor.dock_temperature", "Dock temperature", "temperature"],
+    ] as const
+  ).map(([entity_id, friendly_name, device_class]) => [
+    entity_id,
+    { entity_id, state: "0", attributes: { friendly_name, device_class } },
+  ]),
+);
 
 const params = new URLSearchParams(location.search);
 const listeners = new Set<() => void>();
@@ -124,9 +143,57 @@ async function start(): Promise<void> {
               longitude: null,
             },
           ],
-          suggested: { tide_station: "9410170", current_station: null, marine_zone: "PZZ740" },
+          buoy: [
+            {
+              id: "SDBC1",
+              name: "9410170 - San Diego, CA",
+              distance: 3.8,
+              latitude: 32.714,
+              longitude: -117.174,
+            },
+            {
+              id: "46258",
+              name: "Mission Bay West, CA (220)",
+              distance: 22.1,
+              latitude: 32.749,
+              longitude: -117.502,
+            },
+          ],
+          airport: [
+            {
+              id: "KNZY",
+              name: "San Diego/North Island NAS",
+              distance: 4.0,
+              latitude: 32.6922,
+              longitude: -117.2098,
+            },
+            {
+              id: "KSAN",
+              name: "San Diego Intl Arpt",
+              distance: 6.8,
+              latitude: 32.7364,
+              longitude: -117.1973,
+            },
+          ],
+          suggested: {
+            tide_station: "9410170",
+            current_station: null,
+            marine_zone: "PZZ740",
+            buoy: "SDBC1",
+            airport: "KNZY",
+          },
           failed: false,
         };
+      case "settings/shoreline": {
+        // The demo has the spots' own pins measured; others get the nearest.
+        const [latitude, longitude] = [Number(message.latitude), Number(message.longitude)];
+        const nearest = [...data.shorelines].sort(
+          (a, b) =>
+            Math.hypot(a.latitude - latitude, a.longitude - longitude) -
+            Math.hypot(b.latitude - latitude, b.longitude - longitude),
+        )[0];
+        return nearest;
+      }
       case "settings/save":
         return { profile: message.profile ?? "new" };
       case "settings/delete":
@@ -157,6 +224,7 @@ async function start(): Promise<void> {
           ? { length: "km", temperature: "°C" }
           : { length: "mi", temperature: "°F" },
     },
+    states: STATES,
     connection: {
       sendMessagePromise: <T>(message: Record<string, unknown>) =>
         new Promise<T>((resolve, reject) => {

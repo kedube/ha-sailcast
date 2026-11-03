@@ -8,7 +8,7 @@ import { html, nothing, svg, type SVGTemplateResult, type TemplateResult } from 
 import { isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime } from "./format";
 import { arrow, icon, ring, type IconName } from "./glyphs";
-import { adviceText, compass, heightText, reasonsText } from "./text";
+import { adviceText, ageText, compass, heightText, reasonsText, sourceText } from "./text";
 import type { Day, Hour, Level } from "./types";
 import { addIcon, addText, chip, hoursOf, isPast, SIZES, smoothPath } from "./week";
 import { windColor } from "./wind-field";
@@ -552,7 +552,13 @@ function hourTable(ctx: Ctx, hours: Hour[]): TemplateResult {
       ${
         periods
           ? row(t("table.period"), (hour) =>
-              cell(hour, hour.wave_period === null ? "—" : fmt.number(hour.wave_period)),
+              cell(
+                hour,
+                hour.wave_period === null
+                  ? "—"
+                  : // Short chop on sheltered water needs a decimal.
+                    fmt.number(hour.wave_period, hour.wave_period < 5 ? 1 : 0),
+              ),
             )
           : nothing
       }
@@ -615,19 +621,76 @@ function hourTable(ctx: Ctx, hours: Hour[]): TemplateResult {
 }
 
 function sourcesCard(ctx: Ctx): TemplateResult {
-  const { t } = ctx;
-  const sources = ctx.forecast!.sources;
+  const { t, fmt } = ctx;
+  const forecast = ctx.forecast!;
+  const sources = forecast.sources;
   const spot = ctx.spot;
   const name = (source: { id: string; name: string | null } | null): string =>
     source ? (source.name ? `${source.id} · ${source.name}` : source.id) : "";
-  const openWater = spot?.water_type === "open_coast" || spot?.water_type === "bay";
+  const nudge = forecast.adjustments.find((item) => item.field === "wind");
+  const waveNudge = forecast.adjustments.find((item) => item.field === "wave_height");
+  const waveSources = new Set(forecast.hours.map((hour) => hour.wave_source));
+  const shoreline = forecast.shoreline;
+  const readings: TemplateResult[] = [];
+  for (const source of forecast.readings.sources) {
+    const label =
+      source.kind === "sensors"
+        ? t("reading_source.sensors")
+        : t(`sources.${source.kind}_text`, { station: name(sources[source.kind]) });
+    readings.push(
+      html`<div>
+        ${label}${source.newest ? html` · ${t("sources.newest", { age: ageText(t, forecast.now, source.newest) })}` : nothing}
+      </div>`,
+    );
+  }
   return html`<section class="card sources">
     <div class="card-head"><h2>${t("sources.title")}</h2></div>
     <dl>
       <dt>${t("sources.wind")}</dt>
-      <dd>${t("sources.wind_text")}</dd>
+      <dd>
+        ${t("sources.wind_text")}
+        ${
+          nudge
+            ? t("sources.nudged", {
+                difference: t("unit.knots", { value: fmt.number(Math.abs(nudge.difference), 1) }),
+                direction: t(nudge.difference > 0 ? "sources.up" : "sources.down"),
+                source: sourceText(t, nudge.kind, nudge.station),
+                time: fmt.clock(nudge.time),
+              })
+            : nothing
+        }
+      </dd>
       <dt>${t("sources.waves")}</dt>
-      <dd>${t(openWater ? "sources.waves_open" : "sources.waves_sheltered")}</dd>
+      <dd>
+        ${
+          shoreline && !shoreline.on_water
+            ? t("sources.on_land")
+            : waveSources.has("estimate")
+              ? t(spot?.fetch ? "sources.waves_estimate_set" : "sources.waves_estimate", {
+                  distance: spot?.fetch
+                    ? t(fmt.miles ? "unit.miles" : "unit.km", {
+                        value: fmt.number(fmt.distance(spot.fetch), 1),
+                      })
+                    : "",
+                })
+              : waveSources.has("model") || waveSources.has("sheltered")
+                ? t("sources.waves_open")
+                : t("sources.waves_none")
+        }
+        ${waveSources.has("sheltered") ? t("sources.waves_sheltered") : nothing}
+        ${
+          waveNudge
+            ? t("sources.waves_nudged", {
+                difference: heightText(fmt, t, Math.abs(waveNudge.difference)),
+                direction: t(waveNudge.difference > 0 ? "sources.up" : "sources.down"),
+                source: sourceText(t, waveNudge.kind, waveNudge.station),
+                time: fmt.clock(waveNudge.time),
+              })
+            : nothing
+        }
+      </dd>
+      <dt>${t("sources.readings")}</dt>
+      <dd>${readings.length ? readings : t("sources.no_readings")}</dd>
       <dt>${t("sources.tide")}</dt>
       <dd>
         ${

@@ -8,7 +8,7 @@ import { html, nothing, type TemplateResult } from "lit";
 import type { Ctx } from "./context";
 import { localTime } from "./format";
 import { icon } from "./glyphs";
-import type { Sailor, SizeClass, Skill } from "./types";
+import type { Sailor, SizeClass, Skill, SourceKey } from "./types";
 import { addIcon, autoSummary, daysText, plannedStatus } from "./week";
 
 const SKILL_LEVELS: Record<Skill, number> = { beginner: 1, intermediate: 2, advanced: 3 };
@@ -179,13 +179,14 @@ export function settingsView(ctx: Ctx): TemplateResult {
   });
   const spotRows = config.spots.map((spot) => {
     const radius = fmt.miles ? spot.radius / 1609.344 : spot.radius / 1000;
-    const source = (key: "tide_station" | "current_station" | "marine_zone") => {
+    const source = (key: SourceKey) => {
       const id = spot[key];
       if (!id) return nothing;
       const name = spot.source_names[key];
       return html`<dt>${t(`spot.${key}_short`)}</dt>
         <dd>${name ? `${name} (${id.split("_")[0]})` : id.split("_")[0]}</dd>`;
     };
+    const sensors = Object.keys(spot.sensors).length;
     return html`<article class="row">
       <div>
         <h3>${spot.name}</h3>
@@ -198,8 +199,20 @@ export function settingsView(ctx: Ctx): TemplateResult {
       </div>
       <dl class="srcs">
         ${source("tide_station")} ${source("current_station")} ${source("marine_zone")}
+        ${source("buoy")} ${source("airport")}
         ${
-          !spot.tide_station && !spot.current_station && !spot.marine_zone
+          sensors
+            ? html`<dt>${t("spot.sensors_short")}</dt>
+                <dd>${t("spot.sensors_count", { count: sensors })}</dd>`
+            : nothing
+        }
+        ${
+          !spot.tide_station &&
+          !spot.current_station &&
+          !spot.marine_zone &&
+          !spot.buoy &&
+          !spot.airport &&
+          !sensors
             ? html`<dt>${t("settings.sources")}</dt>
                 <dd>${t("spot.none")}</dd>`
             : nothing
