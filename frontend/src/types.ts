@@ -138,6 +138,8 @@ export interface SailCastConfig {
   skills: Record<Skill, number | null>;
   calendars: CalendarInfo[];
   users: { id: string; name: string }[];
+  /** Whether the AI summary is turned on, with AI Task set up. */
+  ai: boolean;
 }
 
 export interface Preferences {
@@ -252,6 +254,16 @@ export interface Day {
   summary: Summary | null;
   tides: TideTurn[];
   advice: Advice[];
+  /** The AI summary written for this day in the panel's language, with AI on. */
+  ai?: AiSummary | null;
+}
+
+export interface AiSummary {
+  text: string;
+  /** When it was written. */
+  made: string;
+  /** False once the ratings, windows or warnings it describes have changed. */
+  current: boolean;
 }
 
 export interface SailStatus {

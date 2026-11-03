@@ -471,7 +471,7 @@ export class ScWindMap extends LitElement {
       if (!day) {
         day = {
           date: local.date,
-          label: days.length ? this.fmt.weekday(local.date) : this.t("week.today"),
+          label: days.length ? this.fmt.weekday(local.date) : this.t("week.today_short"),
           hour: index,
         };
         days.push(day);

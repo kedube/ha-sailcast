@@ -163,7 +163,7 @@ export class ScWindowDialog extends ScDialog {
             sailor: ctx.sailor?.name ?? "",
             boat: ctx.boat?.name ?? "",
             score,
-            band: t(`band.${band(score)}`).toLowerCase(),
+            band: t(`band_word.${band(score)}`),
           })}
           ${
             winds.length
@@ -215,6 +215,7 @@ export class ScWindowDialog extends ScDialog {
       end: value(form, "end"),
       title,
       watch: (form.elements.namedItem("watch") as HTMLInputElement).checked,
+      language: ctx.fmt.language,
     });
     ctx.act.setCalendar(calendar);
     const chosen = ctx.config.calendars.find((item) => item.entity_id === calendar);
@@ -250,7 +251,8 @@ export class ScPlannedDialog extends ScDialog {
         >
         <span>${sail.title} · ${calendarLabel(calendar, sail.calendar)}</span>
       </div>
-      <p class="hint">${plannedStatus(ctx, sail)}. ${explanation}</p>
+      <p class="hint">${plannedStatus(ctx, sail)}</p>
+      <p class="hint">${explanation}</p>
       ${
         sail.can_delete
           ? nothing

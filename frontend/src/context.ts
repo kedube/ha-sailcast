@@ -34,6 +34,8 @@ export interface Actions {
   hideTip(): void;
   /** Say briefly that something happened. */
   toast(message: string): void;
+  /** Ask the AI for a summary of a day of the week. */
+  summarize(index: number): void;
 }
 
 export interface Ctx {
@@ -53,6 +55,9 @@ export interface Ctx {
   admin: boolean;
   /** The calendar windows go into unless someone picks another. */
   calendar?: string;
+  /** The date whose AI summary is being written, and the last one that failed. */
+  aiBusy?: string;
+  aiError?: { date: string; text: string };
   act: Actions;
 }
 

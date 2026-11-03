@@ -8,7 +8,7 @@ import { html, nothing, type TemplateResult } from "lit";
 import type { Ctx } from "./context";
 import { localTime } from "./format";
 import { icon } from "./glyphs";
-import { savedSourceText } from "./text";
+import { positionText, savedSourceText } from "./text";
 import type { Sailor, SizeClass, Skill, SourceKey } from "./types";
 import { addIcon, autoSummary, daysText, plannedStatus } from "./week";
 
@@ -157,7 +157,7 @@ export function settingsView(ctx: Ctx): TemplateResult {
           >${
             sailors.length
               ? t("settings.sailed_by", {
-                  sailors: sailors.map((sailor) => sailor.name).join(", "),
+                  sailors: sailors.map((sailor) => sailor.name).join(t("advice.list_separator")),
                 })
               : t("settings.no_sailors")
           }</span
@@ -191,9 +191,8 @@ export function settingsView(ctx: Ctx): TemplateResult {
       <div>
         <h3>${spot.name}</h3>
         <span class="small"
-          >${t(`water_type.${spot.water_type}`)} · ${fmt.number(Math.abs(spot.latitude), 3)}°
-          ${spot.latitude >= 0 ? "N" : "S"}, ${fmt.number(Math.abs(spot.longitude), 3)}°
-          ${spot.longitude >= 0 ? "E" : "W"} ·
+          >${t(`water_type.${spot.water_type}`)} ·
+          ${positionText(fmt, t, spot.latitude, spot.longitude, 3)} ·
           ${t(fmt.miles ? "settings.map_miles" : "settings.map_km", { value: fmt.number(radius) })}</span
         >
       </div>
@@ -272,7 +271,7 @@ export function settingsView(ctx: Ctx): TemplateResult {
         >${sail.auto ? html`<span class="tag">${t("settings.automatic")}</span>` : nothing}
         <span class="small"
           >${sail.title} · ${calendar ? `${calendar.name} (${calendar.via})` : sail.calendar} ·
-          ${sailor?.name ?? ""}, ${boat?.name ?? ""}</span
+          ${[sailor?.name, boat?.name].filter(Boolean).join(t("advice.list_separator"))}</span
         >
         <span class="pstat"
           >${plannedStatus(ctx, sail)}${sail.watch ? "" : ` · ${t("settings.warnings_off")}`}</span
@@ -390,7 +389,7 @@ export function settingsView(ctx: Ctx): TemplateResult {
           ${t("settings.read_only_calendars", {
             calendars: config.sailors
               .map((sailor) => t("settings.sailor_calendar", { name: sailor.name }))
-              .join(", "),
+              .join(t("advice.list_separator")),
           })}
         </p>
       </div>

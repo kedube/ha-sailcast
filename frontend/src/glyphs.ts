@@ -28,6 +28,7 @@ import {
   mdiSailBoat,
   mdiShieldAccount,
   mdiStar,
+  mdiStarFourPoints,
   mdiThemeLightDark,
   mdiThermometerWater,
   mdiWaveArrowDown,
@@ -46,6 +47,7 @@ import { svg, type SVGTemplateResult } from "lit";
 import { band } from "./format";
 
 export const ICONS = {
+  ai: mdiStarFourPoints,
   account: mdiAccount,
   alert: mdiAlert,
   beach: mdiBeach,

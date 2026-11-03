@@ -37,6 +37,7 @@
   },
   "week": {
     "today": "Today",
+    "today_short": "Today",
     "best_label": "Best time this week",
     "best_eyebrow": "Best time this week · {who}",
     "no_window": "No good window this week",
@@ -54,7 +55,7 @@
     "calendar_sub": "Rated for {sailor} ({skill}) in the {boat}. Select a day to see it hour by hour, or a sailing window to add it to a calendar or take it out.",
     "your_calendars": "Your calendars",
     "window_label": "{day}, {span}, score {score}. {action}.",
-    "day_label": "{day}: {status}. {best} Open the day.",
+    "day_label": "{day}: {status}. {best}. Open the day.",
     "day_score": "score {score}, {band}",
     "day_best": "Best {span}",
     "no_window_short": "No window",
@@ -102,6 +103,25 @@
     "no_end": "Canada's marine warnings don't say when they end, so SailCast counts each one until the end of the day after it was issued, or until it's lifted.",
     "issued": "issued {time} by {issuer}",
     "meteoalarm_note": "Time delays between this website and the www.meteoalarm.org website are possible. For the most up-to-date awareness information as published by the participating National Meteorological and Hydrological Services, please refer to"
+  },
+  "meteoalarm": {
+    "yellow": "Yellow {kind} warning",
+    "orange": "Orange {kind} warning",
+    "red": "Red {kind} warning",
+    "kind": {
+      "wind": "wind",
+      "snow_ice": "snow and ice",
+      "thunderstorm": "thunderstorm",
+      "fog": "fog",
+      "high_temperature": "high temperature",
+      "low_temperature": "low temperature",
+      "coastal_event": "coastal event",
+      "forest_fire": "forest fire",
+      "avalanches": "avalanche",
+      "rain": "rain",
+      "flooding": "flooding",
+      "rain_flood": "rain and flooding"
+    }
   },
   "legend": {
     "window": "Sailing window",
@@ -200,6 +220,12 @@
     "4": "Next 5 days",
     "6": "The whole week"
   },
+  "ahead_word": {
+    "1": "today and tomorrow",
+    "2": "next 3 days",
+    "4": "next 5 days",
+    "6": "the whole week"
+  },
   "days": {
     "every_day": "every day",
     "weekends": "weekends",
@@ -254,6 +280,17 @@
     "current_slack": "Current {speed} kt (slack)",
     "hours": "Hour by hour",
     "hours_sub": "Daylight hours"
+  },
+  "ai": {
+    "button": "Summarize with AI",
+    "writing": "Writing a summary…",
+    "title": "AI summary",
+    "written": "Written at {time}",
+    "note": "Written by AI from this forecast, so it can get things wrong. The ratings come from SailCast's own rules.",
+    "changed": "The forecast has changed since this summary was written.",
+    "again": "Summarize again",
+    "failed": "The AI summary couldn't be written: {message}",
+    "bad_answer": "The answer didn't look like a summary. Try again, or pick another AI task in SailCast's options."
   },
   "map": {
     "label": "Animated wind map around {spot}",
@@ -453,7 +490,7 @@
     "marine_zone_short": "Warnings",
     "none": "None",
     "nearest": "nearest",
-    "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides come from NOAA, the Canadian Hydrographic Service, Rijkswaterstaat or Kartverket, and anywhere from WorldTides with a key in SailCast's options. Warnings come from the National Weather Service and Environment and Climate Change Canada. Buoys come from NDBC, and airport reports from anywhere.",
+    "sources_hint": "SailCast suggests the nearest of each as you move the pin. Tides come from NOAA, the Canadian Hydrographic Service, Rijkswaterstaat or Kartverket, and anywhere from WorldTides with a key in SailCast's options. Warnings come from the National Weather Service, Environment and Climate Change Canada and MeteoAlarm. Buoys come from NDBC, and airport reports from anywhere.",
     "sources_failed": "Couldn't look up nearby sources. You can save without them and add them later.",
     "tide_mark": "Tide station: {name} ({id})",
     "current_mark": "Current station: {name} ({id})",
@@ -568,11 +605,23 @@
     "not_recommended": "Not rec.",
     "dangerous": "Danger"
   },
+  "level_word": {
+    "good": "good",
+    "caution": "caution",
+    "not_recommended": "not recommended",
+    "dangerous": "dangerous"
+  },
   "band": {
     "great": "Great",
     "good": "Good",
     "fair": "Fair",
     "poor": "Poor"
+  },
+  "band_word": {
+    "great": "great",
+    "good": "good",
+    "fair": "fair",
+    "poor": "poor"
   },
   "confidence": {
     "high": "High confidence",
@@ -618,6 +667,11 @@
     "beginner": "Beginner",
     "intermediate": "Intermediate",
     "advanced": "Advanced"
+  },
+  "skill_word": {
+    "beginner": "beginner",
+    "intermediate": "intermediate",
+    "advanced": "advanced"
   },
   "skill_text": {
     "beginner": "Sustained wind up to 10 kt",

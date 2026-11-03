@@ -6,6 +6,7 @@ import {
   adviceText,
   ageText,
   datumText,
+  eventText,
   reasonsText,
   reasonText,
   savedSourceText,
@@ -137,6 +138,28 @@ describe("adviceText", () => {
     expect(adviceText(us, t, advice("rain_visibility", { chance: 60, visibility: 2500 }))).toBe(
       "Rain likely (60%), with visibility down to 1.3 nm.",
     );
+  });
+});
+
+describe("eventText", () => {
+  it("names MeteoAlarm's warnings in the user's language", () => {
+    expect(eventText(t, "Yellow coastal event warning")).toBe("Yellow coastal event warning");
+    expect(eventText(t, "Orange snow ice warning")).toBe("Orange snow and ice warning");
+    expect(reasonText(us, t, reason("warning", { event: "Red wind warning" }))).toBe(
+      "Red wind warning",
+    );
+    const german = (key: string, values?: Record<string, string | number>) =>
+      key === "meteoalarm.yellow"
+        ? `Gelbe Warnung: ${values?.kind}`
+        : key === "meteoalarm.kind.wind"
+          ? "Wind"
+          : key;
+    expect(eventText(german, "Yellow wind warning")).toBe("Gelbe Warnung: Wind");
+  });
+
+  it("keeps other services' names, and kinds it doesn't know", () => {
+    expect(eventText(t, "Small Craft Advisory")).toBe("Small Craft Advisory");
+    expect(eventText(t, "Yellow avalanche risk warning")).toBe("Yellow avalanche risk warning");
   });
 });
 

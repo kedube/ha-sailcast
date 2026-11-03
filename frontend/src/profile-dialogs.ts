@@ -10,7 +10,7 @@ import { compassKey, FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
 import { limitBars, skillBars } from "./settings";
 import "./spot-map";
 import type { StationMark } from "./spot-map";
-import { savedSourceText } from "./text";
+import { positionText, savedSourceText } from "./text";
 import type {
   Comfort,
   SensorKey,
@@ -646,7 +646,7 @@ export class ScSpotDialog extends ProfileDialog {
         ></sc-spot-map>
         <span class="hint"
           >${t("spot.pin_hint", {
-            position: `${fmt.number(Math.abs(this.latitude), 4)}° ${this.latitude >= 0 ? "N" : "S"}, ${fmt.number(Math.abs(this.longitude), 4)}° ${this.longitude >= 0 ? "E" : "W"}`,
+            position: positionText(fmt, t, this.latitude, this.longitude, 4),
           })}</span
         >
         ${this.shoreText()}
@@ -746,7 +746,9 @@ export class ScSpotDialog extends ProfileDialog {
     if (!shore.on_water) return html`<p class="form-err" role="alert">${t("spot.on_land")}</p>`;
     const longest = Math.max(...shore.rays);
     const toward = shore.rays.indexOf(longest) * 3;
-    const open = shore.exposed.map((point) => t(`compass.${point}`)).join(", ");
+    const open = shore.exposed
+      .map((point) => t(`compass.${point}`))
+      .join(t("advice.list_separator"));
     return html`<span class="hint"
       >${t(open ? "spot.shore_open" : "spot.shore_closed", {
         distance: this.distance(longest),

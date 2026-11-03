@@ -55,9 +55,11 @@ async function start(): Promise<void> {
     return;
   }
   const data = (await response.json()) as DemoData;
-  const config: SailCastConfig = params.has("empty")
-    ? { ...data.config, spots: [], boats: [], sailors: [] }
-    : data.config;
+  const config: SailCastConfig = {
+    ...(params.has("empty") ? { ...data.config, spots: [], boats: [], sailors: [] } : data.config),
+    // `?ai` shows the AI summary's button, with a stand-in summary.
+    ai: params.has("ai"),
+  };
   let planned = data.planned.planned;
   const preferences: Record<string, string | null> = {};
 
@@ -200,6 +202,12 @@ async function start(): Promise<void> {
         return { profile: message.profile };
       case "planned/skipped":
         return message.days;
+      case "ai_summary":
+        return {
+          text: "This is where the AI summary goes: two or three sentences about the day, written by the AI provider set up in Home Assistant, in your language.",
+          made: data.now,
+          current: true,
+        };
       case "wind_grid":
         if (!data.wind_grid.spots.includes(String(message.spot))) {
           throw { code: "not_found", message: "Unknown spot" };

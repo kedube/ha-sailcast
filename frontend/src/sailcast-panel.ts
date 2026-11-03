@@ -8,7 +8,7 @@ import { dayView } from "./day";
 import { errorText } from "./dialog";
 import { Formatter, ms } from "./format";
 import { icon } from "./glyphs";
-import { localize } from "./localize";
+import { loadLanguage, localize } from "./localize";
 import "./profile-dialogs";
 import { settingsView } from "./settings";
 import { styles } from "./styles";
@@ -66,6 +66,8 @@ export class SailCastPanel extends LitElement {
     width: { state: true },
     grid: { state: true },
     gridError: { state: true },
+    aiBusy: { state: true },
+    aiError: { state: true },
   };
 
   declare hass?: HomeAssistant;
@@ -91,6 +93,9 @@ export class SailCastPanel extends LitElement {
   declare grid?: WindGrid;
   declare gridError?: string;
   private gridSpot?: string;
+  /** The date whose AI summary is being written, and the last one that failed. */
+  declare aiBusy?: string;
+  declare aiError?: { date: string; text: string };
 
   private api?: Api;
   private unsubscribe?: Promise<() => Promise<void>>;
@@ -98,6 +103,8 @@ export class SailCastPanel extends LitElement {
   private toastTimer?: number;
   private resizer?: ResizeObserver;
   private started = false;
+  /** The language the panel's strings and AI summaries are in. */
+  private language = "";
   private applied = "";
   /** The request whose forecast is wanted, so a late reply for another is ignored. */
   private wanted = "";
@@ -128,8 +135,19 @@ export class SailCastPanel extends LitElement {
   protected override willUpdate(changed: PropertyValues<this>): void {
     if (changed.has("hass") && this.hass && !this.started && this.isConnected) {
       void this.start();
+    } else if (changed.has("hass") && this.started && this.languageNow() !== this.language) {
+      // The user picked another language in their profile.
+      this.language = this.languageNow();
+      void loadLanguage(this.language).then(() => {
+        this.requestUpdate();
+        void this.loadForecast();
+      });
     }
     this.applyPalette();
+  }
+
+  private languageNow(): string {
+    return this.hass?.locale?.language ?? this.hass?.language ?? "en";
   }
 
   protected override updated(): void {
@@ -150,10 +168,15 @@ export class SailCastPanel extends LitElement {
   private async start(): Promise<void> {
     const hass = this.hass!;
     this.started = true;
+    this.language = this.languageNow();
     this.api = new Api(hass.connection);
     this.unsubscribe = this.api.subscribe(() => this.scheduleRefresh());
     try {
-      const [config, preferences] = await Promise.all([this.api.config(), this.api.preferences()]);
+      const [config, preferences] = await Promise.all([
+        this.api.config(),
+        this.api.preferences(),
+        loadLanguage(this.language).catch(() => false),
+      ]);
       this.preferences = preferences;
       if (THEMES.includes(preferences.theme as Theme)) this.theme = preferences.theme as Theme;
       if (!this.route && VIEWS.includes(preferences.view as View)) {
@@ -210,7 +233,7 @@ export class SailCastPanel extends LitElement {
     const wanted = `${spotId}|${sailorId}|${boatId}`;
     this.wanted = wanted;
     try {
-      const forecast = await api.forecast(spotId, sailorId, boatId);
+      const forecast = await api.forecast(spotId, sailorId, boatId, this.language);
       if (this.wanted !== wanted) return;
       const first = this.forecast === undefined || this.forecast.spot !== forecast.spot;
       this.forecast = forecast;
@@ -307,7 +330,7 @@ export class SailCastPanel extends LitElement {
   }
 
   private t = (key: string, values?: Record<string, string | number>): string =>
-    localize(this.hass?.locale?.language ?? this.hass?.language, key, values);
+    localize(this.languageNow(), key, values);
 
   private get tip(): HTMLElement | null {
     return this.renderRoot.querySelector(".tip");
@@ -479,7 +502,46 @@ export class SailCastPanel extends LitElement {
     },
     hideTip: () => this.hideTip(),
     toast: (message) => this.toast(message),
+    summarize: (index) => void this.summarize(index),
   };
+
+  /** Ask for a day's AI summary and show it, or why it couldn't be written. */
+  private async summarize(index: number): Promise<void> {
+    const { api, spotId, sailorId, boatId } = this;
+    const day = this.forecast?.days[index];
+    if (!api || !spotId || !sailorId || !day) return;
+    const wanted = `${spotId}|${sailorId}|${boatId}`;
+    this.aiBusy = day.date;
+    this.aiError = undefined;
+    try {
+      const summary = await api.aiSummary({
+        spot: spotId,
+        sailor: sailorId,
+        boat: boatId,
+        date: day.date,
+        language: this.language,
+      });
+      if (this.wanted === wanted && this.forecast) {
+        this.forecast = {
+          ...this.forecast,
+          days: this.forecast.days.map((item) =>
+            item.date === day.date ? { ...item, ai: summary } : item,
+          ),
+        };
+      }
+    } catch (err) {
+      const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
+      this.aiError = {
+        date: day.date,
+        text:
+          code === "bad_answer"
+            ? this.t("ai.bad_answer")
+            : this.t("ai.failed", { message: errorText(err) }),
+      };
+    } finally {
+      this.aiBusy = undefined;
+    }
+  }
 
   private ctx(): Ctx | undefined {
     const hass = this.hass;
@@ -499,6 +561,8 @@ export class SailCastPanel extends LitElement {
       day: this.day ?? 0,
       admin: Boolean(hass.user?.is_admin),
       calendar: this.preferences?.calendar,
+      aiBusy: this.aiBusy,
+      aiError: this.aiError,
       act: this.actions,
     };
   }
