@@ -306,7 +306,7 @@
     "updated": "Forecast fetched",
     "none": "None set for this spot",
     "nudged": "{source} read {difference} {direction} the forecast there at {time}, so the next hours move with it, fading over six hours.",
-    "waves_estimate": "Worked out from the wind and the open water upwind, which SailCast measured on OpenStreetMap's map.",
+    "waves_estimate": "Worked out from the wind and the open water upwind, measured on the map: © OpenStreetMap contributors, through OpenFreeMap.",
     "waves_estimate_set": "Worked out from the wind and {distance} of open water upwind, as set for this spot.",
     "waves_none": "None yet: SailCast measures the shoreline when a spot is added.",
     "waves_nudged": "{source} read {difference} {direction} the model there at {time}, so the next hours move with it.",

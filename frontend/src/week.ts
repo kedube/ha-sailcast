@@ -342,7 +342,8 @@ function nowCard(ctx: Ctx): TemplateResult {
                   period
                     ? t("now.waves_every", {
                         height: heightText(fmt, t, waves),
-                        period: fmt.number(period),
+                        // Short chop on sheltered water needs a decimal.
+                        period: fmt.number(period, period < 5 ? 1 : 0),
                       })
                     : heightText(fmt, t, waves)
                 }
