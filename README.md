@@ -19,7 +19,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 
 ## Status
 
-SailCast is in early development. Milestones 0 to 5 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. Readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map. Tides and official warnings come from the US, Canada and Europe, and tides anywhere with a WorldTides key. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
+SailCast is in early development. Milestones 0 to 6 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. Readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map. Tides and official warnings come from the US, Canada and Europe, and tides anywhere with a WorldTides key. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations, and two blueprints turn them into phone notifications. SailCast is in 12 languages, and can summarize a day with the AI you've set up in Home Assistant. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
 
 ## Install
 
@@ -77,6 +77,31 @@ To keep the time free, put sailing windows into a calendar of your own: any Home
 
 SailCast watches every window it added. If one's forecast gets worse, it posts a notification and fires a `sailcast_planned_sail_changed` event, which an automation can turn into a phone notification. Calendars that can't change events, such as CalDAV, keep what was added; SailCast only warns.
 
+Events and notifications are written in Home Assistant's language. An event you add from the panel is written in yours.
+
+## Notifications
+
+Two blueprints send SailCast's news to your phone through the Home Assistant app. Import one, then create an automation from it under **Settings → Automations & scenes → Blueprints**.
+
+| Blueprint | What it sends | Import |
+| --- | --- | --- |
+| Tomorrow's sailing windows | The evening before, at a time you pick, each of a sailor's windows for the next day, with its times, score and wind. | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fkedube%2Fha-sailcast%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsailcast%2Fwindows_tomorrow.yaml) |
+| A planned sail got worse | SailCast's message when a window in your calendar no longer looks good, for every sailor or one. | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fkedube%2Fha-sailcast%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsailcast%2Fplanned_sail_changed.yaml) |
+
+The messages are SailCast's own, in Home Assistant's language; the titles are yours to change. For automations of your own, the `sailcast_planned_sail_changed` event has `sailor`, `spot`, `boat`, `start`, `end`, `calendar`, `title`, `rating`, `score`, `automatic` and `message`. Each event in a sailor's SailCast calendar starts with a line for its window, such as "1 PM to 4:53 PM, score 80 (great). NW 5 to 6 kt, gusts to 15 kt."
+
+## AI summary
+
+SailCast can sum up a day in two or three sentences, written by the AI provider you've set up in Home Assistant, such as OpenAI, Google Gemini, Anthropic or Ollama. It's off until you turn it on under **Settings → Devices & services → SailCast → Configure**, where you can also pick which AI task writes it. Leave that empty to use Home Assistant's default, set under **Settings → System → AI**.
+
+Then the day view has a **Summarize with AI** button. SailCast sends the day's forecast, ratings, windows, warnings and advice, and asks for a summary in your language that never contradicts or softens a rating. The ratings always come from SailCast's own rules and stay beside the summary; AI never sets one. Summaries are written only when you ask, and kept for the day until the ratings, windows or warnings they describe change. Each one sends that day's forecast to your AI provider, with the names of the spot, boat and sailor, and nothing else.
+
+## Languages
+
+SailCast is in English, German, French, Dutch, Spanish, Simplified Chinese, Italian, Polish, Swedish, Russian, Czech and Brazilian Portuguese. SailCast's dialogs and its panel are in each person's own language, and calendar events and notifications in Home Assistant's.
+
+The 11 translations were written by AI and haven't been checked by native speakers yet. If you sail and speak one of them, corrections are welcome, above all for the safety wording. [docs/translations.md](docs/translations.md) says where the strings are and has a glossary of the terms each language uses.
+
 ## Entities and actions
 
 Each spot and each sailor is a device. Ratings and scores use the sailor's skill and usual boat.
@@ -113,7 +138,7 @@ You need [uv](https://docs.astral.sh/uv/) and Node 24 or newer.
 | `.venv/bin/pytest` | Runs the integration's tests. |
 | `npm run dev` in `frontend/` | Rebuilds the panel on save. |
 | `.venv/bin/python scripts/demo_data.py` | Writes the demo's data: the integration's own replies for the recorded San Diego week. |
-| `npm run demo` in `frontend/` | Serves the panel with that data. Add `?mode=night`, `?units=metric`, `?view=day`, `?admin=0` or `?empty`. |
+| `npm run demo` in `frontend/` | Serves the panel with that data. Add `?mode=night`, `?units=metric`, `?view=day`, `?admin=0`, `?empty`, `?lang=de` or `?ai`. |
 | `npm test` in `frontend/` | Runs the panel's tests. |
 | `.venv/bin/python scripts/record_fixtures.py` | Records the provider responses the tests run on. |
 | `.venv/bin/python scripts/safety_limits_doc.py` | Writes [docs/safety-limits.md](docs/safety-limits.md) from the limits table. A test fails if it's out of date. |
