@@ -34,7 +34,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
-"scripts/**" = ["S603", "S607"]
+"scripts/**" = ["S310", "S603", "S607"]
+# The page's prose: long lines, en dashes and multiplication signs.
+"scripts/safety_limits_doc.py" = ["E501", "RUF001"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
@@ -67,3 +69,8 @@ warn_unreachable = true
 [[tool.mypy.overrides]]
 module = ["homeassistant.*"]
 implicit_reexport = true
+
+# Astral, which Home Assistant uses for sunrise and sunset, has no type hints.
+[[tool.mypy.overrides]]
+module = ["astral", "astral.*"]
+ignore_missing_imports = true

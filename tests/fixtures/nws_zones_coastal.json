@@ -1,0 +1,80 @@
+{
+ "@context": {
+  "@version": "1.1"
+ },
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "properties": {
+    "id": "PZZ645",
+    "name": "Point Piedras Blancas to Point Sal westward out to 10 NM",
+    "cwa": [
+     "LOX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ650",
+    "name": "East Santa Barbara Channel from Pt. Conception to Pt. Mugu CA including Santa Cruz Island",
+    "cwa": [
+     "LOX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ655",
+    "name": "Inner waters from Point Mugu to San Mateo Pt. CA including Santa Catalina and Anacapa Islands",
+    "cwa": [
+     "LOX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ670",
+    "name": "Point Piedras Blancas to Point Sal from 10 to 60 NM",
+    "cwa": [
+     "LOX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ673",
+    "name": "Waters from Pt. Sal to Santa Cruz Island CA and westward 60 nm including San Miguel and Santa Rosa Islands",
+    "cwa": [
+     "LOX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ676",
+    "name": "Outer waters from Santa Cruz Island to San Clemente Island to 60 NM offshore including San Nicolas and Santa Barbara Islands",
+    "cwa": [
+     "LOX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ740",
+    "name": "Coastal Waters from San Mateo Point to the Mexican Border and out to 10 nm",
+    "cwa": [
+     "SGX"
+    ]
+   }
+  },
+  {
+   "properties": {
+    "id": "PZZ745",
+    "name": "Waters from San Mateo point to the Mexican Border Extending 10 to 60 nm out including San Clemente Island",
+    "cwa": [
+     "SGX"
+    ]
+   }
+  }
+ ]
+}

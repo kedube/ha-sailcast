@@ -18,14 +18,17 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS
 
 from .const import (
     CONF_BOATS,
+    CONF_CURRENT_STATION,
     CONF_DAYS,
     CONF_END,
     CONF_EXPOSED,
     CONF_LENGTH,
+    CONF_MARINE_ZONE,
     CONF_OFFSHORE,
     CONF_SIZE_CLASS,
     CONF_SKILL,
     CONF_START,
+    CONF_TIDE_STATION,
     CONF_WATER_TYPE,
     SUBENTRY_BOAT,
     SUBENTRY_SAILOR,
@@ -74,7 +77,10 @@ class Skill(StrEnum):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Spot:
-    """A place to sail."""
+    """A place to sail, and where its tides, currents and warnings come from.
+
+    The current station includes its depth bin, as in "PCT0056_1".
+    """
 
     id: str
     name: str
@@ -84,6 +90,14 @@ class Spot:
     water_type: WaterType
     offshore: tuple[str, ...] = ()
     exposed: tuple[str, ...] = ()
+    tide_station: str | None = None
+    current_station: str | None = None
+    marine_zone: str | None = None
+
+    @property
+    def open_water(self) -> bool:
+        """Return whether the ocean wave model applies here."""
+        return self.water_type in (WaterType.OPEN_COAST, WaterType.BAY)
 
     @classmethod
     def from_subentry(cls, subentry: ConfigSubentry) -> Spot:
@@ -98,6 +112,9 @@ class Spot:
             water_type=WaterType(data[CONF_WATER_TYPE]),
             offshore=tuple(data.get(CONF_OFFSHORE, ())),
             exposed=tuple(data.get(CONF_EXPOSED, ())),
+            tide_station=data.get(CONF_TIDE_STATION),
+            current_station=data.get(CONF_CURRENT_STATION),
+            marine_zone=data.get(CONF_MARINE_ZONE),
         )
 
 
@@ -189,9 +206,6 @@ class Profiles:
             "boats": _sorted_dicts(self.boats.values()),
             "sailors": _sorted_dicts(self.sailors.values()),
         }
-
-
-type SailCastConfigEntry = ConfigEntry[Profiles]
 
 
 def _sorted_dicts(profiles: Iterable[Spot | Boat | Sailor]) -> list[dict[str, Any]]:

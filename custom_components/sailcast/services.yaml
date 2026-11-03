@@ -1,0 +1,16 @@
+get_forecast:
+  fields:
+    spot:
+      required: true
+      example: Harbor
+      selector:
+        text:
+    sailor:
+      required: true
+      example: Alex
+      selector:
+        text:
+    boat:
+      example: Keelboat
+      selector:
+        text:
