@@ -1,0 +1,7 @@
+# Home Assistant for development, started by scripts/develop.
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.sailcast: debug

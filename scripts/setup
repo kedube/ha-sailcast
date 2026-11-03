@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Set up for development: Python 3.14 with Home Assistant and the test tools,
+# the panel's Node packages and build, and the privacy hooks.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+uv venv --allow-existing --python ">=3.14.2,<3.15" .venv
+uv pip install --python .venv/bin/python -r requirements_dev.txt
+npm ci --prefix frontend
+npm run --prefix frontend build
+git config core.hooksPath .githooks
+
+terms="${SAILCAST_PRIVATE_TERMS:-$HOME/.config/sailcast/private-terms.txt}"
+if [ ! -f "$terms" ]; then
+  echo "No private terms list at $terms, so the privacy hooks have nothing to check."
+  echo "See scripts/check_private_terms.py to add one."
+fi

@@ -1,0 +1,200 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "SailCast turns wind, wave, tide and weather forecasts into safety ratings and sailing windows for your spots, boats and sailors.\n\n**SailCast is advisory.** Official forecasts and warnings come first, and the skipper always decides.\n\nAfter setup, add your spots, boats and sailors from this integration's page."
+      }
+    }
+  },
+  "config_subentries": {
+    "spot": {
+      "entry_type": "Spot",
+      "initiate_flow": {
+        "user": "Add spot"
+      },
+      "step": {
+        "user": {
+          "title": "Add a spot",
+          "data": {
+            "name": "Name",
+            "location": "Location",
+            "water_type": "Water",
+            "offshore": "Offshore wind",
+            "exposed": "Open to waves from"
+          },
+          "data_description": {
+            "name": "For example, Harbor or Lake.",
+            "location": "Drop the pin on the water where you sail. The circle sets the area the wind map shows.",
+            "offshore": "Wind from these directions blows away from the shore.",
+            "exposed": "Directions with open water, where waves can build."
+          }
+        },
+        "reconfigure": {
+          "title": "Edit spot",
+          "data": {
+            "name": "Name",
+            "location": "Location",
+            "water_type": "Water",
+            "offshore": "Offshore wind",
+            "exposed": "Open to waves from"
+          },
+          "data_description": {
+            "name": "For example, Harbor or Lake.",
+            "location": "Drop the pin on the water where you sail. The circle sets the area the wind map shows.",
+            "offshore": "Wind from these directions blows away from the shore.",
+            "exposed": "Directions with open water, where waves can build."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Enter a name.",
+        "name_too_long": "Use 40 characters or fewer.",
+        "name_taken": "Another spot already has this name.",
+        "radius_out_of_range": "Make the circle's radius between 2 and 50 km (about 1 to 30 miles)."
+      }
+    },
+    "boat": {
+      "entry_type": "Boat",
+      "initiate_flow": {
+        "user": "Add boat"
+      },
+      "step": {
+        "user": {
+          "title": "Add a boat",
+          "data": {
+            "name": "Name",
+            "size_class": "Size",
+            "length": "Length"
+          },
+          "data_description": {
+            "name": "For example, the boat's name.",
+            "size_class": "Each size has its own safety limits for wind, gusts and waves."
+          }
+        },
+        "reconfigure": {
+          "title": "Edit boat",
+          "data": {
+            "name": "Name",
+            "size_class": "Size",
+            "length": "Length"
+          },
+          "data_description": {
+            "name": "For example, the boat's name.",
+            "size_class": "Each size has its own safety limits for wind, gusts and waves."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Enter a name.",
+        "name_too_long": "Use 40 characters or fewer.",
+        "name_taken": "Another boat already has this name.",
+        "length_out_of_range": "Enter a length between 1 and 50 m (3 and 164 ft)."
+      }
+    },
+    "sailor": {
+      "entry_type": "Sailor",
+      "initiate_flow": {
+        "user": "Add sailor"
+      },
+      "step": {
+        "user": {
+          "title": "Add a sailor",
+          "data": {
+            "name": "Name",
+            "skill": "Skill",
+            "default_boat": "Usual boat",
+            "other_boats": "Other boats",
+            "days": "Sailing days",
+            "start": "Earliest start",
+            "end": "Latest finish"
+          },
+          "data_description": {
+            "skill": "Each sailor rates their own skill. It sets their limit for sustained wind; gusts don't count toward it.",
+            "default_boat": "SailCast rates this boat unless the sailor picks another.",
+            "other_boats": "Other boats this sailor takes out.",
+            "start": "Leave empty to start at sunrise.",
+            "end": "Leave empty to finish at sunset."
+          }
+        },
+        "reconfigure": {
+          "title": "Edit sailor",
+          "data": {
+            "name": "Name",
+            "skill": "Skill",
+            "default_boat": "Usual boat",
+            "other_boats": "Other boats",
+            "days": "Sailing days",
+            "start": "Earliest start",
+            "end": "Latest finish"
+          },
+          "data_description": {
+            "skill": "Each sailor rates their own skill. It sets their limit for sustained wind; gusts don't count toward it.",
+            "default_boat": "SailCast rates this boat unless the sailor picks another.",
+            "other_boats": "Other boats this sailor takes out.",
+            "start": "Leave empty to start at sunrise.",
+            "end": "Leave empty to finish at sunset."
+          }
+        }
+      },
+      "error": {
+        "name_required": "Enter a name.",
+        "name_too_long": "Use 40 characters or fewer.",
+        "name_taken": "Another sailor already has this name.",
+        "unknown_boat": "That boat has been removed. Pick another.",
+        "no_days": "Pick at least one day.",
+        "end_before_start": "The latest finish has to be after the earliest start."
+      },
+      "abort": {
+        "no_boats": "Add a boat first. Every sailor needs at least one."
+      }
+    }
+  },
+  "selector": {
+    "water_type": {
+      "options": {
+        "open_coast": "Open coast",
+        "bay": "Bay",
+        "river": "Estuary or river",
+        "lake": "Lake"
+      }
+    },
+    "direction": {
+      "options": {
+        "n": "North",
+        "ne": "Northeast",
+        "e": "East",
+        "se": "Southeast",
+        "s": "South",
+        "sw": "Southwest",
+        "w": "West",
+        "nw": "Northwest"
+      }
+    },
+    "size_class": {
+      "options": {
+        "dinghy": "Dinghy or beach cat, up to about 16 ft (5 m)",
+        "small_keelboat": "Small keelboat, 16–25 ft (5–7.5 m)",
+        "cruiser": "Cruiser, 25–35 ft (7.5–10.5 m)",
+        "large_cruiser": "Large cruiser, 35 ft (10.5 m) and up"
+      }
+    },
+    "skill": {
+      "options": {
+        "beginner": "Beginner: up to 10 kt of sustained wind",
+        "intermediate": "Intermediate: up to 16 kt",
+        "advanced": "Advanced: no wind limit, just guidance"
+      }
+    },
+    "days": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    }
+  }
+}

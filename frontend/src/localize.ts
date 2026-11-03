@@ -1,0 +1,32 @@
+import en from "./translations/en.json";
+
+interface Strings {
+  [key: string]: string | Strings;
+}
+
+const LANGUAGES: Record<string, Strings> = { en };
+
+/**
+ * Return a panel string in the user's language, falling back to English.
+ * Keys are dotted paths, and `{name}` placeholders are filled from `values`.
+ */
+export function localize(
+  language: string | undefined,
+  key: string,
+  values: Record<string, string | number> = {},
+): string {
+  const strings = (language && (LANGUAGES[language] ?? LANGUAGES[language.split("-")[0]])) || en;
+  const text = lookup(strings, key) ?? lookup(en, key) ?? key;
+  return text.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    name in values ? String(values[name]) : placeholder,
+  );
+}
+
+function lookup(strings: Strings, key: string): string | undefined {
+  let node: string | Strings | undefined = strings;
+  for (const part of key.split(".")) {
+    if (typeof node !== "object") return undefined;
+    node = node[part];
+  }
+  return typeof node === "string" ? node : undefined;
+}

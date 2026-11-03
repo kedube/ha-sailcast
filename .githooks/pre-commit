@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stop private terms from being committed. See scripts/check_private_terms.py.
+exec python3 "$(git rev-parse --show-toplevel)/scripts/check_private_terms.py"

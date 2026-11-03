@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Start a throwaway Home Assistant from config/ with this repo's integration,
+# then open http://localhost:8123. The first start installs Home Assistant's
+# own requirements, which takes a few minutes.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if [ ! -f custom_components/sailcast/frontend/sailcast-panel.js ]; then
+  npm run --prefix frontend build
+fi
+
+# Home Assistant finds custom_components on the Python path.
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+exec .venv/bin/hass --config "$PWD/config" --debug
