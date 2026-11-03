@@ -9,6 +9,7 @@ import { checked, define, numberOrNull, ScDialog, value } from "./dialog";
 import { FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
 import { limitBars, skillBars } from "./settings";
 import "./spot-map";
+import type { StationMark } from "./spot-map";
 import type { Comfort, SizeClass, Skill, SourceKey, SourceSuggestions, Spot } from "./types";
 import { SIZES } from "./week";
 
@@ -490,6 +491,32 @@ export class ScSpotDialog extends ProfileDialog {
     return spot ? this.t("spot.edit", { name: spot.name }) : this.t("spot.add");
   }
 
+  /** The suggested tide and current stations, to show on the map. */
+  private stations(): StationMark[] {
+    const found = this.found;
+    if (!found) return [];
+    const marks: StationMark[] = [];
+    for (const [key, kind] of [
+      ["tide_station", "tide"],
+      ["current_station", "current"],
+    ] as const) {
+      for (const choice of found[key]) {
+        if (choice.latitude === null || choice.longitude === null) continue;
+        marks.push({
+          kind,
+          id: choice.id,
+          label: this.t(`spot.${kind}_mark`, {
+            name: choice.name,
+            id: choice.id.split("_")[0],
+          }),
+          latitude: choice.latitude,
+          longitude: choice.longitude,
+        });
+      }
+    }
+    return marks;
+  }
+
   private distance(km: number): string {
     const { t, fmt } = this.ctx;
     return t(fmt.miles ? "unit.miles" : "unit.km", { value: fmt.number(fmt.distance(km), 1) });
@@ -543,6 +570,7 @@ export class ScSpotDialog extends ProfileDialog {
           .latitude=${this.latitude}
           .longitude=${this.longitude}
           .radius=${this.radius}
+          .stations=${this.stations()}
           label=${t("spot.map_label")}
           @pin=${this.pinMoved}
         ></sc-spot-map>

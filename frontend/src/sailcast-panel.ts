@@ -22,10 +22,13 @@ import type {
   SailCastConfig,
   Theme,
   View,
+  WindGrid,
 } from "./types";
 import { weekView } from "./week";
+import "./wind-map";
 
-const VIEWS: View[] = ["week", "day", "settings"];
+const VIEWS: View[] = ["week", "day", "map", "settings"];
+const TAB_ICONS = { week: "calMonth", day: "clock", map: "windy", settings: "cog" } as const;
 const THEMES: Theme[] = ["auto", "day", "night"];
 // Updates can come in bursts, such as a reload after a settings change.
 const REFRESH_DELAY = 400;
@@ -61,6 +64,8 @@ export class SailCastPanel extends LitElement {
     forecastError: { state: true },
     dialog: { state: true },
     width: { state: true },
+    grid: { state: true },
+    gridError: { state: true },
   };
 
   declare hass?: HomeAssistant;
@@ -82,6 +87,10 @@ export class SailCastPanel extends LitElement {
   declare forecastError?: string;
   declare dialog?: TemplateResult;
   declare width: number;
+  /** The wind map's grid, and the spot it was asked for. */
+  declare grid?: WindGrid;
+  declare gridError?: string;
+  private gridSpot?: string;
 
   private api?: Api;
   private unsubscribe?: Promise<() => Promise<void>>;
@@ -124,6 +133,9 @@ export class SailCastPanel extends LitElement {
   }
 
   protected override updated(): void {
+    if (this.currentView() === "map" && this.spotId && this.gridSpot !== this.spotId) {
+      void this.loadGrid(this.spotId);
+    }
     const content = this.renderRoot.querySelector(".content");
     if (content && !this.resizer) {
       this.resizer = new ResizeObserver(([entry]) => {
@@ -222,6 +234,26 @@ export class SailCastPanel extends LitElement {
       0,
       forecast.days.findIndex((day) => !day.over),
     );
+  }
+
+  /** Ask for the wind map's grid; SailCast keeps it three hours. */
+  private async loadGrid(spot: string): Promise<void> {
+    if (!this.api) return;
+    this.gridSpot = spot;
+    this.gridError = undefined;
+    if (this.grid && !this.grid.spots.includes(spot)) this.grid = undefined;
+    try {
+      const grid = await this.api.windGrid(spot);
+      if (this.gridSpot === spot) this.grid = grid;
+    } catch (err) {
+      if (this.gridSpot !== spot) return;
+      const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
+      this.grid = undefined;
+      this.gridError =
+        code === "budget"
+          ? this.t("map.budget")
+          : this.t("map.unavailable", { message: errorText(err) });
+    }
   }
 
   private async loadPlanned(): Promise<void> {
@@ -492,9 +524,7 @@ export class SailCastPanel extends LitElement {
                 role="tab"
                 aria-selected=${item === view ? "true" : "false"}
                 @click=${(event: MouseEvent) => this.go(item, event)}
-                >${icon(item === "week" ? "calMonth" : item === "day" ? "clock" : "cog")}${this.t(
-                  `tabs.${item}`,
-                )}</a
+                >${icon(TAB_ICONS[item])}${this.t(`tabs.${item}`)}</a
               >`,
           )}
         </nav>
@@ -645,7 +675,28 @@ export class SailCastPanel extends LitElement {
           </section>`
         : html`<p class="muted">${this.t("loading")}</p>`;
     }
+    if (view === "map") return this.mapView(ctx);
     return view === "day" ? dayView(ctx, Math.max(0, this.width - 34)) : weekView(ctx);
+  }
+
+  private mapView(ctx: Ctx): TemplateResult {
+    if (this.gridError) {
+      return html`<div class="notice" role="status">
+        ${icon("info")}
+        <p>${this.gridError}</p>
+      </div>`;
+    }
+    if (!this.grid || !this.spotId || !this.grid.spots.includes(this.spotId)) {
+      return html`<p class="muted">${this.t("map.loading")}</p>`;
+    }
+    return html`<sc-wind-map
+      .hass=${ctx.hass}
+      .grid=${this.grid}
+      .spots=${ctx.config.spots}
+      .spotId=${this.spotId}
+      .t=${this.t}
+      .fmt=${ctx.fmt}
+    ></sc-wind-map>`;
   }
 }
 

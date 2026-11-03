@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 import json
+import math
 from pathlib import Path
 import sys
 from typing import Any
@@ -44,6 +45,7 @@ from custom_components.sailcast.providers import (  # noqa: E402
 from custom_components.sailcast.storage import PlannedSail  # noqa: E402
 from custom_components.sailcast.timeline import build, daylight  # noqa: E402
 from custom_components.sailcast.week import week  # noqa: E402
+from custom_components.sailcast.wind import WindGrid, areas  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
 OUTPUT = ROOT / "frontend" / "demo" / "data.json"
@@ -211,6 +213,55 @@ def conditions() -> dict[str, SpotConditions]:
     return result
 
 
+def wind_grid(spots: dict[str, SpotConditions]) -> dict[str, Any]:
+    """Return the wind map's grid over the three spots, for the demo.
+
+    No grid was recorded, so each point blends the spots' recorded wind,
+    weighted by how near each spot is, and the open water to the west gets
+    a little more.
+    """
+    area = areas(SPOTS)[SPOTS[0].id]
+    points = area.points
+    hours = spots[SPOTS[0].id].hours
+    speed, direction, gust = [], [], []
+    for latitude, longitude in points:
+        weights = [
+            1
+            / max(
+                0.5, (latitude - spot.latitude) ** 2 + (longitude - spot.longitude) ** 2
+            )
+            for spot in SPOTS
+        ]
+        total = sum(weights)
+        west = (area.east - longitude) / (area.east - area.west)
+        point_speed, point_direction, point_gust = [], [], []
+        for index in range(len(hours)):
+            east = north = gusts = 0.0
+            for spot, weight in zip(SPOTS, weights, strict=True):
+                hour = spots[spot.id].hours[index]
+                angle = math.radians(hour.wind_direction)
+                east -= weight * hour.wind * math.sin(angle)
+                north -= weight * hour.wind * math.cos(angle)
+                gusts += weight * hour.gust
+            boost = 1 + 0.25 * west
+            east, north = east / total * boost, north / total * boost
+            point_speed.append(math.hypot(east, north))
+            point_direction.append(math.degrees(math.atan2(-east, -north)) % 360)
+            point_gust.append(gusts / total * boost)
+        speed.append(tuple(point_speed))
+        direction.append(tuple(point_direction))
+        gust.append(tuple(point_gust))
+    wind = open_meteo.WindPoints(
+        times=tuple(hour.start for hour in hours),
+        speed=tuple(speed),
+        direction=tuple(direction),
+        gust=tuple(gust),
+    )
+    return WindGrid.from_points(area, NOW.replace(minute=5), wind).as_dict(
+        NOW, stale=False
+    )
+
+
 def main() -> None:
     """Write the replies the demo answers with."""
     profiles = Profiles(
@@ -277,6 +328,7 @@ def main() -> None:
         "config": config,
         "forecasts": forecasts,
         "planned": {"planned": planned, "skipped": {"alex": [], "sam": []}},
+        "wind_grid": wind_grid(spots),
     }
     OUTPUT.write_text(json.dumps(data, default=_json, separators=(",", ":")))
     print(f"Wrote {OUTPUT.relative_to(ROOT)} ({OUTPUT.stat().st_size // 1024} KB)")

@@ -38,7 +38,8 @@ const FAMILIES: Record<string, string[]> = {
   rain: ["avoid", "some", "any"],
   ahead: ["1", "2", "4", "6"],
   auto: ["score_60", "score_60_hint", "score_80", "score_80_hint"],
-  tabs: ["week", "day", "settings"],
+  tabs: ["week", "day", "map", "settings"],
+  map: ["wind", "gust"],
   compass: "n nne ne ene e ese se sse s ssw sw wsw w wnw nw nnw".split(" "),
   spot: [
     "tide_station",
@@ -51,6 +52,8 @@ const FAMILIES: Record<string, string[]> = {
     "exposed",
     "offshore_hint",
     "exposed_hint",
+    "tide_mark",
+    "current_mark",
   ],
   // The backend's advice keys (advice.py).
   advice: [

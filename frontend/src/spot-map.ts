@@ -1,30 +1,27 @@
 /**
- * The spot editor's map: a pin on the water and the wind map's circle around
- * it. Select the map or drag the pin to move it; arrow keys move it too.
- *
- * The base map is OpenStreetMap through Home Assistant's own tile proxy,
- * which takes a short-lived token. If that internal interface isn't there,
- * the map falls back to OpenFreeMap. OpenSeaMap's seamarks go on top.
- * MapLibre is only loaded when the map is shown.
+ * The spot editor's map: a pin on the water, the wind map's circle around it,
+ * and the tide and current stations nearby. Select the map or drag the pin to
+ * move it; arrow keys move it too.
  */
 import type { Feature } from "geojson";
-import { css, html, LitElement, unsafeCSS, type PropertyValues, type TemplateResult } from "lit";
+import { css, html, LitElement, type PropertyValues, type TemplateResult } from "lit";
 
 import { define } from "./dialog";
 import { circle } from "./geo";
+import { addSeamarks, createMap, loadMapLibre, MAP_CREDITS, type MapInstance } from "./map";
 import type { HomeAssistant } from "./types";
 
-type MapLibre = typeof import("maplibre-gl");
-type MapInstance = InstanceType<MapLibre["Map"]>;
-type MarkerInstance = InstanceType<MapLibre["Marker"]>;
+type MarkerInstance = InstanceType<typeof import("maplibre-gl").Marker>;
 
-const SEAMARKS = "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png";
-const FALLBACK_STYLE = "https://tiles.openfreemap.org/styles/liberty";
-// Tokens change every 30 minutes and two are accepted at a time.
-const TOKEN_REFRESH = 20 * 60 * 1000;
-const ATTRIBUTION =
-  '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · ' +
-  'Seamarks © <a href="https://www.openseamap.org" target="_blank" rel="noopener">OpenSeaMap</a>';
+/** A station to show on the map. */
+export interface StationMark {
+  kind: "tide" | "current";
+  id: string;
+  /** What a pointer over it reads, such as "Tide station: San Diego". */
+  label: string;
+  latitude: number;
+  longitude: number;
+}
 
 export class ScSpotMap extends LitElement {
   static override properties = {
@@ -32,6 +29,7 @@ export class ScSpotMap extends LitElement {
     latitude: { type: Number },
     longitude: { type: Number },
     radius: { type: Number },
+    stations: { attribute: false },
     label: { type: String },
     failed: { state: true },
   };
@@ -41,17 +39,21 @@ export class ScSpotMap extends LitElement {
   declare longitude: number;
   /** Meters. */
   declare radius: number;
+  declare stations: StationMark[];
   declare label: string;
   declare failed: boolean;
 
   private map?: MapInstance;
-  private marker?: MarkerInstance;
-  private refresher?: number;
+  private stop?: () => void;
+  private pin?: MarkerInstance;
+  private markers: MarkerInstance[] = [];
+  private maplibre?: typeof import("maplibre-gl");
 
   constructor() {
     super();
     this.failed = false;
     this.label = "";
+    this.stations = [];
   }
 
   protected override firstUpdated(): void {
@@ -60,94 +62,39 @@ export class ScSpotMap extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.clearInterval(this.refresher);
-    this.map?.remove();
+    this.stop?.();
     this.map = undefined;
   }
 
-  private async token(): Promise<string | undefined> {
-    try {
-      const result = await this.hass.connection.sendMessagePromise<{ token: string }>({
-        type: "map_tiles/access_token",
-      });
-      return result.token;
-    } catch {
-      return undefined;
-    }
-  }
-
   private async load(): Promise<void> {
-    let maplibre: MapLibre;
-    let styleSheet: string;
-    try {
-      [maplibre, styleSheet] = await Promise.all([
-        import("maplibre-gl"),
-        import("maplibre-gl/dist/maplibre-gl.css?inline").then((module) => module.default),
-      ]);
-    } catch {
+    const root = this.renderRoot as ShadowRoot;
+    const maplibre = await loadMapLibre(root);
+    const container = root.querySelector<HTMLElement>(".map");
+    if (!maplibre) {
       this.failed = true;
       return;
     }
-    if (import.meta.env.DEV) {
-      // The dev server bundles MapLibre elsewhere, so point it at its worker.
-      maplibre.setWorkerUrl(
-        `${location.origin}/node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs`,
-      );
-    }
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(styleSheet);
-    const root = this.renderRoot as ShadowRoot;
-    root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
-
-    const token = await this.token();
-    const container = root.querySelector<HTMLElement>(".map");
     if (!container || !this.isConnected) return;
-    const tiles = (key: string): string =>
-      `${location.origin}/api/map_tiles/raster/{z}/{x}/{y}.png?token=${key}`;
-    const map = new maplibre.Map({
-      container,
-      style: token
-        ? {
-            version: 8,
-            sources: {
-              osm: { type: "raster", tiles: [tiles(token)], tileSize: 256, maxzoom: 19 },
-            },
-            layers: [{ id: "osm", type: "raster", source: "osm" }],
-          }
-        : FALLBACK_STYLE,
+    this.maplibre = maplibre;
+    const { map, stop } = await createMap(maplibre, container, this.hass, {
       center: [this.longitude, this.latitude],
       zoom: 10,
-      attributionControl: false,
-      dragRotate: false,
-      pitchWithRotate: false,
+      credits: MAP_CREDITS,
     });
     this.map = map;
-    map.addControl(
-      new maplibre.AttributionControl({ compact: true, customAttribution: ATTRIBUTION }),
-      "bottom-right",
-    );
-    map.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
-    map.touchZoomRotate.disableRotation();
-    if (token) {
-      this.refresher = window.setInterval(async () => {
-        const fresh = await this.token();
-        const source = map.getSource("osm") as { setTiles?: (tiles: string[]) => void } | undefined;
-        if (fresh) source?.setTiles?.([tiles(fresh)]);
-      }, TOKEN_REFRESH);
-    }
+    this.stop = stop;
     const color = getComputedStyle(this).getPropertyValue("--sc-btn").trim() || "#0a6a9c";
-    this.marker = new maplibre.Marker({ draggable: true, color })
+    this.pin = new maplibre.Marker({ draggable: true, color })
       .setLngLat([this.longitude, this.latitude])
       .addTo(map);
-    this.marker.on("dragend", () => {
-      const where = this.marker!.getLngLat();
+    this.pin.on("dragend", () => {
+      const where = this.pin!.getLngLat();
       this.move(where.lat, where.lng);
     });
     map.on("click", (event) => this.move(event.lngLat.lat, event.lngLat.lng));
     map.on("load", () => {
       map.resize();
-      map.addSource("seamarks", { type: "raster", tiles: [SEAMARKS], tileSize: 256, maxzoom: 18 });
-      map.addLayer({ id: "seamarks", type: "raster", source: "seamarks", minzoom: 9 });
+      addSeamarks(map);
       map.addSource("area", {
         type: "geojson",
         data: circle(this.latitude, this.longitude, this.radius),
@@ -166,6 +113,29 @@ export class ScSpotMap extends LitElement {
         paint: { "line-color": tint, "line-width": 1.5, "line-dasharray": [3, 2] },
       });
       this.fit(false);
+      this.showStations();
+    });
+  }
+
+  /** Put a marker on each station: a triangle for tides, a diamond for currents. */
+  private showStations(): void {
+    const { map, maplibre } = this;
+    if (!map || !maplibre) return;
+    for (const marker of this.markers) marker.remove();
+    this.markers = this.stations.map((station) => {
+      // MapLibre positions the marker with its own transform, so the shape
+      // goes on an element inside it.
+      const element = document.createElement("div");
+      element.className = "station";
+      element.title = station.label;
+      element.setAttribute("role", "img");
+      element.setAttribute("aria-label", station.label);
+      const shape = document.createElement("span");
+      shape.className = station.kind;
+      element.append(shape);
+      return new maplibre.Marker({ element })
+        .setLngLat([station.longitude, station.latitude])
+        .addTo(map);
     });
   }
 
@@ -195,11 +165,12 @@ export class ScSpotMap extends LitElement {
     const map = this.map;
     if (!map) return;
     if (changed.has("latitude") || changed.has("longitude") || changed.has("radius")) {
-      this.marker?.setLngLat([this.longitude, this.latitude]);
+      this.pin?.setLngLat([this.longitude, this.latitude]);
       const source = map.getSource("area") as { setData?: (data: Feature) => void } | undefined;
       source?.setData?.(circle(this.latitude, this.longitude, this.radius));
       if (changed.has("radius")) this.fit();
     }
+    if (changed.has("stations") && map.loaded()) this.showStations();
   }
 
   private onKey(event: KeyboardEvent): void {
@@ -236,7 +207,7 @@ export class ScSpotMap extends LitElement {
       overflow: hidden;
       border: 1px solid var(--sc-line);
       border-radius: 12px;
-      background: ${unsafeCSS("#d4e6f3")};
+      background: #d4e6f3;
     }
     /* More specific than MapLibre's own .maplibregl-map, which would make
        the container relative and, with no height of its own, empty. */
@@ -249,6 +220,28 @@ export class ScSpotMap extends LitElement {
     .map:focus-visible {
       outline: 2px solid var(--sc-focus);
       outline-offset: -2px;
+    }
+    .station {
+      display: grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      filter: drop-shadow(0 0 1px #ffffff) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+      cursor: default;
+    }
+    .station span {
+      display: block;
+      background: #2f4250;
+    }
+    .station .tide {
+      width: 13px;
+      height: 12px;
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+    .station .current {
+      width: 9px;
+      height: 9px;
+      transform: rotate(45deg);
     }
     .failed {
       position: absolute;
