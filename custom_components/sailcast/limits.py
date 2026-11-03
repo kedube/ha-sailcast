@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
+import re
 from types import MappingProxyType
 from typing import Final
 
@@ -146,8 +147,11 @@ class WarningGroup(StrEnum):
     WATCH = "watch"
 
 
-# NWS event names. Other countries' warnings map to the closest group as
-# they're added. Any other event ending in "Watch" is a watch.
+# Event names, matched whatever their capitals. US marine warnings first,
+# then the NWS's warnings for lakes without a marine zone, then Canada's
+# marine warnings, which share names with some US ones. A watch is any other
+# event ending in "watch" that's about wind, storms or the sea, so a flood or
+# fire weather watch on a lake doesn't count.
 WARNING_EVENTS: Final[Mapping[str, WarningGroup]] = MappingProxyType(
     {
         "Small Craft Advisory": WarningGroup.ADVISORY,
@@ -165,7 +169,38 @@ WARNING_EVENTS: Final[Mapping[str, WarningGroup]] = MappingProxyType(
         "Storm Surge Warning": WarningGroup.STORM,
         "Special Marine Warning": WarningGroup.STORM,
         "Tsunami Warning": WarningGroup.STORM,
+        # The NWS on lakes.
+        "Lake Wind Advisory": WarningGroup.ADVISORY,
+        "Wind Advisory": WarningGroup.ADVISORY,
+        "Freezing Fog Advisory": WarningGroup.FOG_AND_SPRAY,
+        "High Wind Warning": WarningGroup.GALE,
+        "Extreme Wind Warning": WarningGroup.STORM,
+        "Severe Thunderstorm Warning": WarningGroup.STORM,
+        "Tornado Warning": WarningGroup.STORM,
+        "Snow Squall Warning": WarningGroup.STORM,
+        # Environment and Climate Change Canada.
+        "Strong wind warning": WarningGroup.ADVISORY,
+        "Freezing spray warning": WarningGroup.GALE,
+        "Squall warning": WarningGroup.STORM,
+        "Waterspout warning": WarningGroup.STORM,
     }
+)
+_EVENT_GROUPS: Final = {
+    event.casefold(): group for event, group in WARNING_EVENTS.items()
+}
+WATCH_WORDS: Final = (
+    "wind",
+    "gale",
+    "storm",
+    "squall",
+    "tornado",
+    "waterspout",
+    "hurricane",
+    "seas",
+    "spray",
+    "surge",
+    "tsunami",
+    "blizzard",
 )
 
 # The lowest rating while a warning is in effect, at every skill level.
@@ -197,10 +232,36 @@ WARNING_FLOORS: Final[Mapping[WarningGroup, Mapping[SizeClass, Level]]] = (
 )
 
 
+# MeteoAlarm's warnings in Europe, by kind and level: "Yellow wind warning".
+# Each country sets its own thresholds; yellow wind is around force 6 to 8 at
+# sea, so it starts where a Small Craft Advisory does. Other kinds, such as
+# rain or heat, don't change the rating.
+AWARENESS_GROUPS: Final[Mapping[tuple[str, str], WarningGroup]] = MappingProxyType(
+    {
+        ("wind", "yellow"): WarningGroup.ADVISORY,
+        ("wind", "orange"): WarningGroup.GALE,
+        ("wind", "red"): WarningGroup.STORM,
+        ("thunderstorm", "yellow"): WarningGroup.ADVISORY,
+        ("thunderstorm", "orange"): WarningGroup.STORM,
+        ("thunderstorm", "red"): WarningGroup.STORM,
+        ("coastal event", "yellow"): WarningGroup.ADVISORY,
+        ("coastal event", "orange"): WarningGroup.GALE,
+        ("coastal event", "red"): WarningGroup.STORM,
+        ("fog", "yellow"): WarningGroup.FOG_AND_SPRAY,
+        ("fog", "orange"): WarningGroup.FOG_AND_SPRAY,
+        ("fog", "red"): WarningGroup.FOG_AND_SPRAY,
+    }
+)
+_AWARENESS = re.compile(r"^(yellow|orange|red) (.+) warning$")
+
+
 def warning_group(event: str) -> WarningGroup | None:
     """Return the group an official warning belongs to, if any."""
-    if group := WARNING_EVENTS.get(event):
+    name = event.casefold()
+    if group := _EVENT_GROUPS.get(name):
         return group
-    if event.endswith(" Watch"):
+    if match := _AWARENESS.match(name):
+        return AWARENESS_GROUPS.get((match.group(2), match.group(1)))
+    if name.endswith(" watch") and any(word in name for word in WATCH_WORDS):
         return WarningGroup.WATCH
     return None

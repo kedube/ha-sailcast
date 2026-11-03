@@ -2,12 +2,15 @@
 
 Spot positions, names, stations, sensors and marine zones can each point to a
 place, so they're redacted along with people's names, linked users and
-calendars. Errors keep their kind, the service's host and the status, but not
-the addresses, which can hold a station or a position.
+calendars. API keys are only said to be set. Errors keep their kind, the
+service's host and the status, but not the addresses, which can hold a
+station or a position, nor any station or zone a spot uses. Which provider a
+spot's tides and warnings come from is kept: it shows the country at most.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 import re
 from typing import Any
 
@@ -15,7 +18,10 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
+from . import alerts, tides
+from .const import CONF_WORLDTIDES_KEY
 from .coordinator import Observed, SailCastConfigEntry, stations
+from .profiles import Spot
 from .wind import DATA_WIND
 
 TO_REDACT = {
@@ -43,12 +49,15 @@ async def async_get_config_entry_diagnostics(
     results = data.results.data
     observed = data.sources.observations.data or Observed()
     now = dt_util.utcnow()
+    hidden = _places(data.profiles.spots.values())
     return {
         "profiles": async_redact_data(data.profiles.as_dict(), TO_REDACT),
+        "worldtides_key_set": bool(entry.options.get(CONF_WORLDTIDES_KEY)),
+        "worldtides_key_problem": data.sources.predictions.key_problem is not None,
         "sources": {
             source.name: {
                 "last_update_success": source.last_update_success,
-                "last_exception": safe_error(source.last_exception),
+                "last_exception": safe_error(source.last_exception, hidden),
                 "update_interval": source.update_interval.total_seconds()
                 if source.update_interval
                 else None,
@@ -87,7 +96,18 @@ async def async_get_config_entry_diagnostics(
                 {
                     "hours": len(conditions.hours),
                     "days": len(conditions.days),
+                    "tide_provider": (
+                        tides.provider(source)
+                        if (source := conditions.spot.tide_station)
+                        else None
+                    ),
+                    "tide_datum": conditions.tides.datum if conditions.tides else None,
                     "tide_events": len(conditions.tide_events),
+                    "warnings_provider": (
+                        alerts.provider(source)
+                        if (source := conditions.spot.marine_zone)
+                        else None
+                    ),
                     "warnings": [alert.event for alert in conditions.alerts],
                     "shoreline": (
                         {
@@ -113,13 +133,39 @@ async def async_get_config_entry_diagnostics(
     }
 
 
-def safe_error(error: BaseException | None) -> str | None:
+def safe_error(error: BaseException | None, hidden: Iterable[str] = ()) -> str | None:
     """Return an error's kind and message, with addresses cut to their host.
 
-    Numbers with several decimals, which could be a position, are hidden too.
+    Numbers with several decimals, which could be a position, are hidden
+    too, and so is each of `hidden`, such as the stations spots use.
     """
     if error is None:
         return None
     text = re.sub(r"https?://([^/\s?:]+)\S*", r"\1", str(error))
+    for secret in sorted(hidden, key=len, reverse=True):
+        text = text.replace(secret, "…")
     text = re.sub(r"-?\d+\.\d{3,}", "…", text)
     return f"{type(error).__name__}: {text}"[:300]
+
+
+def _places(spots: Iterable[Spot]) -> set[str]:
+    """Return the stations, zones and keys spots use, which could show a place."""
+    found: set[str] = set()
+    for spot in spots:
+        values = (
+            spot.tide_station,
+            spot.current_station,
+            spot.marine_zone,
+            spot.buoy,
+            spot.airport,
+            tides.key(spot),
+            alerts.key(spot),
+            *spot.source_names.values(),
+        )
+        for value in values:
+            if value and value not in (tides.WORLDTIDES, tides.MODEL, alerts.NWS):
+                found.add(value)
+                # A regional source's own ID, without its provider.
+                found.add(value.partition(":")[2] or value)
+    found.discard("")
+    return found

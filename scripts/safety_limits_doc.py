@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 from custom_components.sailcast import limits  # noqa: E402
 from custom_components.sailcast.limits import (  # noqa: E402
+    AWARENESS_GROUPS,
     BOAT_LIMITS,
     FOOT,
     SKILL_WIND_LIMITS,
@@ -44,7 +45,7 @@ GROUPS = {
     WarningGroup.FOG_AND_SPRAY: None,
     WarningGroup.GALE: None,
     WarningGroup.STORM: None,
-    WarningGroup.WATCH: "Any marine watch",
+    WarningGroup.WATCH: "Any watch for wind, storms, squalls, waves, spray, surge or tsunamis",
 }
 
 SOURCES = """\
@@ -195,6 +196,13 @@ def render() -> str:
     ]
     for group, label in GROUPS.items():
         events = [event for event, g in WARNING_EVENTS.items() if g is group]
+        europe = [
+            f"{level} {kind}"
+            for (kind, level), g in AWARENESS_GROUPS.items()
+            if g is group
+        ]
+        if europe:
+            events.append(f"MeteoAlarm {', '.join(europe)} warning")
         name = label or "; ".join(events)
         floors = " | ".join(LEVELS[WARNING_FLOORS[group][size]] for size in sizes)
         lines.append(f"| {name} | {floors} |")

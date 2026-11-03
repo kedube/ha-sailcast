@@ -24,7 +24,8 @@ from .nowcast import Adjustment, Observation, latest, nudge
 from .waves import shelter
 
 if TYPE_CHECKING:
-    from .providers.noaa_coops import Currents, Tides
+    from .providers import Tides
+    from .providers.noaa_coops import Currents
     from .providers.open_meteo import Forecast, Marine, Spread
 
 HOUR = timedelta(hours=1)
@@ -32,13 +33,20 @@ HOUR = timedelta(hours=1)
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Alert:
-    """An official warning for a marine zone, in effect from start to end."""
+    """An official warning for a zone or pin, in effect from start to end.
+
+    `issued` and `issuer` say when and by whom, and `details` the warning's
+    own description and advice, where the provider asks for them to be shown.
+    """
 
     event: str
     zone: str
     start: datetime
     end: datetime
     headline: str | None = None
+    issued: datetime | None = None
+    issuer: str | None = None
+    details: str | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

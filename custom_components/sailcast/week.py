@@ -133,6 +133,9 @@ def week(
                 "start": alert.start.isoformat(),
                 "end": alert.end.isoformat(),
                 "headline": alert.headline,
+                "issued": alert.issued.isoformat() if alert.issued else None,
+                "issuer": alert.issuer,
+                "details": alert.details,
             }
             for alert in conditions.alerts
         ],

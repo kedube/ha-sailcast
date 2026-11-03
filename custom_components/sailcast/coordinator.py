@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, tzinfo
+from datetime import UTC, date, datetime, time, timedelta, tzinfo
 import logging
 from typing import Any, Final
 
@@ -25,7 +25,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DOMAIN
+from . import alerts as alert_sources, tides as tide_sources
+from .const import CONF_WORLDTIDES_KEY, DOMAIN
 from .nowcast import AIRPORT, BUOY, SENSORS, Observation
 from .outlook import Results, SpotConditions, compute
 from .planner import Planner
@@ -33,14 +34,18 @@ from .profiles import Profiles, Spot
 from .providers import (
     ProviderError,
     Readings,
+    TideEvent,
+    Tides,
     ha_entity,
     metar,
+    meteoalarm,
     ndbc,
     noaa_coops,
-    nws,
     open_meteo,
+    worldtides,
 )
-from .providers.noaa_coops import CurrentEvent, Currents, TideEvent, Tides
+from .providers.noaa_coops import CurrentEvent, Currents
+from .regions import DATA_REGIONS, Regions
 from .shoreline import DATA_SHORELINES, Shoreline, Shorelines
 from .storage import SailCastStore
 from .timeline import Alert, build, daylight, localize
@@ -115,6 +120,7 @@ class SourceCoordinator[DataT](DataUpdateCoordinator[DataT]):
             update_interval=interval,
             always_update=False,
         )
+        self.entry = entry
         self.profiles = profiles
         self.session = async_get_clientsession(hass)
 
@@ -187,7 +193,7 @@ class MarineCoordinator(SourceCoordinator[dict[str, open_meteo.Marine]]):
 
 @dataclass(frozen=True, slots=True)
 class Predictions:
-    """Tide and current predictions, by station."""
+    """Tide predictions by station or pin (see tides.key), and currents by station."""
 
     tides: dict[str, Tides] = field(default_factory=dict)
     currents: dict[str, Currents] = field(default_factory=dict)
@@ -381,75 +387,111 @@ class ObservationCoordinator(SourceCoordinator[Observed]):
 class PredictionCoordinator(SourceCoordinator[Predictions]):
     """Tide and current predictions, fetched once a day and kept on disk.
 
-    NOAA throttles heavy users, so each station is fetched at most once a
-    day, for ten days. Predictions from an earlier day are used while they
-    still cover the coming week. `failing` says since when a station has
-    failed, by "tide:<id>" or "current:<id>", for repair issues.
+    Providers throttle heavy users, so each station is fetched at most once
+    a day, for ten days; WorldTides costs credits, so its two weeks are kept
+    for days. Predictions from an earlier day are used while they still
+    cover the coming week. `failing` says since when a source has failed, by
+    "tide:<key>" or "current:<id>", and `key_problem` why WorldTides can't
+    be asked: "missing", or the error it gave for the key.
     """
 
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, profiles: Profiles
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        profiles: Profiles,
+        budget: Budget,
     ) -> None:
         """Set up predictions."""
         super().__init__(hass, entry, profiles, "predictions", PREDICTION_INTERVAL)
+        self.budget = budget
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
-        self._fetched: dict[str, date] = {}
+        self._fetched: dict[str, datetime] = {}
         self._loaded = False
         self.failing: dict[str, datetime] = {}
+        self.key_problem: str | None = None
 
     async def _async_update_data(self) -> Predictions:
         if not self._loaded:
             await self._async_load()
         spots = self.profiles.spots.values()
-        tide_stations = {spot.tide_station for spot in spots if spot.tide_station}
+        tide_keys = {key for spot in spots if (key := tide_sources.key(spot))}
         current_stations = {
             spot.current_station for spot in spots if spot.current_station
         }
         old = self.data or Predictions()
-        tides = {k: v for k, v in old.tides.items() if k in tide_stations}
+        tides = {k: v for k, v in old.tides.items() if k in tide_keys}
         currents = {k: v for k, v in old.currents.items() if k in current_stations}
-        today = dt_util.utcnow().date()
+        now = dt_util.utcnow()
         # Start a day early, so the timeline can begin at local midnight.
-        begin = today - timedelta(days=1)
-        wanted = {f"tide:{station}" for station in tide_stations} | {
+        begin = datetime.combine(now.date() - timedelta(days=1), time(), UTC)
+        wanted = {f"tide:{key}" for key in tide_keys} | {
             f"current:{station}" for station in current_stations
         }
         self._fetched = {k: v for k, v in self._fetched.items() if k in wanted}
         self.failing = {k: v for k, v in self.failing.items() if k in wanted}
-        now = dt_util.utcnow()
+        if not any(
+            tide_sources.provider(key) == tide_sources.WORLDTIDES for key in tide_keys
+        ):
+            self.key_problem = None
         failures = []
-        for station in sorted(tide_stations):
-            if self._fetched.get(f"tide:{station}") == today:
+        for key in sorted(tide_keys):
+            if not tide_sources.stale(
+                tides.get(key), self._fetched.get(f"tide:{key}"), now
+            ):
                 continue
             try:
-                tides[station] = await noaa_coops.async_get_tides(
-                    self.session, station, begin
-                )
+                tides[key] = await self._async_fetch_tides(key, begin)
             except ProviderError as err:
                 failures.append(str(err))
-                self.failing.setdefault(f"tide:{station}", now)
+                self.failing.setdefault(f"tide:{key}", now)
                 continue
-            self._fetched[f"tide:{station}"] = today
-            self.failing.pop(f"tide:{station}", None)
+            self._fetched[f"tide:{key}"] = now
+            self.failing.pop(f"tide:{key}", None)
         for station in sorted(current_stations):
-            if self._fetched.get(f"current:{station}") == today:
+            fetched = self._fetched.get(f"current:{station}")
+            if fetched and fetched.date() == now.date():
                 continue
             try:
                 currents[station] = await noaa_coops.async_get_currents(
-                    self.session, station, begin
+                    self.session, station, begin.date()
                 )
             except ProviderError as err:
                 failures.append(str(err))
                 self.failing.setdefault(f"current:{station}", now)
                 continue
-            self._fetched[f"current:{station}"] = today
+            self._fetched[f"current:{station}"] = now
             self.failing.pop(f"current:{station}", None)
         predictions = Predictions(tides, currents)
         if predictions != self.data:
             await self._store.async_save(_to_store(predictions, self._fetched))
-        if failures and len(failures) == len(tide_stations) + len(current_stations):
+        if failures and len(failures) == len(tide_keys) + len(current_stations):
             raise UpdateFailed(f"Couldn't get predictions: {failures[0]}")
         return predictions
+
+    async def _async_fetch_tides(self, key: str, begin: datetime) -> Tides:
+        """Fetch one source's tides, minding WorldTides' key and the budget."""
+        name = tide_sources.provider(key)
+        if name == tide_sources.WORLDTIDES:
+            api_key = self.entry.options.get(CONF_WORLDTIDES_KEY)
+            if not api_key:
+                self.key_problem = "missing"
+                raise tide_sources.MissingKeyError("No WorldTides key is set")
+            if self.key_problem:
+                # Asking again with a refused key wouldn't help.
+                raise ProviderError(f"WorldTides refused the key: {self.key_problem}")
+            try:
+                found = await tide_sources.async_fetch(
+                    self.session, key, begin, worldtides_key=api_key
+                )
+            except worldtides.KeyRejectedError as err:
+                self.key_problem = str(err)
+                raise
+            self.key_problem = None
+            return found
+        if name == tide_sources.MODEL:
+            self.budget.add(open_meteo.sea_level_calls(1))
+        return await tide_sources.async_fetch(self.session, key, begin)
 
     async def _async_load(self) -> None:
         """Read the predictions kept from earlier days."""
@@ -466,26 +508,59 @@ class PredictionCoordinator(SourceCoordinator[Predictions]):
 
 
 class AlertCoordinator(SourceCoordinator[tuple[Alert, ...]]):
-    """Official marine warnings for every spot's zone, in one request."""
+    """Official warnings for every spot.
+
+    NWS zones are fetched in one request, and each pin, Canadian area or
+    European country in one of its own. When one source fails, the warnings
+    it last gave stay until they end, so a failure never makes a warning
+    disappear. `places` holds the MeteoAlarm regions near each pin, and
+    `details` each MeteoAlarm warning's text, read once.
+    """
 
     def __init__(
         self, hass: HomeAssistant, entry: ConfigEntry, profiles: Profiles
     ) -> None:
         """Set up warnings."""
         super().__init__(hass, entry, profiles, "warnings", ALERT_INTERVAL)
+        self.places: dict[str, meteoalarm.Place] = {}
+        self.details: dict[str, meteoalarm.Details] = {}
 
     async def _async_update_data(self) -> tuple[Alert, ...]:
-        zones = {
-            spot.marine_zone
+        keys = {
+            key
             for spot in self.profiles.spots.values()
-            if spot.marine_zone
+            if (key := alert_sources.key(spot))
         }
-        if not zones:
+        if not keys:
             return ()
-        try:
-            return tuple(await nws.async_get_alerts(self.session, zones))
-        except ProviderError as err:
-            raise UpdateFailed(f"Couldn't get marine warnings: {err}") from err
+        regions = self.hass.data.setdefault(DATA_REGIONS, Regions(self.hass))
+        for key in keys:
+            if (
+                alert_sources.provider(key) == alert_sources.METEOALARM
+                and key not in self.places
+            ):
+                try:
+                    self.places[key] = await regions.async_place(
+                        *alert_sources.pin(key)
+                    )
+                except ProviderError as err:
+                    LOGGER.warning("Couldn't get MeteoAlarm's regions: %s", err)
+        fetched = await alert_sources.async_fetch(
+            self.session,
+            keys,
+            dt_util.get_default_time_zone(),
+            self.places,
+            self.details,
+        )
+        if len(fetched.failed) == len(keys):
+            message = next(iter(fetched.failed.values()))
+            raise UpdateFailed(f"Couldn't get warnings: {message}")
+        kept = [
+            alert
+            for alert in self.data or ()
+            if any(alert_sources.applies(alert, key) for key in fetched.failed)
+        ]
+        return tuple(fetched.alerts + kept)
 
 
 class ResultsCoordinator(DataUpdateCoordinator[Results]):
@@ -625,10 +700,13 @@ class Sources:
         if forecast is None:
             return None
         predictions = self.predictions.data or Predictions()
-        tides = predictions.tides.get(spot.tide_station or "")
+        tides = predictions.tides.get(tide_sources.key(spot) or "")
         currents = predictions.currents.get(spot.current_station or "")
+        warnings = alert_sources.key(spot)
         alerts = tuple(
-            alert for alert in self.alerts.data or () if alert.zone == spot.marine_zone
+            alert
+            for alert in self.alerts.data or ()
+            if warnings and alert_sources.applies(alert, warnings)
         )
         days = [
             daylight(spot.latitude, spot.longitude, today + timedelta(days=n), zone)
@@ -661,13 +739,20 @@ class Sources:
             spot=spot,
             hours=tuple(hours),
             days=tuple(days),
-            tide_events=tides.events if tides else (),
+            tides=tides,
+            # The ocean model's highs and lows are too rough to give times for.
+            tide_events=tides.events if tides and not _rough(tides) else (),
             current_events=currents.events if currents else (),
             alerts=alerts,
             observations=observations,
             adjustments=adjustments,
             shoreline=shoreline,
         )
+
+
+def _rough(tides: Tides) -> bool:
+    """Return whether tides are the ocean model's rough curve."""
+    return tide_sources.provider(tides.station) == tide_sources.MODEL
 
 
 def _fetch(spot: Spot, shoreline: Shoreline | None) -> Callable[[float], float] | None:
@@ -700,7 +785,7 @@ class SailCastData:
         sources = Sources(
             forecast=ForecastCoordinator(hass, entry, profiles, budget),
             marine=MarineCoordinator(hass, entry, profiles, budget),
-            predictions=PredictionCoordinator(hass, entry, profiles),
+            predictions=PredictionCoordinator(hass, entry, profiles, budget),
             alerts=AlertCoordinator(hass, entry, profiles),
             spread=SpreadCoordinator(hass, entry, profiles, budget),
             observations=ObservationCoordinator(hass, entry, profiles, budget),
@@ -719,9 +804,9 @@ class SailCastData:
 type SailCastConfigEntry = ConfigEntry[SailCastData]
 
 
-def _to_store(predictions: Predictions, fetched: dict[str, date]) -> dict[str, Any]:
+def _to_store(predictions: Predictions, fetched: dict[str, datetime]) -> dict[str, Any]:
     return {
-        "fetched": {key: day.isoformat() for key, day in fetched.items()},
+        "fetched": {key: when.isoformat() for key, when in fetched.items()},
         "tides": {
             station: {
                 "events": [
@@ -729,6 +814,9 @@ def _to_store(predictions: Predictions, fetched: dict[str, date]) -> dict[str, A
                     for event in tides.events
                 ],
                 "hourly": [[when.isoformat(), height] for when, height in tides.hourly],
+                "datum": tides.datum,
+                "name": tides.name,
+                "notice": tides.notice,
             }
             for station, tides in predictions.tides.items()
         },
@@ -745,7 +833,7 @@ def _to_store(predictions: Predictions, fetched: dict[str, date]) -> dict[str, A
     }
 
 
-def _from_store(stored: dict[str, Any]) -> tuple[Predictions, dict[str, date]]:
+def _from_store(stored: dict[str, Any]) -> tuple[Predictions, dict[str, datetime]]:
     tides = {
         station: Tides(
             station=station,
@@ -757,6 +845,9 @@ def _from_store(stored: dict[str, Any]) -> tuple[Predictions, dict[str, date]]:
                 (datetime.fromisoformat(when), height)
                 for when, height in data["hourly"]
             ),
+            datum=data.get("datum", "MLLW"),
+            name=data.get("name"),
+            notice=data.get("notice"),
         )
         for station, data in stored["tides"].items()
     }
@@ -772,5 +863,12 @@ def _from_store(stored: dict[str, Any]) -> tuple[Predictions, dict[str, date]]:
         )
         for station, data in stored["currents"].items()
     }
-    fetched = {key: date.fromisoformat(day) for key, day in stored["fetched"].items()}
-    return Predictions(tides, currents), fetched
+    return Predictions(tides, currents), {
+        key: _aware(datetime.fromisoformat(when))
+        for key, when in stored["fetched"].items()
+    }
+
+
+def _aware(when: datetime) -> datetime:
+    """Return a time in UTC; days saved by earlier versions start at midnight."""
+    return when if when.tzinfo else when.replace(tzinfo=UTC)

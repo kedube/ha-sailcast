@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 import json
+import math
 from pathlib import Path
 import re
 from typing import Any
@@ -32,11 +33,14 @@ from custom_components.sailcast.const import (
 )
 from custom_components.sailcast.providers import (
     metar,
+    meteoalarm,
     ndbc,
     noaa_coops,
     nws,
     open_meteo,
     openfreemap,
+    rws,
+    worldtides,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -66,11 +70,26 @@ STATION_NAMES = {
 TILE_URL = re.compile(
     r"^https://tiles\.openfreemap\.org/planet/[^/]+/(\d+)/(\d+)/(\d+)\.pbf"
 )
+# Spots outside the US, in the Solent, the Wadden Sea and on Lake Garda, with
+# their recordings made at 2:30 PM UTC the next day. Vlissingen had a
+# MeteoAlarm warning in effect then.
+WORLD_RECORDED = datetime(2026, 11, 3, 14, 30, tzinfo=UTC)
+SOLENT_POINT = (50.785, -1.305)
+WADDEN_POINT = (53.18, 5.38)
+GARDA_POINT = (45.8, 10.83)
+WORLD_POINTS = (SOLENT_POINT, WADDEN_POINT, GARDA_POINT)
+VLISSINGEN_POINT = (51.44, 3.57)
+WORLDTIDES_KEY = "made-up-worldtides-key"
 
 
 def fixture(name: str) -> Any:
     """Return a recorded response."""
     return json.loads((FIXTURES / f"{name}.json").read_text())
+
+
+def text_fixture(name: str) -> str:
+    """Return a recorded response that isn't JSON."""
+    return (FIXTURES / name).read_text()
 
 
 def with_stations(
@@ -141,6 +160,22 @@ RIVER = _spot(
     tide_station="9410196",
     marine_zone="PZZ740",
 )
+SOLENT = _spot(
+    "solent",
+    SOLENT_POINT,
+    "bay",
+    tide_station="worldtides",
+    marine_zone="meteoalarm",
+)
+WADDEN = _spot(
+    "wadden",
+    WADDEN_POINT,
+    "bay",
+    tide_station="rws:harlingen.waddenzee",
+    marine_zone="meteoalarm",
+    source_names={"tide_station": "Harlingen, Waddenzee"},
+)
+GARDA = _spot("garda", GARDA_POINT, "lake", marine_zone="meteoalarm")
 KEELBOAT = ConfigSubentryData(
     data={"size_class": "small_keelboat", "length": 6.096},
     subentry_id="boat_keelboat",
@@ -235,18 +270,26 @@ def sailcast_entry(hass: HomeAssistant) -> MockConfigEntry:
     return entry
 
 
-def by_point(name: str, points: tuple[tuple[float, float], ...]) -> Any:
+def by_point(
+    name: str,
+    points: tuple[tuple[float, float], ...],
+    stand_ins: dict[tuple[float, float], tuple[float, float]] | None = None,
+) -> Any:
     """Answer an Open-Meteo request with the recorded place for each point.
 
-    One place comes back on its own, as Open-Meteo sends it.
+    `stand_ins` answers other points with a recorded one's place. One place
+    comes back on its own, as Open-Meteo sends it.
     """
     places = fixture(name)
+    if isinstance(places, dict):
+        places = [places]
+    stand_ins = stand_ins or {}
 
     async def respond(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
         lats = [float(value) for value in url.query["latitude"].split(",")]
         lons = [float(value) for value in url.query["longitude"].split(",")]
         chosen = [
-            places[points.index((lat, lon))]
+            places[points.index(stand_ins.get((lat, lon), (lat, lon)))]
             for lat, lon in zip(lats, lons, strict=True)
         ]
         return AiohttpClientMockResponse(
@@ -330,6 +373,9 @@ def mock_tiles(aioclient_mock: AiohttpClientMocker) -> None:
         assert match is not None
         z, x, y = match.groups()
         path = FIXTURES / "tiles" / z / x / f"{y}.pbf"
+        if not path.exists():
+            # Only the lake abroad's tiles were recorded.
+            return AiohttpClientMockResponse(method, url, status=404)
         return AiohttpClientMockResponse(method, url, response=path.read_bytes())
 
     aioclient_mock.get(TILE_URL, side_effect=respond)
@@ -511,3 +557,191 @@ async def family(hass: HomeAssistant, tmp_path: Path) -> str:
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     return "calendar.family"
+
+
+def meteoalarm_geocodes() -> dict[str, Any]:
+    """Return made-up MeteoAlarm region outlines around the spots abroad.
+
+    MeteoAlarm's own outlines aren't openly licensed, so these are rough
+    boxes with the real regions' codes: the Wadden spot in two regions, and
+    Garda's in Veneto with Lombardia and Trentino within a few kilometers.
+    """
+
+    def box(code: str, name: str, *bounds: float) -> dict[str, Any]:
+        south, north, west, east = bounds
+        ring = [
+            [west, south],
+            [east, south],
+            [east, north],
+            [west, north],
+            [west, south],
+        ]
+        return {
+            "type": "Feature",
+            "properties": {
+                "code": code,
+                "country": code[:2],
+                "name": name,
+                "type": "EMMA_ID",
+            },
+            "geometry": {"type": "Polygon", "coordinates": [ring]},
+        }
+
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            box("NL801", "Vlissingen", 51.3, 51.6, 3.2, 3.9),
+            box("NL806", "Waddenzee", 53.0, 53.5, 4.8, 6.0),
+            box("NL809", "Harlingen", 53.1, 53.25, 5.2, 5.5),
+            box("NL017", "Friesland", 52.7, 53.05, 5.4, 6.4),
+            box("IT006", "Veneto", 45.0, 46.0, 10.82, 12.5),
+            box("IT003", "Lombardia", 45.0, 46.3, 9.0, 10.8),
+            box("IT002", "Trentino Alto Adige", 45.83, 47.0, 10.4, 12.0),
+        ],
+    }
+
+
+def worldtides_response(heights: bool = True) -> Any:
+    """Answer a WorldTides request with made-up predictions in its shape.
+
+    The tide is a plain 12.42-hour wave, 1.5 m either side of 2 m above
+    chart datum, high at the start of the request.
+    """
+    period = 44_712
+
+    async def respond(method: str, url: URL, data: Any) -> AiohttpClientMockResponse:
+        if url.query.get("key") != WORLDTIDES_KEY:
+            return AiohttpClientMockResponse(
+                method,
+                url,
+                status=400,
+                json={"status": 400, "error": "API key is invalid"},
+            )
+        start = int(url.query["start"])
+        length = int(url.query["length"])
+        step = int(url.query["step"])
+
+        def height(when: int) -> float:
+            return round(2.0 + 1.5 * math.cos(2 * math.pi * (when - start) / period), 3)
+
+        extremes = [
+            {
+                "dt": start + k * period // 2,
+                "height": height(start + k * period // 2),
+                "type": "Low" if k % 2 else "High",
+            }
+            for k in range(2 * length // period + 1)
+        ]
+        payload = {
+            "status": 200,
+            "callCount": 3,
+            "copyright": (
+                "Made-up predictions for SailCast's tests, in WorldTides' shape."
+            ),
+            "requestDatum": url.query["datum"],
+            "responseDatum": "CD",
+            "station": "Test gauge",
+            "extremes": extremes,
+        }
+        if heights:
+            payload["heights"] = [
+                {"dt": when, "height": height(when)}
+                for when in range(start, start + length + 1, step)
+            ]
+        return AiohttpClientMockResponse(method, url, json=payload)
+
+    return respond
+
+
+def mock_world(
+    aioclient_mock: AiohttpClientMocker,
+    stand_ins: dict[tuple[float, float], tuple[float, float]] | None = None,
+) -> None:
+    """Answer every provider request for the spots abroad with recordings.
+
+    WorldTides' predictions and MeteoAlarm's region outlines are made up.
+    `stand_ins` answers the forecast for other pins with a recorded spot's.
+    """
+    aioclient_mock.get(
+        open_meteo.FORECAST_URL,
+        params={
+            "models": ",".join(open_meteo.MODELS),
+            "hourly": ",".join(open_meteo.FORECAST_VARIABLES),
+        },
+        side_effect=by_point("open_meteo_forecast_world", WORLD_POINTS, stand_ins),
+    )
+    aioclient_mock.get(
+        open_meteo.MARINE_URL,
+        params={"hourly": ",".join(open_meteo.MARINE_VARIABLES)},
+        side_effect=by_point("open_meteo_marine_world", WORLD_POINTS[:2], stand_ins),
+    )
+    aioclient_mock.get(
+        open_meteo.MARINE_URL,
+        params={"hourly": open_meteo.SEA_LEVEL_VARIABLE},
+        side_effect=by_point("open_meteo_sea_level_solent", WORLD_POINTS[:1]),
+    )
+    aioclient_mock.get(
+        open_meteo.ENSEMBLE_URL,
+        side_effect=by_point("open_meteo_spread_world", WORLD_POINTS, stand_ins),
+    )
+
+    async def rws_respond(
+        method: str, url: URL, data: Any
+    ) -> AiohttpClientMockResponse:
+        kind = data["AquoPlusWaarnemingMetadata"]["AquoMetadata"]["Grootheid"]["Code"]
+        name = "heights" if kind == "WATHTE" else "kinds"
+        return AiohttpClientMockResponse(
+            method, url, json=fixture(f"rws_harlingen_{name}")
+        )
+
+    aioclient_mock.post(rws.DATA_URL, side_effect=rws_respond)
+    aioclient_mock.post(rws.CATALOGUE_URL, json=fixture("rws_catalogue"))
+    aioclient_mock.get(worldtides.API, side_effect=worldtides_response())
+    for country in ("NL", "UK", "IT"):
+        aioclient_mock.get(
+            meteoalarm.FEED_URL.format(slug=meteoalarm.COUNTRIES[country][0]),
+            text=text_fixture(f"meteoalarm_{country.lower()}.xml"),
+        )
+    for path in FIXTURES.glob("meteoalarm_cap_*.xml"):
+        uuid = path.stem.removeprefix("meteoalarm_cap_")
+        aioclient_mock.get(
+            f"https://feeds.meteoalarm.org/api/v1/warnings/feeds-netherlands/{uuid}",
+            text=path.read_text(),
+        )
+    aioclient_mock.get(
+        meteoalarm.GEOCODES_LIST,
+        json=[{"name": "MeteoAlarm_Geocodes_2026_07_31.json", "type": "blob"}],
+    )
+    aioclient_mock.get(
+        meteoalarm.GEOCODES_URL.format(name="MeteoAlarm_Geocodes_2026_07_31.json"),
+        text=json.dumps(meteoalarm_geocodes()),
+    )
+    mock_tiles(aioclient_mock)
+
+
+@pytest.fixture
+def world_entry(hass: HomeAssistant) -> MockConfigEntry:
+    """Return an entry with the three spots abroad, a WorldTides key and a sailor."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=NAME,
+        data={},
+        options={"worldtides_key": WORLDTIDES_KEY},
+        subentries_data=[SOLENT, WADDEN, GARDA, KEELBOAT, CRUISER, BEGINNER],
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+async def set_up_abroad(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """Set an entry up in Amsterdam's time, when the spots abroad were recorded."""
+    await hass.config.async_set_time_zone("Europe/Amsterdam")
+    freezer.move_to(WORLD_RECORDED)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    freezer.tick(timedelta(seconds=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    freezer.move_to(WORLD_RECORDED)

@@ -14,30 +14,12 @@ from typing import Any, Final
 
 import aiohttp
 
-from . import ProviderError, fetch_json
+from . import ProviderError, Station, TideEvent, Tides, fetch_json
 
 DATA_URL: Final = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 STATIONS_URL: Final = "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi"
 APPLICATION: Final = "SailCast"
 HOURS: Final = 240  # ten days
-
-
-@dataclass(frozen=True, slots=True)
-class TideEvent:
-    """A high or low tide, in meters above the station's chart datum."""
-
-    time: datetime
-    height: float
-    high: bool
-
-
-@dataclass(frozen=True, slots=True)
-class Tides:
-    """A tide station's predictions. Subordinate stations have no hourly heights."""
-
-    station: str
-    events: tuple[TideEvent, ...]
-    hourly: tuple[tuple[datetime, float], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,16 +41,6 @@ class Currents:
     events: tuple[CurrentEvent, ...]
     flood_direction: float | None
     ebb_direction: float | None
-
-
-@dataclass(frozen=True, slots=True)
-class Station:
-    """A tide or current station."""
-
-    id: str
-    name: str
-    latitude: float
-    longitude: float
 
 
 async def async_get_tides(
@@ -125,8 +97,9 @@ async def async_tide_stations_near(
                 latitude=float(item["lat"]),
                 longitude=float(item["lon"]),
             )
+            # Far from any station, the list is null.
             for item in sorted(
-                payload["stationList"], key=lambda item: item["distance"]
+                payload["stationList"] or (), key=lambda item: item["distance"]
             )
         ]
     except (KeyError, TypeError, ValueError) as err:

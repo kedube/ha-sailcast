@@ -51,18 +51,18 @@
         },
         "sources": {
           "title": "Data sources",
-          "description": "SailCast suggests the nearest sources. Tide and current predictions come from NOAA, warnings from the National Weather Service and buoys from NDBC, so for now those cover US waters only. Airport reports come from anywhere.",
+          "description": "SailCast suggests the nearest sources. Tides come from NOAA in the US, the Canadian Hydrographic Service in Canada, Rijkswaterstaat in the Netherlands and Kartverket in Norway, and anywhere from WorldTides if you add its key in SailCast's options. Warnings come from the National Weather Service in the US and Environment and Climate Change Canada. Buoys come from NDBC, and airport reports from anywhere.",
           "data": {
             "tide_station": "Tide station",
             "current_station": "Current station",
-            "marine_zone": "Marine warning zone",
+            "marine_zone": "Official warnings",
             "buoy": "Buoy",
             "airport": "Airport"
           },
           "data_description": {
-            "tide_station": "For tide heights, highs and lows.",
+            "tide_station": "For tide heights, highs and lows. The ocean model's tide is rough, often an hour or more off near the coast, so it's only there to pick by hand when nothing else covers the spot.",
             "current_station": "For the wind-against-current rule. Pick one only if it's close to where you sail.",
-            "marine_zone": "Official warnings, such as a Small Craft Advisory, come from this zone.",
+            "marine_zone": "Official warnings, such as a Small Craft Advisory, come from here. On a lake with no marine zone, pick the National Weather Service's alerts at the pin.",
             "buoy": "Readings of wind, waves and water temperature from a buoy or coastal station. Each reading counts while it's fresh, and nudges the next few hours.",
             "airport": "Hourly reports of wind, visibility and air temperature. If there's a choice, pick one near the water."
           },
@@ -449,16 +449,38 @@
       "description": "{sensor} hasn't reported for 12 hours, so {spots} use other readings or the forecast. Check the sensor, or take it out of {spots} in SailCast's settings."
     },
     "failing_tide": {
-      "title": "Tide station {station} isn't answering",
-      "description": "NOAA hasn't returned predictions for tide station {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station."
+      "title": "Tide predictions for {station} aren't coming",
+      "description": "{provider} hasn't returned tide predictions for {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another tide source."
     },
     "failing_current": {
       "title": "Current station {station} isn't answering",
-      "description": "NOAA hasn't returned predictions for current station {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station, or none."
+      "description": "{provider} hasn't returned predictions for current station {station} for a day. {spots} use the predictions SailCast saved earlier while they still cover the week. If it keeps failing, edit {spots} in SailCast's settings and pick another station, or none."
     },
     "budget_low": {
       "title": "Open-Meteo's free calls are running low",
       "description": "SailCast has used {calls} of Open-Meteo's 10,000 free calls today, so it now updates the forecast every three hours instead of every hour, and the wind map rests until tomorrow. Anything else on the same internet connection shares the allowance. The count starts again at midnight UTC."
+    },
+    "worldtides_key_missing": {
+      "title": "WorldTides needs a key",
+      "description": "{spots} get their tides from WorldTides, but SailCast has no WorldTides key. Add your key in SailCast's options (Settings → Devices & services → SailCast → Configure), or edit {spots} in SailCast's settings and pick another tide source."
+    },
+    "worldtides_key_rejected": {
+      "title": "WorldTides refused SailCast's key",
+      "description": "WorldTides answered: \"{error}\". Check the key in SailCast's options (Settings → Devices & services → SailCast → Configure) and your account's credits at worldtides.info. Until then, {spots} use the tide predictions SailCast saved while they last."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "API keys",
+        "description": "Keys for providers that need one. They stay in Home Assistant and never reach the panel.",
+        "data": {
+          "worldtides_key": "WorldTides API key"
+        },
+        "data_description": {
+          "worldtides_key": "Tide predictions anywhere, from worldtides.info, with your own account. A spot that uses it costs about 3 credits every five days. Leave empty to remove the key."
+        }
+      }
     }
   }
 }

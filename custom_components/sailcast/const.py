@@ -44,6 +44,7 @@ CONF_START: Final = "start"
 CONF_TIDE_STATION: Final = "tide_station"
 CONF_USER: Final = "user"
 CONF_WATER_TYPE: Final = "water_type"
+CONF_WORLDTIDES_KEY: Final = "worldtides_key"
 
 # Sent whenever the results, planned sails or profiles change, so open panels
 # can ask for the forecast again.

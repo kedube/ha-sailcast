@@ -14,6 +14,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     ConfigSubentry,
     ConfigSubentryFlow,
+    OptionsFlow,
     SubentryFlowResult,
 )
 from homeassistant.const import (
@@ -43,6 +44,8 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
     TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
     TimeSelector,
 )
 from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
@@ -84,6 +87,7 @@ from .const import (
     CONF_TIDE_STATION,
     CONF_USER,
     CONF_WATER_TYPE,
+    CONF_WORLDTIDES_KEY,
     DOMAIN,
     NAME,
     SUBENTRY_BOAT,
@@ -138,6 +142,42 @@ class SailCastConfigFlow(ConfigFlow, domain=DOMAIN):
             SUBENTRY_BOAT: BoatFlow,
             SUBENTRY_SAILOR: SailorFlow,
         }
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Return the options: API keys for providers that need one."""
+        return SailCastOptionsFlow()
+
+
+class SailCastOptionsFlow(OptionsFlow):
+    """Set the API keys for optional providers. Saving reloads SailCast."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the keys. An empty field removes a key."""
+        if user_input is not None:
+            return self.async_create_entry(
+                data={
+                    key: value.strip()
+                    for key, value in user_input.items()
+                    if value and value.strip()
+                }
+            )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                probatio.Schema(
+                    {
+                        probatio.Optional(CONF_WORLDTIDES_KEY): TextSelector(
+                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                        )
+                    }
+                ),
+                dict(self.config_entry.options),
+            ),
+        )
 
 
 class ProfileFlow(ConfigSubentryFlow, ABC):
@@ -293,7 +333,10 @@ class SpotFlow(ProfileFlow):
                 subentry,
             )
         suggestions = await async_suggest(
-            self.hass, data[CONF_LATITUDE], data[CONF_LONGITUDE]
+            self.hass,
+            data[CONF_LATITUDE],
+            data[CONF_LONGITUDE],
+            worldtides=bool(self._get_entry().options.get(CONF_WORLDTIDES_KEY)),
         )
         choices = {
             CONF_TIDE_STATION: suggestions.tide,
@@ -392,15 +435,17 @@ class SpotFlow(ProfileFlow):
         return UnitOfLength.KILOMETERS
 
     def _label(self, key: str, choice: Choice) -> str:
-        """Label a source with its name, ID and distance."""
-        station = choice.id.partition("_")[0]
-        if key == CONF_MARINE_ZONE and choice.distance_km == 0:
-            return f"{choice.name} ({station})"
+        """Label a source with its name, code and distance, where it has them."""
+        label = choice.name
+        if choice.code:
+            label += f" ({choice.code.partition('_')[0]})"
+        if choice.distance_km is None or (
+            key == CONF_MARINE_ZONE and choice.distance_km == 0
+        ):
+            return label
         if self.hass.config.units.length_unit == UnitOfLength.MILES:
-            distance = f"{choice.distance_km / 1.609344:.1f} mi"
-        else:
-            distance = f"{choice.distance_km:.1f} km"
-        return f"{choice.name} ({station}), {distance}"
+            return f"{label}, {choice.distance_km / 1.609344:.1f} mi"
+        return f"{label}, {choice.distance_km:.1f} km"
 
     def _schema(self) -> probatio.Schema:
         return probatio.Schema(

@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import json
 
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.diagnostics import (
     async_get_config_entry_diagnostics,
     safe_error,
 )
 from custom_components.sailcast.providers import ProviderError
+
+from .conftest import WORLDTIDES_KEY, mock_world, set_up_abroad
 
 
 async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
@@ -103,3 +107,33 @@ def test_errors_without_addresses() -> None:
     assert safe_error(error) == "ProviderError: www.ndbc.noaa.gov returned 404"
     assert safe_error(ValueError("near 32.7500,-117.2700")) == "ValueError: near …,…"
     assert safe_error(None) is None
+
+
+def test_errors_without_stations() -> None:
+    """Errors leave out every station and zone the spots use."""
+    error = ProviderError(
+        "Rijkswaterstaat has no predictions for rws:harlingen.waddenzee: busy"
+    )
+    assert (
+        safe_error(error, {"rws:harlingen.waddenzee", "harlingen.waddenzee"})
+        == "ProviderError: Rijkswaterstaat has no predictions for …: busy"
+    )
+
+
+async def test_diagnostics_abroad(
+    hass: HomeAssistant,
+    world_entry: MockConfigEntry,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Diagnostics say a key is set and where tides come from, never the key."""
+    mock_world(aioclient_mock)
+    await set_up_abroad(hass, world_entry, freezer)
+    diagnostics = await async_get_config_entry_diagnostics(hass, world_entry)
+    text = json.dumps(diagnostics)
+    for private in (WORLDTIDES_KEY, "harlingen", "50.785", "53.18", "Wadden"):
+        assert private not in text, private
+    assert diagnostics["worldtides_key_set"]
+    spots = diagnostics["results"]["spots"]
+    assert {spot["tide_provider"] for spot in spots} == {"worldtides", "rws", None}
+    assert {spot["warnings_provider"] for spot in spots} == {"meteoalarm"}
