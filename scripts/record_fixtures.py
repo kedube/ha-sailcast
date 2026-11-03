@@ -2,23 +2,27 @@
 """Record the provider responses the tests run on.
 
 The test spots are made-up places in San Diego, far from anywhere the
-maintainer sails, so the recordings need no anonymizing. Large responses are
-trimmed: station and zone lists keep only the San Diego area, zone shapes keep
-a few hundred points, and map tiles keep only their water.
+maintainer sails, so the recordings need no anonymizing. Three more, in the
+Solent, the Wadden Sea and on Lake Garda, test sources outside the US. Large
+responses are trimmed: station and zone lists keep only the test spots'
+areas, zone shapes keep a few hundred points, and map tiles keep only their
+water. Canada's tide predictions can't be passed on under CHS's licence, and
+WorldTides needs a key, so their tests use made-up predictions instead.
 
 Readings from buoys and airports are cut to what a fetch at `--as-of` would
 have seen, so they can line up with forecasts recorded earlier. Name groups to
 record only those.
 
 Usage: .venv/bin/python scripts/record_fixtures.py [--as-of TIME] [GROUP ...]
-Groups: forecast, tides, stations, nws, observations, spread, shoreline
+Groups: forecast, tides, stations, nws, observations, spread, shoreline, world,
+meteoalarm
 """
 
 from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import gzip
 import json
 import math
@@ -35,7 +39,14 @@ import certifi
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from custom_components.sailcast.providers import open_meteo, openfreemap
+from custom_components.sailcast.providers import (
+    eccc,
+    kartverket,
+    meteoalarm,
+    open_meteo,
+    openfreemap,
+    rws,
+)
 
 OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures"
 USER_AGENT = "SailCast tests (https://github.com/kedube/ha-sailcast)"
@@ -57,6 +68,21 @@ SHORE_KM = openfreemap.REACH_KM
 SHORE_ZOOM = openfreemap.ZOOM
 ZONES = ("PZZ740", "PZZ745")
 NEAR_KM = 40
+# Name, latitude, longitude, water type: spots outside the US.
+WORLD = (
+    ("Solent", 50.785, -1.305, "bay"),
+    ("Wadden", 53.18, 5.38, "bay"),
+    ("Garda", 45.8, 10.83, "lake"),
+)
+# Dutch tides at Harlingen, Norwegian ones near Bergen, a lake's NWS alerts
+# (Lake Tahoe, which gets Lake Wind Advisories), and a Canadian marine area.
+RWS_STATION = "harlingen.waddenzee"
+# MeteoAlarm's regions near the Wadden and Garda spots, and Vlissingen's,
+# which had a warning in effect when they were recorded.
+METEOALARM_REGIONS = ("NL801", "NL806", "NL809", "IT002", "IT003", "IT006")
+BERGEN = (60.39, 5.32)
+LAKE_PIN = (39.09, -120.04)
+HALIFAX = (44.63, -63.55)
 
 MODELS = "ecmwf_ifs,ncep_gfs_seamless,dwd_icon_seamless"
 FORECAST_VARIABLES = (
@@ -83,6 +109,17 @@ def get(url: str, params: dict[str, Any] | None = None) -> Any:
         if 400 <= err.code < 500:
             return json.load(err)
         raise
+
+
+def post(url: str, body: Any) -> Any:
+    """Return the JSON a URL answers a posted JSON body with."""
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(body).encode(),
+        headers={"User-Agent": USER_AGENT, "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(request, context=CONTEXT, timeout=60) as response:
+        return json.load(response)
 
 
 def get_bytes(url: str, headers: dict[str, str] | None = None) -> bytes:
@@ -416,6 +453,194 @@ def record_shoreline(as_of: datetime) -> None:
         )
 
 
+def record_world(as_of: datetime) -> None:
+    """Record the forecast, tides, warnings and shorelines for spots abroad."""
+    points = {
+        "latitude": ",".join(str(spot[1]) for spot in WORLD),
+        "longitude": ",".join(str(spot[2]) for spot in WORLD),
+        "timeformat": "unixtime",
+        "timezone": "GMT",
+        "past_days": 1,
+        "forecast_days": 7,
+    }
+    save(
+        "open_meteo_forecast_world",
+        get(
+            "https://api.open-meteo.com/v1/forecast",
+            points
+            | {
+                "hourly": FORECAST_VARIABLES,
+                "models": MODELS,
+                "wind_speed_unit": "kn",
+            },
+        ),
+    )
+    save(
+        "open_meteo_spread_world",
+        get(
+            "https://ensemble-api.open-meteo.com/v1/ensemble",
+            points
+            | {
+                "hourly": "wind_speed_10m_spread",
+                "models": "ecmwf_ifs025_ensemble_mean",
+                "wind_speed_unit": "kn",
+            },
+        ),
+    )
+    sea = [spot for spot in WORLD if spot[3] != "lake"]
+    sea_points = points | {
+        "latitude": ",".join(str(spot[1]) for spot in sea),
+        "longitude": ",".join(str(spot[2]) for spot in sea),
+        "cell_selection": "sea",
+    }
+    save(
+        "open_meteo_marine_world",
+        get(
+            "https://marine-api.open-meteo.com/v1/marine",
+            sea_points | {"hourly": MARINE_VARIABLES},
+        ),
+    )
+    solent = WORLD[0]
+    save(
+        "open_meteo_sea_level_solent",
+        get(
+            "https://marine-api.open-meteo.com/v1/marine",
+            points
+            | {
+                "latitude": solent[1],
+                "longitude": solent[2],
+                "hourly": open_meteo.SEA_LEVEL_VARIABLE,
+                "cell_selection": "sea",
+            },
+        ),
+    )
+    record_rws(as_of)
+    begin = as_of.replace(hour=0, minute=0, second=0, microsecond=0)
+    for datatype, extra in (("tab", ""), ("pre", "&interval=60")):
+        url = (
+            f"{kartverket.API}?tide_request=locationdata&lat={BERGEN[0]:.4f}"
+            f"&lon={BERGEN[1]:.4f}&fromtime={begin:%Y-%m-%dT%H:%M}"
+            f"&totime={begin + timedelta(days=kartverket.DAYS):%Y-%m-%dT%H:%M}"
+            f"&refcode=cd&tzone=0&lang=en&datatype={datatype}{extra}"
+        )
+        save_raw(f"kartverket_bergen_{datatype}.xml", get_bytes(url))
+    save(
+        "nws_alerts_lake",
+        get(f"{NWS}/alerts/active", {"point": f"{LAKE_PIN[0]:.4f},{LAKE_PIN[1]:.4f}"}),
+    )
+    search = get(
+        eccc.API,
+        {
+            "f": "json",
+            "skipGeometry": "true",
+            "bbox": f"{HALIFAX[1] - 0.01:.4f},{HALIFAX[0] - 0.01:.4f},"
+            f"{HALIFAX[1] + 0.01:.4f},{HALIFAX[0] + 0.01:.4f}",
+        },
+    )
+    save("eccc_areas_halifax", search)
+    area = search["features"][0]["id"]
+    save(
+        f"eccc_area_{area}",
+        get(f"{eccc.API}/{area}", {"f": "json", "skipGeometry": "true"}),
+    )
+    record_meteoalarm(as_of)
+    # Only a lake's waves are worked out from its shoreline in the tests.
+    tilejson = get(openfreemap.TILEJSON_URL)
+    template = tilejson["tiles"][0]
+    tiles = set()
+    for spot in WORLD:
+        if spot[3] == "lake":
+            tiles.update(
+                openfreemap.tiles_around(spot[1], spot[2], SHORE_KM, SHORE_ZOOM)
+            )
+    for z, x, y in sorted(tiles):
+        url = template.format(z=z, x=x, y=y)
+        save_raw(
+            f"tiles/{z}/{x}/{y}.pbf", openfreemap.only_layer(get_bytes(url), "water")
+        )
+
+
+def record_meteoalarm(as_of: datetime) -> None:
+    """Record MeteoAlarm's feeds for the spots' countries, and their warnings' text.
+
+    The text is kept for warnings in the spots' regions, or whose outline
+    holds the Solent's pin. MeteoAlarm's region outlines aren't openly
+    licensed, so the tests use made-up ones with the same codes.
+    """
+    solent = WORLD[0]
+    for country in ("NL", "UK", "IT"):
+        text = get_bytes(
+            meteoalarm.FEED_URL.format(slug=meteoalarm.COUNTRIES[country][0])
+        ).decode()
+        save_raw(f"meteoalarm_{country.lower()}.xml", text.encode())
+        for warning in meteoalarm.parse_feed(text):
+            if set(warning.regions) & set(METEOALARM_REGIONS) or meteoalarm.applies(
+                warning, meteoalarm.Place((), ()), solent[1], solent[2]
+            ):
+                uuid = warning.link.rsplit("/", 1)[1]
+                save_raw(f"meteoalarm_cap_{uuid}.xml", get_bytes(warning.link))
+
+
+def record_rws(as_of: datetime) -> None:
+    """Record Rijkswaterstaat's stations with tides, and Harlingen's tides."""
+    catalogue = post(rws.CATALOGUE_URL, rws.CATALOGUE)
+    stations = {station.id for station in rws.parse_stations(catalogue)}
+    places = {
+        item["Locatie_MessageID"]
+        for item in catalogue["LocatieLijst"]
+        if item["Code"] in stations
+    }
+    wanted = {
+        item["AquoMetadata_MessageID"]
+        for item in catalogue["AquoMetadataLijst"]
+        if item.get("ProcesType") == "astronomisch"
+        and item.get("Grootheid", {}).get("Code") == "WATHTE"
+    }
+    save(
+        "rws_catalogue",
+        {
+            "Succesvol": catalogue["Succesvol"],
+            "AquoMetadataLijst": [
+                item
+                for item in catalogue["AquoMetadataLijst"]
+                if item["AquoMetadata_MessageID"] in wanted
+            ],
+            "AquoMetadataLocatieLijst": [
+                link
+                for link in catalogue["AquoMetadataLocatieLijst"]
+                if link["AquoMetaData_MessageID"] in wanted
+                and link["Locatie_MessageID"] in places
+            ],
+            "LocatieLijst": [
+                item
+                for item in catalogue["LocatieLijst"]
+                if item["Locatie_MessageID"] in places
+            ],
+        },
+    )
+    begin = (as_of - timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    period = {
+        "Begindatumtijd": begin.strftime("%Y-%m-%dT%H:%M:%S.000+00:00"),
+        "Einddatumtijd": (begin + timedelta(days=rws.DAYS)).strftime(
+            "%Y-%m-%dT%H:%M:%S.000+00:00"
+        ),
+    }
+    for name, metadata in (("heights", rws.EXTREMES), ("kinds", rws.KINDS)):
+        save(
+            f"rws_{RWS_STATION.split('.', maxsplit=1)[0]}_{name}",
+            post(
+                rws.DATA_URL,
+                {
+                    "Locatie": {"Code": RWS_STATION},
+                    "AquoPlusWaarnemingMetadata": {"AquoMetadata": metadata},
+                    "Periode": period,
+                },
+            ),
+        )
+
+
 GROUPS: dict[str, Callable[[datetime], None]] = {
     "forecast": record_forecast,
     "tides": record_tides,
@@ -424,6 +649,8 @@ GROUPS: dict[str, Callable[[datetime], None]] = {
     "observations": record_observations,
     "spread": record_spread,
     "shoreline": record_shoreline,
+    "world": record_world,
+    "meteoalarm": record_meteoalarm,
 }
 
 

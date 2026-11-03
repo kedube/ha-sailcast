@@ -1,0 +1,158 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "lastUpdated": "2026-11-03T13:54:34Z",
+    "area": {
+     "countryCode": {
+      "en": "CA",
+      "fr": "CA"
+     },
+     "region": {
+      "en": "Atlantic Coast",
+      "fr": "Côte Atlantique"
+     },
+     "subRegion": {
+      "en": "Maritimes",
+      "fr": "Maritimes"
+     },
+     "value": {
+      "en": "Halifax Harbour and Approaches",
+      "fr": "port d'Halifax et ses abords"
+     }
+    },
+    "regularForecast": {
+     "locations": [
+      {
+       "weatherCondition": {
+        "periodOfCoverage": {
+         "en": "Today Tonight and Wednesday.",
+         "fr": "aujourd'hui cette nuit et mercredi."
+        },
+        "weatherVisibility": {
+         "en": "Periods of rain overnight and Wednesday.",
+         "fr": "Pluie intermittente cette nuit et mercredi."
+        },
+        "airTemperature": {
+         "en": "Temperatures near plus 11.",
+         "fr": "Température près de plus 11."
+        },
+        "wind": {
+         "en": "Wind light increasing to southeasterly 10 to 15 knots this evening and to southeast 20 early Wednesday morning. Wind diminishing to southwest 15 Wednesday afternoon.",
+         "fr": "Vent léger augmentant du secteur sud-est à 10 à 15 noeuds ce soir et du sud-est à 20 tôt mercredi matin. Vent diminuant du sud-ouest à 15 mercredi après-midi."
+        }
+       }
+      }
+     ],
+     "issuedDatetimeUTC": "2026-11-03T14:00:00Z",
+     "issuedDatetimeLocal": "2026-11-03T10:00:00-04:00"
+    },
+    "extendedForecast": {
+     "locations": [
+      {
+       "weatherCondition": {
+        "forecastPeriods": [
+         {
+          "name": {
+           "en": "Thursday",
+           "fr": "Jeudi"
+          },
+          "value": {
+           "en": "Wind southwest 15 to 20 knots.",
+           "fr": "Vent du sud-ouest de 15 à 20 noeuds."
+          }
+         },
+         {
+          "name": {
+           "en": "Friday",
+           "fr": "Vendredi"
+          },
+          "value": {
+           "en": "Wind southwest 15 knots.",
+           "fr": "Vent du sud-ouest à 15 noeuds."
+          }
+         },
+         {
+          "name": {
+           "en": "Saturday",
+           "fr": "Samedi"
+          },
+          "value": {
+           "en": "Wind southerly 15 to 20 knots.",
+           "fr": "Vent du secteur sud de 15 à 20 noeuds."
+          }
+         }
+        ]
+       }
+      }
+     ],
+     "issuedDatetimeUTC": "2026-11-03T07:00:00Z",
+     "issuedDatetimeLocal": "2026-11-03T03:00:00-04:00"
+    },
+    "warnings": {
+     "locations": [
+      {
+       "name": {
+        "en": "Halifax Harbour and Approaches",
+        "fr": "port d'Halifax et ses abords"
+       },
+       "events": [
+        {
+         "name": {
+          "en": "Strong wind warning",
+          "fr": "Avertissement de vent fort"
+         },
+         "type": {
+          "en": "warning",
+          "fr": "avertissement"
+         },
+         "category": {
+          "en": "marine",
+          "fr": "maritime"
+         },
+         "status": {
+          "en": "IN EFFECT",
+          "fr": "EN VIGUEUR"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "id": "m0000053",
+   "geometry": null
+  }
+ ],
+ "numberMatched": 1,
+ "numberReturned": 1,
+ "links": [
+  {
+   "type": "application/geo+json",
+   "rel": "self",
+   "title": "This document as GeoJSON",
+   "href": "https://api.weather.gc.ca/collections/marineweather-realtime/items?f=json&skipGeometry=true&bbox=-63.5600,44.6200,-63.5400,44.6400"
+  },
+  {
+   "rel": "alternate",
+   "type": "application/ld+json",
+   "title": "This document as RDF (JSON-LD)",
+   "href": "https://api.weather.gc.ca/collections/marineweather-realtime/items?f=jsonld&skipGeometry=true&bbox=-63.5600,44.6200,-63.5400,44.6400"
+  },
+  {
+   "type": "text/html",
+   "rel": "alternate",
+   "title": "This document as HTML",
+   "href": "https://api.weather.gc.ca/collections/marineweather-realtime/items?f=html&skipGeometry=true&bbox=-63.5600,44.6200,-63.5400,44.6400"
+  },
+  {
+   "type": "application/json",
+   "title": "Marine forecasts and warnings [experimental]",
+   "rel": "collection",
+   "href": "https://api.weather.gc.ca/collections/marineweather-realtime"
+  }
+ ],
+ "timeStamp": "2026-11-03T14:30:57.596545Z"
+}
