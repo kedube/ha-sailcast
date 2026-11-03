@@ -20,3 +20,6 @@ config/*
 
 # macOS
 .DS_Store
+
+# Written by scripts/demo_data.py for the panel demo.
+frontend/demo/data.json
