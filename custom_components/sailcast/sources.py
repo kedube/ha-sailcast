@@ -36,11 +36,13 @@ DATA_CURRENT_STATIONS: HassKey[tuple[datetime, list[Station]]] = HassKey(
 
 @dataclass(frozen=True, slots=True)
 class Choice:
-    """A source a spot could use, and how far away it is."""
+    """A source a spot could use, how far away it is, and where, for stations."""
 
     id: str
     name: str
     distance_km: float
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +86,8 @@ async def async_suggest(
                     distance_km(
                         latitude, longitude, station.latitude, station.longitude
                     ),
+                    station.latitude,
+                    station.longitude,
                 )
                 for station in found
             ),

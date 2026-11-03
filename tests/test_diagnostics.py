@@ -57,6 +57,7 @@ async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None
     # time, and the count keeps going.
     assert diagnostics["open_meteo_calls_today"] == 27.6
     assert diagnostics["planned_sails"] == 0
+    assert diagnostics["wind_grids"] == []
     assert diagnostics["results"]["outlooks"] == 6
     assert [spot["hours"] for spot in diagnostics["results"]["spots"]] == [160] * 3
     spot = diagnostics["profiles"]["spots"][0]

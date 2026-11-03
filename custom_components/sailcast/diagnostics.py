@@ -12,6 +12,7 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
 from .coordinator import SailCastConfigEntry
+from .wind import DATA_WIND
 
 TO_REDACT = {
     "calendar",
@@ -48,6 +49,15 @@ async def async_get_config_entry_diagnostics(
         },
         "open_meteo_calls_today": round(data.budget.today, 1),
         "planned_sails": len(data.planner.store.planned),
+        # Counts and ages only: a grid's corners would show where it is.
+        "wind_grids": [
+            {
+                "points": grid.area.rows * grid.area.cols,
+                "spots": len(grid.area.spots),
+                "fetched": grid.fetched.isoformat(),
+            }
+            for grid in (hass.data[DATA_WIND].grids if DATA_WIND in hass.data else [])
+        ],
         "results": {
             "spots": [
                 {

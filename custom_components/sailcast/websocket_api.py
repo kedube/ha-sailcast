@@ -24,6 +24,7 @@ from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, WEEK
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, Unauthorized
 from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.loader import IntegrationNotLoaded, async_get_loaded_integration
 from homeassistant.util import dt as dt_util
@@ -65,9 +66,11 @@ from .const import (
 from .coordinator import SailCastConfigEntry, SailCastData
 from .limits import BOAT_LIMITS, SKILL_WIND_LIMITS
 from .planner import calendar_entity, supports
+from .providers import ProviderError
 from .sources import async_suggest, suggested
 from .storage import DATA_STORE, PREFERENCES, PlannedSail
 from .week import week
+from .wind import DATA_WIND, BudgetSpentError, WindGrids, areas
 
 # A sail added from the panel lasts at least an hour, and at most a day.
 SHORTEST_SAIL: Final = timedelta(hours=1)
@@ -173,6 +176,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
         ws_calendar_remove,
         ws_planned_list,
         ws_planned_skipped,
+        ws_wind_grid,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -550,7 +554,13 @@ async def ws_settings_sources(
         msg["id"],
         {
             key: [
-                {"id": choice.id, "name": choice.name, "distance": choice.distance_km}
+                {
+                    "id": choice.id,
+                    "name": choice.name,
+                    "distance": choice.distance_km,
+                    "latitude": choice.latitude,
+                    "longitude": choice.longitude,
+                }
                 for choice in options
             ]
             for key, options in choices.items()
@@ -704,3 +714,42 @@ def ws_planned_skipped(
             hass, data.planner.async_sync(), "sailcast planned sails"
         )
     connection.send_result(msg["id"], sorted(day.isoformat() for day in days))
+
+
+@websocket_api.websocket_command(
+    {
+        probatio.Required("type"): "sailcast/wind_grid",
+        probatio.Required("spot"): cv.string,
+    }
+)
+@websocket_api.async_response
+async def ws_wind_grid(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Send the wind map's grid for a spot, and the other spots it covers."""
+    if (data := _data(hass, connection, msg)) is None:
+        return
+    spots = data.profiles.spots
+    if msg["spot"] not in spots:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Unknown spot")
+        return
+    area = areas(spots.values())[msg["spot"]]
+    grids = hass.data.setdefault(DATA_WIND, WindGrids())
+    try:
+        grid, stale = await grids.async_get(
+            async_get_clientsession(hass), area, data.budget
+        )
+    except BudgetSpentError:
+        connection.send_error(
+            msg["id"],
+            "budget",
+            "Open-Meteo's free daily calls are nearly used up, so the wind map "
+            "is back tomorrow",
+        )
+        return
+    except ProviderError as err:
+        connection.send_error(msg["id"], "unavailable", str(err))
+        return
+    connection.send_result(msg["id"], grid.as_dict(dt_util.utcnow(), stale=stale))
