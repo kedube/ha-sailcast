@@ -53,6 +53,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
     )
     for source in data.sources.all:
         await source.async_refresh()
+    # Shorelines measured before are read first, so the first results have
+    # them; only new pins are measured in the background.
+    await data.sources.shorelines.async_load()
     await data.results.async_refresh()
     for unsubscribe in data.results.async_follow_sources():
         entry.async_on_unload(unsubscribe)
