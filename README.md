@@ -17,17 +17,38 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 > [!IMPORTANT]
 > SailCast is advisory. Official forecasts and warnings come first, and the skipper always decides.
 
+## What's in it
+
+- **Forecasts for the water:** wind and gusts from three weather models and waves, anywhere. Tides and official warnings in the US, Canada and Europe, currents in the US, and tides anywhere with a WorldTides key.
+- **Local corrections:** readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map.
+- **A sidebar panel:** the week as a calendar, each day hour by hour, an animated wind map, and the settings.
+- **Your own calendar:** sailing windows go into it one at a time or automatically, and SailCast warns you when a planned sail's forecast gets worse.
+- **Automations:** entities, a calendar, an action, and two blueprints for phone notifications.
+- **12 languages**, and an optional AI summary of each day.
+
+The [safety limits](docs/safety-limits.md) list every number the ratings use, and the [plan](docs/PLAN.md) explains the choices behind them.
+
 ## Status
 
-SailCast is in early development. Milestones 0 to 6 are done: SailCast fetches the forecast, rates every hour for every boat size, scores each sailor's boats and finds sailing windows. Readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map. Tides and official warnings come from the US, Canada and Europe, and tides anywhere with a WorldTides key. The sidebar panel shows the week as a calendar, each day hour by hour, an animated wind map, and the settings, and puts windows into your own calendar one at a time or automatically. Entities, a calendar and an action share the results with automations, and two blueprints turn them into phone notifications. SailCast is in 12 languages, and can summarize a day with the AI you've set up in Home Assistant. The [plan](docs/PLAN.md) describes everything SailCast will do and the order of work. The [safety limits](docs/safety-limits.md) list every number the ratings use.
+Version 1.0 is in beta, for testing before the stable release. Please [report problems](https://github.com/kedube/ha-sailcast/issues), above all a rating that doesn't match the conditions you saw.
 
 ## Install
 
-SailCast needs Home Assistant 2026.11 or newer. It isn't in the Marketplace's default catalog yet. Once a release is published, add `https://github.com/kedube/ha-sailcast` as a custom repository in Marketplace, with the type **Integration**. Then install SailCast and restart Home Assistant.
+SailCast needs Home Assistant 2026.11 or newer, and installs through the Marketplace.
+
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=kedube&repository=ha-sailcast&category=integration)
+
+1. Select the button above to add SailCast to your Marketplace as a custom repository. Or go to **Settings → Marketplace** and add `https://github.com/kedube/ha-sailcast` yourself, as an **Integration**. SailCast isn't in the Marketplace's catalog yet, and adding a repository from outside it needs the Marketplace connected to GitHub.
+2. While SailCast is in beta, turn on its **Pre-release** switch in the Marketplace before you install, so you get the beta.
+3. Install SailCast. You can set it up right away, without a restart.
+
+New versions show up under **Settings → Updates**, with their release notes. After an update, restart Home Assistant when **Settings → Repairs** asks you to.
 
 ## Set up
 
-1. Go to **Settings → Devices & services → Add integration** and pick **SailCast**.
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=sailcast)
+
+1. Select the button above, or go to **Settings → Devices & services → Add integration** and pick **SailCast**. It asks for nothing, and shows a safety note.
 2. Open **SailCast** in the sidebar, and add your spots, boats and sailors on its **Settings** tab. SailCast's page under Devices & services edits the same settings.
    - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station, source of official warnings, buoy and airport; see [outside the US](#outside-the-us) for what each country has. You can add your own sensors too, such as a weather station on the dock.
    - **Boat:** a name, a size and a length.
@@ -36,6 +57,8 @@ SailCast needs Home Assistant 2026.11 or newer. It isn't in the Marketplace's de
 Only administrators can change settings. Everyone can pick their own spot, sailor and boat at the top of the panel, and SailCast remembers the choice on every device.
 
 Each sailor rates their own skill, which sets their limit for sustained wind: up to 10 kt for Beginner, 16 kt for Intermediate, and no limit for Advanced. Gusts don't count toward it.
+
+[docs/settings.md](docs/settings.md) describes every setting and option, with its default.
 
 ## The wind map
 
@@ -125,6 +148,48 @@ data:
   sailor: Alex
 response_variable: forecast
 ```
+
+Add `boat` to rate one of the sailor's other boats. An unknown spot, sailor or boat gives an error that names it.
+
+## How often it updates
+
+| What | How often |
+| --- | --- |
+| Forecast from three weather models | Every hour, or every 3 hours once Open-Meteo's free calls for the day run low |
+| Model agreement | Every 6 hours |
+| Waves | Every 3 hours |
+| Official warnings | Every 5 minutes |
+| Tide and current predictions | Once a day for each station; WorldTides about every five days |
+| Buoy readings | Every 20 minutes |
+| Airport reports | Every 30 minutes |
+| Your own sensors | Whenever the ratings are worked out, and live in the panel |
+| The wind map's grid | When you open the map, kept for 3 hours |
+
+Ratings, scores and windows are worked out again whenever new data comes in, and at the start of every hour.
+
+## Troubleshooting
+
+- **Settings → Repairs** lists what SailCast found wrong, and how to fix it: a pin on land, a buoy, airport, sensor or station that stopped reporting, Open-Meteo's free calls running low, and a missing or refused WorldTides key.
+- **Diagnostics** show each source's status and last error, and the Open-Meteo calls used today. Download them from SailCast's menu under **Settings → Devices & services → SailCast**. They leave out where your spots are, every name, station and warning zone, your sensors and calendars, and your API key, so you can attach them to an issue.
+- **Debug logging** records what SailCast fetches and when. Turn it on from the same menu, try again, then turn it off to download the log.
+
+[Open an issue](https://github.com/kedube/ha-sailcast/issues) with the diagnostics and what you expected to see.
+
+## Known limitations
+
+- SailCast is advisory. Its tides, currents and warnings aren't for navigation.
+- Times show in Home Assistant's time zone, also for a spot in another one.
+- Outside the US, Canada and Europe there are no official warnings yet, and the UK's coastal strong wind and gale warnings have no open feed.
+- The 11 translations haven't been checked by native speakers.
+- AI summaries are lost when Home Assistant restarts.
+- Open-Meteo's free tier is for non-commercial use, and its daily limit is shared with everything else on your IP address.
+
+## Remove SailCast
+
+1. Go to **Settings → Devices & services → SailCast**, open its menu, and select **Delete**. That removes its entities, calendars and panel.
+2. To remove its files too, uninstall SailCast in **Settings → Marketplace**, then restart Home Assistant.
+
+Events SailCast added to your own calendars stay there, and automations made from its blueprints stop working. Delete them yourself if you don't want them.
 
 ## Development
 
