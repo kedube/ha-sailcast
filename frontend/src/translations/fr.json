@@ -38,6 +38,8 @@
   "week": {
     "today": "Aujourd'hui",
     "today_short": "Auj.",
+    "day_date": "{day} {date}",
+    "day_time": "{day} {time}",
     "best_label": "Meilleur moment de la semaine",
     "best_eyebrow": "Meilleur moment de la semaine · {who}",
     "no_window": "Aucun bon créneau cette semaine",

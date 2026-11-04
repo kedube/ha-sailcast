@@ -76,3 +76,11 @@ export function plannedFor(ctx: Ctx, window: Window): PlannedSail | undefined {
 export function isToday(ctx: Ctx, day: Day): boolean {
   return ctx.forecast?.days[0]?.date === day.date;
 }
+
+/** Name a day with its date, such as "Saturday, Nov 7" or "Today, Nov 3". */
+export function dayAndDate(ctx: Ctx, day: Day): string {
+  return ctx.t("week.day_date", {
+    day: isToday(ctx, day) ? ctx.t("week.today") : ctx.fmt.weekday(day.date, "long"),
+    date: ctx.fmt.shortDate(day.date),
+  });
+}

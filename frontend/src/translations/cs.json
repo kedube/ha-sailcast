@@ -38,6 +38,8 @@
   "week": {
     "today": "Dnes",
     "today_short": "Dnes",
+    "day_date": "{day} {date}",
+    "day_time": "{day} {time}",
     "best_label": "Nejlepší čas tohoto týdne",
     "best_eyebrow": "Nejlepší čas tohoto týdne · {who}",
     "no_window": "Tento týden žádné dobré okno",
