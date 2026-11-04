@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import MappingProxyType
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.config_entries import (
@@ -16,6 +16,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import SUBENTRY_BOAT
+from custom_components.sailcast.shoreline import Shorelines
 
 
 async def test_panel_added_and_removed(
@@ -90,3 +91,34 @@ async def test_profile_change_reloads(
     assert "sailcast" in hass.data[DATA_PANELS]
     # The module is served once, however often the entry reloads.
     mock_http.async_register_static_paths.assert_awaited_once()
+
+
+async def test_change_during_setup(
+    hass: HomeAssistant,
+    full_entry: MockConfigEntry,
+    mock_http: MagicMock,
+    sources: AiohttpClientMocker,
+) -> None:
+    """A profile added while SailCast sets up still reaches it.
+
+    Setup reads the profiles before it fetches, so it reloads once it's done.
+    """
+    dinghy = ConfigSubentry(
+        data=MappingProxyType({"size_class": "dinghy", "length": 4.2}),
+        subentry_type=SUBENTRY_BOAT,
+        title="Dinghy",
+        unique_id=None,
+    )
+    load = Shorelines.async_load
+
+    async def add_while_loading(shorelines: Shorelines) -> None:
+        if dinghy.subentry_id not in full_entry.subentries:
+            hass.config_entries.async_add_subentry(full_entry, dinghy)
+        await load(shorelines)
+
+    with patch.object(Shorelines, "async_load", add_while_loading):
+        assert await hass.config_entries.async_setup(full_entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert full_entry.state is ConfigEntryState.LOADED
+    assert dinghy.subentry_id in full_entry.runtime_data.profiles.boats

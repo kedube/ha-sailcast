@@ -48,6 +48,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
     A source that's down doesn't stop setup; its entities show as unavailable
     until it's back.
     """
+    # Adding, editing or removing a spot, boat or sailor updates the entry.
+    # Listening before the profiles are read means a change made while setup
+    # fetches still reloads SailCast once setup is done.
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     data = SailCastData.create(
         hass, entry, Profiles.from_entry(entry), hass.data[DATA_STORE]
     )
@@ -100,8 +104,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
 
     # Calendars may still be loading while Home Assistant starts.
     entry.async_on_unload(async_at_started(hass, _async_started))
-    # Adding, editing or removing a spot, boat or sailor updates the entry.
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
 
