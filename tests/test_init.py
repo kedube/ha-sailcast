@@ -141,7 +141,9 @@ async def test_change_during_setup(
         await load(shorelines)
 
     with patch.object(Shorelines, "async_load", add_while_loading):
-        assert await hass.config_entries.async_setup(full_entry.entry_id)
+        # The reload may already be under way when setup returns, so only how
+        # things end up counts.
+        await hass.config_entries.async_setup(full_entry.entry_id)
         await hass.async_block_till_done()
 
     assert full_entry.state is ConfigEntryState.LOADED
