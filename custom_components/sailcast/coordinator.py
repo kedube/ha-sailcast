@@ -509,6 +509,12 @@ class PredictionCoordinator(SourceCoordinator[Predictions]):
         self.data = predictions
 
 
+async def async_remove_predictions(hass: HomeAssistant) -> None:
+    """Delete the saved predictions, when SailCast is deleted."""
+    store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+    await store.async_remove()
+
+
 class AlertCoordinator(SourceCoordinator[tuple[Alert, ...]]):
     """Official warnings for every spot.
 
@@ -804,7 +810,7 @@ class SailCastData:
             sources=sources,
             results=results,
             planner=Planner(hass, store, profiles, results),
-            summaries=hass.data.setdefault(DATA_SUMMARIES, Summaries()),
+            summaries=hass.data.setdefault(DATA_SUMMARIES, Summaries(hass)),
         )
 
 

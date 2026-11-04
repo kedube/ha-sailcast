@@ -17,12 +17,15 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
+from .ai import DATA_SUMMARIES, Summaries
 from .const import DOMAIN, SIGNAL_UPDATED
-from .coordinator import SailCastConfigEntry, SailCastData
+from .coordinator import SailCastConfigEntry, SailCastData, async_remove_predictions
 from .panel import async_register_panel, async_remove_panel
 from .profiles import Profiles
+from .regions import DATA_REGIONS, Regions
 from .repairs import async_clear_issues, async_update_issues
 from .services import async_register_services
+from .shoreline import DATA_SHORELINES, Shorelines
 from .storage import DATA_STORE, SailCastStore
 from .websocket_api import async_register_commands
 
@@ -60,6 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
     # Shorelines measured before are read first, so the first results have
     # them; only new pins are measured in the background.
     await data.sources.shorelines.async_load()
+    await data.summaries.async_load()
     await data.results.async_refresh()
     for unsubscribe in data.results.async_follow_sources():
         entry.async_on_unload(unsubscribe)
@@ -119,9 +123,18 @@ async def async_unload_entry(hass: HomeAssistant, entry: SailCastConfigEntry) ->
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> None:
-    """Remove the panel and SailCast's repair issues when SailCast is deleted."""
+    """Remove the panel, repair issues and saved data when SailCast is deleted.
+
+    Events SailCast added to calendars stay, since the calendars are yours.
+    """
     async_remove_panel(hass)
     async_clear_issues(hass)
+    await hass.data[DATA_STORE].async_remove()
+    # A new one deletes a file saved before Home Assistant started.
+    await (hass.data.pop(DATA_SHORELINES, None) or Shorelines(hass)).async_remove()
+    await (hass.data.pop(DATA_SUMMARIES, None) or Summaries(hass)).async_remove()
+    await (hass.data.pop(DATA_REGIONS, None) or Regions(hass)).async_remove()
+    await async_remove_predictions(hass)
 
 
 async def _async_update_listener(

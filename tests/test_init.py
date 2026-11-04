@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import MappingProxyType
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from homeassistant.components.frontend import DATA_PANELS
@@ -17,6 +18,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.sailcast.const import SUBENTRY_BOAT
 from custom_components.sailcast.shoreline import Shorelines
+from custom_components.sailcast.storage import DATA_STORE
 
 
 async def test_panel_added_and_removed(
@@ -62,6 +64,28 @@ async def test_panel_removed_with_entry(
 
     await hass.config_entries.async_remove(full_entry.entry_id)
     assert "sailcast" not in hass.data[DATA_PANELS]
+
+
+async def test_saved_data_removed_with_entry(
+    hass: HomeAssistant,
+    full_entry: MockConfigEntry,
+    sources: AiohttpClientMocker,
+    hass_storage: dict[str, Any],
+) -> None:
+    """Deleting SailCast deletes what it saved, also what was saved before a start."""
+    names = ("panel", "predictions", "shoreline", "summaries", "meteoalarm_regions")
+    for key in (f"sailcast.{name}" for name in names):
+        hass_storage[key] = {"version": 1, "key": key, "data": {}}
+    assert await hass.config_entries.async_setup(full_entry.entry_id)
+    await hass.async_block_till_done()
+    store = hass.data[DATA_STORE]
+    store.set_preferences("user1", {"spot": "spot_harbor"})
+
+    await hass.config_entries.async_remove(full_entry.entry_id)
+    await hass.async_block_till_done()
+    assert [key for key in hass_storage if key.startswith("sailcast.")] == []
+    # Added again, SailCast starts afresh.
+    assert store.preferences("user1") == {}
 
 
 async def test_profile_change_reloads(

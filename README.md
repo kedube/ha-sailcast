@@ -181,13 +181,12 @@ Ratings, scores and windows are worked out again whenever new data comes in, and
 - Times show in Home Assistant's time zone, also for a spot in another one.
 - Outside the US, Canada and Europe there are no official warnings yet, and the UK's coastal strong wind and gale warnings have no open feed.
 - The 11 translations haven't been checked by native speakers.
-- AI summaries are lost when Home Assistant restarts.
 - Open-Meteo's free tier is for non-commercial use, and its daily limit is shared with everything else on your IP address.
 
 ## Remove SailCast
 
-1. Go to **Settings → Devices & services → SailCast**, open its menu, and select **Delete**. That removes its entities, calendars and panel.
-2. To remove its files too, uninstall SailCast in **Settings → Marketplace**, then restart Home Assistant.
+1. Go to **Settings → Devices & services → SailCast**, open its menu, and select **Delete**. That removes its entities, calendars and panel, and what it saved: panel preferences, planned sails, measured shorelines, tide predictions, warning regions and AI summaries.
+2. To remove its program files too, uninstall SailCast in **Settings → Marketplace**, then restart Home Assistant.
 
 Events SailCast added to your own calendars stay there, and automations made from its blueprints stop working. Delete them yourself if you don't want them.
 

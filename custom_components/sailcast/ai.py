@@ -9,9 +9,9 @@ or soften a rating; the panel shows the ratings beside it, and AI never sets
 one. SailCast stores no AI keys.
 
 Summaries are written only when someone asks, never in the background, and
-are kept for the day, through settings changes that reload SailCast. One
-stays current while the ratings, windows and warnings it describes stay the
-same; after that the panel offers a new one.
+are kept for the day on disk, through reloads and restarts. One stays
+current while the ratings, windows and warnings it describes stay the same;
+after that the panel offers a new one.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import logging
 import re
 from typing import Any, Final
 
@@ -30,6 +31,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfLength, UnitOfTemperature
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
@@ -39,7 +41,12 @@ from .geo import compass_point
 from .limits import SKILL_WIND_LIMITS
 from .outlook import BoatOutlook, Outlook
 
+LOGGER = logging.getLogger(__package__)
+
 AI_TASK: Final = "ai_task"
+STORAGE_VERSION: Final = 1
+STORAGE_KEY: Final = f"{DOMAIN}.summaries"
+SAVE_DELAY: Final = 2.0
 # How long a provider gets to answer.
 WAIT: Final = 90
 # Two or three sentences fit in this many characters, in any language.
@@ -294,12 +301,42 @@ class Summary:
 
 
 class Summaries:
-    """The day's summaries, written when someone asks and kept for the day."""
+    """The day's summaries, written when someone asks and kept for the day.
 
-    def __init__(self) -> None:
-        """Start with none."""
+    They're kept on disk, so a restart doesn't lose them.
+    """
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        """Start with none, until the saved ones are read."""
+        self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._kept: dict[Key, Summary] = {}
         self._locks: dict[Key, asyncio.Lock] = {}
+        self._loaded = False
+
+    async def async_load(self) -> None:
+        """Read the summaries saved before, leaving out days gone by."""
+        if self._loaded:
+            return
+        self._loaded = True
+        stored = await self._store.async_load()
+        for item in (stored or {}).get("summaries") or []:
+            try:
+                spot, sailor, boat, date, language = map(str, item["key"])
+                key: Key = (spot, sailor, boat, date, language)
+                summary = Summary(
+                    str(item["text"]),
+                    datetime.fromisoformat(item["made"]),
+                    dict(item["facts"]),
+                )
+            except KeyError, TypeError, ValueError:
+                LOGGER.warning("Ignoring an unreadable saved AI summary")
+                continue
+            self._kept[key] = summary
+        self._forget_before(dt_util.now().date().isoformat())
+
+    async def async_remove(self) -> None:
+        """Delete the saved summaries, when SailCast is deleted."""
+        await self._store.async_remove()
 
     def get(self, key: Key) -> Summary | None:
         """Return the summary kept for a day, if there is one."""
@@ -331,6 +368,7 @@ class Summaries:
             summary = Summary(clean(result.data), dt_util.utcnow(), found)
             self._forget_before(key[3])
             self._kept[key] = summary
+            self._store.async_delay_save(self._data, SAVE_DELAY)
             return summary
 
     def _forget_before(self, date: str) -> None:
@@ -338,6 +376,19 @@ class Summaries:
         for key in [key for key in self._kept if key[3] < date]:
             del self._kept[key]
             self._locks.pop(key, None)
+
+    def _data(self) -> dict[str, Any]:
+        return {
+            "summaries": [
+                {
+                    "key": list(key),
+                    "text": summary.text,
+                    "made": summary.made.isoformat(),
+                    "facts": summary.facts,
+                }
+                for key, summary in self._kept.items()
+            ]
+        }
 
 
 def _level(key: str) -> str:

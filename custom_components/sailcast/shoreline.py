@@ -257,6 +257,10 @@ class Shorelines:
             except KeyError, TypeError, ValueError:
                 LOGGER.warning("Ignoring an unreadable saved shoreline")
 
+    async def async_remove(self) -> None:
+        """Delete the saved shorelines, when SailCast is deleted."""
+        await self._store.async_remove()
+
     def get(self, latitude: float, longitude: float) -> Shoreline | None:
         """Return a pin's shoreline, if it's been measured."""
         return self._known.get(self.key(latitude, longitude))

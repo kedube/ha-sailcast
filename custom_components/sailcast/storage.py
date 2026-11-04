@@ -177,6 +177,11 @@ class SailCastStore:
         """Save soon."""
         self._store.async_delay_save(self._data, SAVE_DELAY)
 
+    async def async_remove(self) -> None:
+        """Forget everything and delete the file, when SailCast is deleted."""
+        self._preferences, self._planned, self._skipped = {}, {}, {}
+        await self._store.async_remove()
+
     def _data(self) -> dict[str, Any]:
         return {
             "preferences": self._preferences,
