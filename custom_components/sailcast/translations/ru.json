@@ -524,6 +524,7 @@
     "month_11": "нояб.",
     "month_12": "дек.",
     "date": "{weekday}, {day} {month}",
+    "first_of_month": "1",
     "range": "от {low} до {high}",
     "feet": "{value} фт",
     "meters": "{value} м",

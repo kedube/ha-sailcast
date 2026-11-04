@@ -66,6 +66,23 @@ async def test_language_without_a_file(hass: HomeAssistant) -> None:
     assert wording.text("changed_title") == "SailCast: forecast changed"
 
 
+@pytest.mark.parametrize(
+    ("language", "date"),
+    [
+        ("en", "Sunday, Nov 1"),
+        ("de", "Sonntag, 1. Nov."),
+        ("fr", "dimanche 1er nov."),
+        ("pt-BR", "domingo, 1º de nov."),
+    ],
+)
+async def test_first_of_the_month(
+    hass: HomeAssistant, language: str, date: str
+) -> None:
+    """French and Brazilian Portuguese write the first as an ordinal."""
+    wording = await Wording.async_load(hass, language)
+    assert wording.date(datetime(2026, 11, 1, 20, tzinfo=UTC)) == date
+
+
 @pytest.mark.parametrize("language", LANGUAGES)
 async def test_every_language(hass: HomeAssistant, language: str) -> None:
     """Each language has its own sentences, with every value filled in."""

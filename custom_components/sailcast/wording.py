@@ -118,7 +118,8 @@ class Wording:
             "date",
             weekday=self.text(f"weekday_{_WEEKDAYS[when.weekday()]}"),
             month=self.text(f"month_{when.month}"),
-            day=when.day,
+            # Some languages write the first as an ordinal, such as "1er".
+            day=self.text("first_of_month") if when.day == 1 else when.day,
         )
 
     def compass(self, degrees: float) -> str:

@@ -524,6 +524,7 @@
     "month_11": "nov.",
     "month_12": "déc.",
     "date": "{weekday} {day} {month}",
+    "first_of_month": "1er",
     "range": "{low} à {high}",
     "feet": "{value} ft",
     "meters": "{value} m",
