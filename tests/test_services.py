@@ -80,20 +80,37 @@ async def test_us_units(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
 
 
 @pytest.mark.parametrize(
-    ("data", "key"),
+    ("data", "key", "message"),
     [
-        ({"spot": "Lake", "sailor": "Alex"}, "unknown_spot"),
-        ({"spot": "Harbor", "sailor": "Pat"}, "unknown_sailor"),
-        ({"spot": "Harbor", "sailor": "Sam", "boat": "Cruiser"}, "unknown_boat"),
+        (
+            {"spot": "Lake", "sailor": "Alex"},
+            "unknown_spot",
+            "There's no spot named Lake",
+        ),
+        (
+            {"spot": "Harbor", "sailor": "Pat"},
+            "unknown_sailor",
+            "There's no sailor named Pat",
+        ),
+        (
+            {"spot": "Harbor", "sailor": "Sam", "boat": "Cruiser"},
+            "unknown_boat",
+            "Sam doesn't sail a boat named Cruiser",
+        ),
     ],
 )
 async def test_unknown_names(
-    hass: HomeAssistant, loaded: MockConfigEntry, data: dict[str, str], key: str
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    data: dict[str, str],
+    key: str,
+    message: str,
 ) -> None:
-    """Unknown spots, sailors and boats are explained."""
+    """Unknown spots, sailors and boats are explained, and named."""
     with pytest.raises(ServiceValidationError) as err:
         await get_forecast(hass, **data)
     assert err.value.translation_key == key
+    assert str(err.value).rstrip(".") == message
 
 
 async def test_not_loaded(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
