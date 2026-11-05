@@ -219,6 +219,17 @@ You need [uv](https://docs.astral.sh/uv/) and Node 24 or newer.
 
 On macOS, the python.org build of Python ships without SSL certificates. If you use it, run its "Install Certificates" command once, or Home Assistant can't reach any API.
 
+### Releasing
+
+Releases are made by hand: on GitHub, open **Actions → Release → Run workflow**, pick **beta** or **stable**, and run it on `main`. Once CI passes, the workflow works out the version from the last release:
+
+| Last release | beta | stable |
+| --- | --- | --- |
+| 1.0.0b1 | 1.0.0b2 | 1.0.0 |
+| 1.0.0 | 1.1.0b1 | 1.0.1 |
+
+It saves the version in `manifest.json` and commits it to `main`, unless a pull request already did. Then it builds the panel and publishes a GitHub release tagged with the bare version, such as `1.0.0b2`, with `sailcast.zip` for the Marketplace to install. Betas are pre-releases. The release notes list the pull requests merged since the last release, or for a stable release, since the last stable one. To see the next version first, run `.venv/bin/python scripts/bump_version.py beta`, or `stable`.
+
 ### Privacy
 
 The repository holds no personal data. Tests run on responses recorded at made-up spots in San Diego, and in the Solent, the Wadden Sea and on Lake Garda for sources abroad. Canada's tide predictions and MeteoAlarm's region outlines can't be passed on, and WorldTides needs a key, so their tests use made-up data. The git hooks that `scripts/setup` turns on check every commit and commit message against a list of private terms kept outside the repository, in `~/.config/sailcast/private-terms.txt` or the file named by `SAILCAST_PRIVATE_TERMS`. Put one term per line, matched as a whole word. Lines starting with `re:` are regular expressions.
