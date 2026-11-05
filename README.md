@@ -1,3 +1,11 @@
+# SailCast for Home Assistant
+
+[![Marketplace: Custom repository](https://img.shields.io/badge/Marketplace-Custom%20repository-41BDF5.svg)](https://www.hacs.xyz/docs/marketplace/)
+[![GitHub release](https://img.shields.io/github/v/release/kedube/ha-sailcast?include_prereleases)](https://github.com/kedube/ha-sailcast/releases)
+[![CI](https://github.com/kedube/ha-sailcast/actions/workflows/ci.yml/badge.svg)](https://github.com/kedube/ha-sailcast/actions/workflows/ci.yml)
+![Home Assistant 2026.11+](https://img.shields.io/badge/Home%20Assistant-2026.11%2B-41BDF5.svg)
+[![License](https://img.shields.io/github/license/kedube/ha-sailcast)](LICENSE)
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="custom_components/sailcast/brand/dark_logo.png">
@@ -16,6 +24,8 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 
 > [!IMPORTANT]
 > SailCast is advisory. Official forecasts and warnings come first, and the skipper always decides.
+
+[What's in it](#whats-in-it) · [Install](#install) · [Set up](#set-up) · [Wind map](#the-wind-map) · [Outside the US](#outside-the-us) · [Calendar](#your-own-calendar) · [Notifications](#notifications) · [AI summary](#ai-summary) · [Entities and actions](#entities-and-actions) · [Troubleshooting](#troubleshooting) · [Limitations](#known-limitations) · [Development](#development)
 
 ## What's in it
 
