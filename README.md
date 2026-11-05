@@ -228,7 +228,7 @@ Releases are made by hand: on GitHub, open **Actions → Release → Run workflo
 | 1.0.0b1 | 1.0.0b2 | 1.0.0 |
 | 1.0.0 | 1.1.0b1 | 1.0.1 |
 
-It saves the version in `manifest.json` and commits it to `main`, unless a pull request already did. Then it builds the panel and publishes a GitHub release tagged with the bare version, such as `1.0.0b2`, with `sailcast.zip` for the Marketplace to install. Betas are pre-releases. The release notes list the pull requests merged since the last release, or for a stable release, since the last stable one. To see the next version first, run `.venv/bin/python scripts/bump_version.py beta`, or `stable`.
+It saves the version in `manifest.json` and commits it to `main`, unless `main` already has it. Then it builds the panel and publishes a GitHub release tagged with the bare version, such as `1.0.0b2`, with `sailcast.zip` for the Marketplace to install. Betas are pre-releases. The release notes list the commits since the last release, or for a stable release, since the last stable one. To see the next version first, run `.venv/bin/python scripts/bump_version.py beta`, or `stable`.
 
 ### Privacy
 

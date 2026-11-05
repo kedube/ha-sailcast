@@ -3,9 +3,9 @@ run-name: Release a ${{ inputs.release }} version
 
 # Run by hand from the Actions tab, on main. Once CI passes, it works out the
 # version from the last release (scripts/bump_version.py), commits it to
-# manifest.json unless a pull request already did, builds the panel, and
-# publishes a GitHub release with sailcast.zip, which the Marketplace installs.
-# Tags are the bare version, with no "v" in front.
+# manifest.json unless main already has it, builds the panel, and publishes a
+# GitHub release with sailcast.zip, which the Marketplace installs. Tags are
+# the bare version, with no "v" in front.
 on:
   workflow_dispatch:
     inputs:
@@ -74,9 +74,15 @@ jobs:
       # behind, and running it again makes the same version.
       - name: Publish the release
         run: |
+          # The notes list the commits since the last release, leaving out
+          # merges and the commits that saved a version.
+          git log --no-merges --format='- %s' "$PREVIOUS..HEAD" \
+            --invert-grep --extended-regexp \
+            --grep='^Release [0-9]+\.[0-9]+\.[0-9]+(b[0-9]+)?$' > notes.md
+          compare="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$PREVIOUS...$VERSION"
+          printf '\n**Full Changelog**: %s\n' "$compare" >> notes.md
           gh release create "$VERSION" sailcast.zip --target "$(git rev-parse HEAD)" \
-            --title "$VERSION" --prerelease="$PRERELEASE" \
-            --generate-notes --notes-start-tag "$PREVIOUS"
+            --title "$VERSION" --prerelease="$PRERELEASE" --notes-file notes.md
           url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$VERSION"
           echo "Published [$VERSION]($url)." >> "$GITHUB_STEP_SUMMARY"
         env:
