@@ -5,7 +5,7 @@
  */
 import { html, nothing, svg, type SVGTemplateResult, type TemplateResult } from "lit";
 
-import { isToday, plannedFor, type Ctx } from "./context";
+import { dayAndDate, isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime } from "./format";
 import { arrow, icon, ring, type IconName } from "./glyphs";
 import {
@@ -97,7 +97,7 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
           type="button"
           class="ds ${item.score === null ? "" : `s-${band(item.score)}`}"
           aria-pressed=${number === index ? "true" : "false"}
-          aria-label=${`${isToday(ctx, item) ? t("week.today") : fmt.weekday(item.date, "long")}, ${fmt.shortDate(item.date)}${item.score === null ? "" : `, ${t("week.score_label", { score: item.score })}`}`}
+          aria-label=${`${dayAndDate(ctx, item)}${item.score === null ? "" : `, ${t("week.score_label", { score: item.score })}`}`}
           @click=${() => ctx.act.openDay(number)}
         >
           <span class="ds-wd"

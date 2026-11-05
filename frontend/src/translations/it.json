@@ -38,6 +38,8 @@
   "week": {
     "today": "Oggi",
     "today_short": "Oggi",
+    "day_date": "{day} {date}",
+    "day_time": "{day} {time}",
     "best_label": "Momento migliore della settimana",
     "best_eyebrow": "Momento migliore della settimana · {who}",
     "no_window": "Nessuna buona finestra questa settimana",

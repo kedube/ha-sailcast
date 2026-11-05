@@ -38,6 +38,8 @@
   "week": {
     "today": "Сегодня",
     "today_short": "Сег.",
+    "day_date": "{day}, {date}",
+    "day_time": "{day} {time}",
     "best_label": "Лучшее время на этой неделе",
     "best_eyebrow": "Лучшее время на неделе · {who}",
     "no_window": "На этой неделе нет хороших окон",

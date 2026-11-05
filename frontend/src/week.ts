@@ -5,7 +5,7 @@
  */
 import { html, nothing, svg, type TemplateResult } from "lit";
 
-import { isToday, plannedFor, type Ctx } from "./context";
+import { dayAndDate, isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime, ms, WEEKDAYS } from "./format";
 import { arrow, dial, icon, ring, weather, type IconName } from "./glyphs";
 import {
@@ -144,9 +144,7 @@ function hero(ctx: Ctx, best: Found | undefined, next: Found | undefined): Templ
     ${heroWave(ctx, day, window)}
     <div class="hero-main">
       <span class="eyebrow">${t("week.best_eyebrow", { who })}</span>
-      <div class="hero-day">
-        ${dayName(ctx, day)}, ${fmt.shortDate(day.date)} · ${ctx.spot?.name}
-      </div>
+      <div class="hero-day">${dayAndDate(ctx, day)} · ${ctx.spot?.name}</div>
       <div class="hero-time">${fmt.span(window.start, window.end)}</div>
       <div class="hero-facts">
         ${
@@ -739,7 +737,7 @@ function dayColumn(
     type="button"
     class="cd-head"
     aria-label=${t("week.day_label", {
-      day: `${dayName(ctx, day)}, ${fmt.shortDate(day.date)}`,
+      day: dayAndDate(ctx, day),
       status,
       best: best
         ? t("week.day_best", { span: fmt.span(best.start, best.end) })
@@ -878,7 +876,7 @@ export function chip(ctx: Ctx, level: Level): TemplateResult {
 function hourTip(ctx: Ctx, day: Day, hour: Hour): TemplateResult {
   const { t, fmt } = ctx;
   const why = reasonsText(fmt, t, hour.reasons);
-  return html`<b>${dayName(ctx, day)}, ${fmt.clock(hour.time)}</b>
+  return html`<b>${t("week.day_time", { day: dayName(ctx, day), time: fmt.clock(hour.time) })}</b>
     <div>${chip(ctx, hour.rating)}${t("tip.score", { score: hour.score ?? "–" })}</div>
     <div>
       ${compass(t, hour.direction)}
@@ -895,7 +893,8 @@ function hourTip(ctx: Ctx, day: Day, hour: Hour): TemplateResult {
 
 function windowTip(ctx: Ctx, day: Day, window: Window, sail?: PlannedSail): TemplateResult {
   const { t, fmt } = ctx;
-  return html`<b>${dayName(ctx, day)}, ${fmt.span(window.start, window.end)}</b>
+  const when = fmt.span(window.start, window.end);
+  return html`<b>${t("week.day_time", { day: dayName(ctx, day), time: when })}</b>
     <div>
       ${t("tip.window_score", {
         score: window.score,

@@ -524,6 +524,7 @@
     "month_11": "listopadu",
     "month_12": "prosince",
     "date": "{weekday} {day}. {month}",
+    "first_of_month": "1",
     "range": "{low} až {high}",
     "feet": "{value} ft",
     "meters": "{value} m",

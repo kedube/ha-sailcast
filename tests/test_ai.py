@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import json
 from typing import Any
 from unittest.mock import AsyncMock
@@ -21,8 +21,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.setup import async_setup_component
+from homeassistant.util import dt as dt_util
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
@@ -200,6 +204,55 @@ async def test_summary(
         "forecast", spot="spot_river", sailor="sailor_alex", language="de"
     )
     assert forecast["result"]["days"][5]["ai"]["text"] == ANSWER
+
+
+async def test_kept_through_restart(
+    hass: HomeAssistant,
+    ai_on: MockConfigEntry,
+    stand_in: StandInTask,
+    send: Send,
+    hass_storage: dict[str, Any],
+) -> None:
+    """A summary is saved a moment after it's written, and read after a restart."""
+    response = await send("ai_summary", **SATURDAY)
+    assert ai.STORAGE_KEY not in hass_storage
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=5))
+    await hass.async_block_till_done()
+    saved = hass_storage[ai.STORAGE_KEY]["data"]["summaries"]
+    assert [item["key"] for item in saved] == [list(KEY)]
+
+    restarted = ai.Summaries(hass)
+    await restarted.async_load()
+    kept = restarted.get(KEY)
+    assert kept is not None
+    assert kept.as_dict(kept.facts) == response["result"]
+
+
+async def test_saved_summaries_checked(
+    hass: HomeAssistant, hass_storage: dict[str, Any], freezer: FrozenDateTimeFactory
+) -> None:
+    """Saved summaries of days gone by, and unreadable ones, are left out."""
+    freezer.move_to(datetime(2026, 11, 7, 18, tzinfo=UTC))
+    made = "2026-11-06T18:00:00+00:00"
+    yesterday = (*KEY[:3], "2026-11-06", "de")
+    hass_storage[ai.STORAGE_KEY] = {
+        "version": ai.STORAGE_VERSION,
+        "key": ai.STORAGE_KEY,
+        "data": {
+            "summaries": [
+                {"key": list(KEY), "text": ANSWER, "made": made, "facts": {}},
+                {"key": list(yesterday), "text": "Gestern.", "made": made, "facts": {}},
+                {"key": list(KEY[:4]), "text": "Ohne Sprache.", "made": made},
+                {"key": list(KEY), "text": "Ohne Zeit.", "facts": {}},
+            ]
+        },
+    }
+    summaries = ai.Summaries(hass)
+    await summaries.async_load()
+    kept = summaries.get(KEY)
+    assert kept is not None
+    assert kept.text == ANSWER
+    assert summaries.get(yesterday) is None
 
 
 async def test_changed_forecast(

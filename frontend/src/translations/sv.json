@@ -38,6 +38,8 @@
   "week": {
     "today": "I dag",
     "today_short": "I dag",
+    "day_date": "{day} {date}",
+    "day_time": "{day} {time}",
     "best_label": "Bästa tiden den här veckan",
     "best_eyebrow": "Bästa tiden den här veckan · {who}",
     "no_window": "Inget bra fönster den här veckan",

@@ -55,6 +55,10 @@ class Regions:
             meteoalarm.place, latitude, longitude, table
         )
 
+    async def async_remove(self) -> None:
+        """Delete the saved regions, when SailCast is deleted."""
+        await self._store.async_remove()
+
     async def _async_table(self) -> meteoalarm.Table:
         """Return the regions, downloading them if they're missing or old."""
         async with self._lock:

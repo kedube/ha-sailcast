@@ -38,6 +38,8 @@
   "week": {
     "today": "今天",
     "today_short": "今天",
+    "day_date": "{date} {day}",
+    "day_time": "{day} {time}",
     "best_label": "本周最佳时段",
     "best_eyebrow": "本周最佳时段 · {who}",
     "no_window": "本周没有合适的航行窗口",

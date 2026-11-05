@@ -524,6 +524,7 @@
     "month_11": "11月",
     "month_12": "12月",
     "date": "{month}{day}日 {weekday}",
+    "first_of_month": "1",
     "range": "{low}–{high}",
     "feet": "{value} 英尺",
     "meters": "{value} 米",

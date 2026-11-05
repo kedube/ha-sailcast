@@ -96,13 +96,13 @@ def _find[T: (Spot, Sailor, Boat)](
     for profile in profiles:
         if wanted.casefold() in (profile.name.casefold(), profile.id.casefold()):
             return profile
+    placeholders = {kind: wanted}
+    if sailor is not None:
+        placeholders["sailor"] = sailor.name
     raise ServiceValidationError(
         translation_domain=DOMAIN,
         translation_key=f"unknown_{kind}",
-        translation_placeholders={
-            kind: wanted,
-            "sailor": sailor.name if sailor else "",
-        },
+        translation_placeholders=placeholders,
     )
 
 

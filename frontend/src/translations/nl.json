@@ -38,6 +38,8 @@
   "week": {
     "today": "Vandaag",
     "today_short": "Vandaag",
+    "day_date": "{day} {date}",
+    "day_time": "{day} {time}",
     "best_label": "Beste moment deze week",
     "best_eyebrow": "Beste moment deze week · {who}",
     "no_window": "Deze week geen goed zeilvenster",
