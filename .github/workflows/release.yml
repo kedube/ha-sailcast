@@ -1,26 +1,53 @@
 name: Release
+run-name: Release a ${{ inputs.release }} version
 
-# Publishing a GitHub release builds the panel and attaches sailcast.zip,
-# which the Marketplace installs.
+# Run by hand from the Actions tab, on main. Once CI passes, it works out the
+# version from the last release (scripts/bump_version.py), commits it to
+# manifest.json unless a pull request already did, builds the panel, and
+# publishes a GitHub release with sailcast.zip, which the Marketplace installs.
+# Tags are the bare version, with no "v" in front.
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: >-
+          beta: a pre-release, such as 1.0.0b2 after 1.0.0b1.
+          stable: such as 1.0.0 after 1.0.0b2, or 1.0.1 after 1.0.0.
+        type: choice
+        options: [beta, stable]
+        default: beta
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release
 
 jobs:
-  zip:
+  ci:
+    name: CI
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Release
+    needs: ci
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
-      - name: Check that the tag matches the manifest version
-        run: |
-          version="$(jq -r .version custom_components/sailcast/manifest.json)"
-          if [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME doesn't match manifest version $version"
-            exit 1
-          fi
+        with:
+          # The tags too, to find the last release.
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Work out the version
+        id: version
+        run: python scripts/bump_version.py "$RELEASE" --write >> "$GITHUB_OUTPUT"
+        env:
+          RELEASE: ${{ inputs.release }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -31,7 +58,29 @@ jobs:
       - name: Zip the integration
         working-directory: custom_components/sailcast
         run: zip -r "$GITHUB_WORKSPACE/sailcast.zip" . -x "__pycache__/*"
-      - name: Attach the zip to the release
-        run: gh release upload "$GITHUB_REF_NAME" sailcast.zip --clobber
+      - name: Commit the version
+        run: |
+          if ! git diff --quiet -- "$MANIFEST"; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --message "Release $VERSION" -- "$MANIFEST"
+            # Fails if main moved on since CI checked it.
+            git push origin HEAD:main
+          fi
+        env:
+          MANIFEST: custom_components/sailcast/manifest.json
+          VERSION: ${{ steps.version.outputs.version }}
+      # The release makes its tag, so a run that fails here leaves no tag
+      # behind, and running it again makes the same version.
+      - name: Publish the release
+        run: |
+          gh release create "$VERSION" sailcast.zip --target "$(git rev-parse HEAD)" \
+            --title "$VERSION" --prerelease="$PRERELEASE" \
+            --generate-notes --notes-start-tag "$PREVIOUS"
+          url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$VERSION"
+          echo "Published [$VERSION]($url)." >> "$GITHUB_STEP_SUMMARY"
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
