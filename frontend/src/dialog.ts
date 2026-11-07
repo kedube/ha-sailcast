@@ -146,13 +146,43 @@ export function errorText(err: unknown): string {
   return String(err);
 }
 
-/** The value of a form field, by name. */
+/**
+ * A form's fields with this name. Not form.elements: Home Assistant's
+ * frontend loads a polyfill that replaces it, and its namedItem("length")
+ * answers with the collection's own length, the count of fields.
+ */
+function fields(form: HTMLFormElement, name: string) {
+  return [
+    ...form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+      `[name="${name}"]`,
+    ),
+  ];
+}
+
+/** The value of a form field, by name; for radio buttons, the chosen one's. */
 export function value(form: HTMLFormElement, name: string): string {
-  const field = form.elements.namedItem(name);
-  if (field instanceof RadioNodeList) return field.value;
-  if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) return field.value;
-  if (field instanceof HTMLTextAreaElement) return field.value;
-  return "";
+  const found = fields(form, name);
+  const radios = found.filter(
+    (field): field is HTMLInputElement =>
+      field instanceof HTMLInputElement && field.type === "radio",
+  );
+  if (radios.length) return radios.find((radio) => radio.checked)?.value ?? "";
+  return found[0]?.value ?? "";
+}
+
+/** Whether a checkbox is ticked, by name. */
+export function ticked(form: HTMLFormElement, name: string): boolean {
+  return fields(form, name).some((field) => field instanceof HTMLInputElement && field.checked);
+}
+
+/**
+ * A number as a number field's value: a point for decimals and a plain
+ * minus, whatever the user's number format. A field can't take "34,0" or
+ * "−3", and would show nothing.
+ */
+export function fieldNumber(number: number, digits = 0): string {
+  const scale = 10 ** digits;
+  return String(Math.round(number * scale) / scale + 0);
 }
 
 /** The checked values of checkboxes that share a name. */

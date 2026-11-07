@@ -5,7 +5,17 @@
  */
 import { html, nothing, type TemplateResult } from "lit";
 
-import { checked, define, hourSelect, hourTime, numberOrNull, ScDialog, value } from "./dialog";
+import {
+  checked,
+  define,
+  fieldNumber,
+  hourSelect,
+  hourTime,
+  numberOrNull,
+  ScDialog,
+  ticked,
+  value,
+} from "./dialog";
 import { compassKey, FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
 import { limitBars, skillBars } from "./settings";
 import "./spot-map";
@@ -125,7 +135,7 @@ export class ScSailorDialog extends ProfileDialog {
       coldest: null,
       rain: "some",
     };
-    const coldest = comfort.coldest === null ? "" : fmt.number(fmt.temperature(comfort.coldest));
+    const coldest = comfort.coldest === null ? "" : fieldNumber(fmt.temperature(comfort.coldest));
     return html`
       <label class="fld">
         <span class="lbl">${t("profile.name")}</span>
@@ -356,7 +366,9 @@ export class ScBoatDialog extends ProfileDialog {
     const { t, fmt } = ctx;
     const boat = this.boat;
     const size = this.size ?? boat?.size_class ?? "small_keelboat";
-    const length = boat ? fmt.number(fmt.feet ? boat.length * FEET_PER_METER : boat.length, 1) : "";
+    const length = boat
+      ? fieldNumber(fmt.feet ? boat.length * FEET_PER_METER : boat.length, 1)
+      : "";
     return html`
       <label class="fld">
         <span class="lbl">${t("profile.name")}</span>
@@ -443,7 +455,7 @@ export class ScBoatDialog extends ProfileDialog {
     return this.save("boat", name, {
       size_class: value(form, "size_class"),
       length: Math.round(meters * 1000) / 1000,
-      lights: checked(form, "lights").length > 0,
+      lights: ticked(form, "lights"),
     });
   }
 }

@@ -6,7 +6,16 @@
 import { html, nothing, type TemplateResult } from "lit";
 
 import { dayAndDate, hoursText } from "./context";
-import { checked, define, errorText, hourSelect, hourTime, ScDialog, value } from "./dialog";
+import {
+  checked,
+  define,
+  errorText,
+  hourSelect,
+  hourTime,
+  ScDialog,
+  ticked,
+  value,
+} from "./dialog";
 import { band, localTime, ms, WEEKDAYS } from "./format";
 import { icon, ring } from "./glyphs";
 import { compass, heightRange } from "./text";
@@ -216,7 +225,7 @@ export class ScWindowDialog extends ScDialog {
       start: value(form, "start"),
       end: value(form, "end"),
       title,
-      watch: (form.elements.namedItem("watch") as HTMLInputElement).checked,
+      watch: ticked(form, "watch"),
       language: ctx.fmt.language,
     });
     ctx.act.setCalendar(calendar);
@@ -462,7 +471,7 @@ export class ScAutoDialog extends ScDialog {
   protected async submit(form: HTMLFormElement): Promise<string | void> {
     const { ctx } = this;
     const sailor = this.sailor;
-    const on = (form.elements.namedItem("on") as HTMLInputElement).checked;
+    const on = ticked(form, "on");
     let auto: AutoCalendar | null = null;
     if (on) {
       const days = checked(form, "days");
