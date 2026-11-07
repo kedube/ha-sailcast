@@ -5,7 +5,7 @@
  */
 import { html, nothing, type TemplateResult } from "lit";
 
-import { checked, define, numberOrNull, ScDialog, value } from "./dialog";
+import { checked, define, hourSelect, hourTime, numberOrNull, ScDialog, value } from "./dialog";
 import { compassKey, FEET_PER_METER, KM_PER_MILE, WEEKDAYS } from "./format";
 import { limitBars, skillBars } from "./settings";
 import "./spot-map";
@@ -13,6 +13,7 @@ import type { StationMark } from "./spot-map";
 import { positionText, savedSourceText } from "./text";
 import type {
   Comfort,
+  DayHours,
   SensorKey,
   Shoreline,
   SizeClass,
@@ -38,7 +39,6 @@ const SENSORS: [SensorKey, string][] = [
   ["temperature", "temperature"],
   ["water_temperature", "temperature"],
 ];
-const HOURS = Array.from({ length: 17 }, (_, index) => index + 5);
 
 /** A field's error from the server, under the field. */
 function fieldError(errors: Record<string, string>, key: string, t: (key: string) => string) {
@@ -89,9 +89,15 @@ abstract class ProfileDialog extends ScDialog {
 }
 
 export class ScSailorDialog extends ProfileDialog {
-  static override properties = { ...ProfileDialog.properties, boats: { state: true } };
+  static override properties = {
+    ...ProfileDialog.properties,
+    boats: { state: true },
+    days: { state: true },
+  };
   /** The boats ticked so far, for the usual-boat choice. */
   declare boats?: string[];
+  /** The days ticked so far, whose hours can be chosen. */
+  declare days?: string[];
 
   private get sailor() {
     return this.ctx.config.sailors.find((item) => item.id === this.profileId);
@@ -109,15 +115,16 @@ export class ScSailorDialog extends ProfileDialog {
     const boats =
       this.boats ?? sailor?.boats ?? ctx.config.boats.slice(0, 1).map((boat) => boat.id);
     const skill = sailor?.skill ?? "beginner";
-    const days = sailor?.days ?? [...WEEKDAYS];
+    // A new sailor sails every day, sunrise to sunset.
+    const week: Partial<Record<string, DayHours>> =
+      sailor?.week ?? Object.fromEntries(WEEKDAYS.map((day) => [day, { start: null, end: null }]));
+    const days = this.days ?? WEEKDAYS.filter((day) => week[day]);
     const comfort: Comfort = sailor?.comfort ?? {
       ideal_low: null,
       ideal_high: null,
       coldest: null,
       rain: "some",
     };
-    const hour = (time: string | null | undefined): number | null =>
-      time ? Number(time.slice(0, 2)) : null;
     const coldest = comfort.coldest === null ? "" : fmt.number(fmt.temperature(comfort.coldest));
     return html`
       <label class="fld">
@@ -185,47 +192,39 @@ export class ScSailorDialog extends ProfileDialog {
       </label>
       <fieldset class="fld">
         <legend class="lbl">${t("sailor.when")}</legend>
-        <div class="daypick">
-          ${WEEKDAYS.map(
-            (day) =>
-              html`<label class="dayt"
+        <div class="dayhours">
+          <span></span>
+          <span class="lbl">${t("sailor.from")}</span>
+          <span class="lbl">${t("sailor.until")}</span>
+          ${WEEKDAYS.map((day, index) => {
+            const sails = days.includes(day);
+            const name = fmt.weekday(`2026-11-0${2 + index}`, "long");
+            return html`<label class="dayt"
                 ><input
                   type="checkbox"
                   name="days"
                   value=${day}
-                  ?checked=${days.includes(day)}
+                  ?checked=${sails}
+                  @change=${(event: Event) => {
+                    const on = (event.target as HTMLInputElement).checked;
+                    this.days = WEEKDAYS.filter((item) =>
+                      item === day ? on : days.includes(item),
+                    );
+                  }}
                 /><span>${t(`weekday.${day}`)}</span></label
-              >`,
-          )}
+              >
+              ${hourSelect(ctx, `start_${day}`, false, week[day]?.start, {
+                label: t("sailor.from_day", { day: name }),
+                disabled: !sails,
+              })}
+              ${hourSelect(ctx, `end_${day}`, true, week[day]?.end, {
+                label: t("sailor.until_day", { day: name }),
+                disabled: !sails,
+              })}
+              ${this.err(`${day}_end`)}`;
+          })}
         </div>
         ${this.err("days")}
-        <div class="two" style="margin-top:6px">
-          <label class="fld">
-            <span class="lbl">${t("sailor.from")}</span>
-            <select name="start">
-              <option value="">${t("sailor.sunrise")}</option>
-              ${HOURS.map(
-                (value) =>
-                  html`<option value=${value} ?selected=${hour(sailor?.start) === value}>
-                    ${fmt.hourOf("2026-11-02", value)}
-                  </option>`,
-              )}
-            </select>
-          </label>
-          <label class="fld">
-            <span class="lbl">${t("sailor.until")}</span>
-            <select name="end">
-              <option value="">${t("sailor.sunset")}</option>
-              ${HOURS.map(
-                (value) =>
-                  html`<option value=${value} ?selected=${hour(sailor?.end) === value}>
-                    ${fmt.hourOf("2026-11-02", value)}
-                  </option>`,
-              )}
-            </select>
-          </label>
-        </div>
-        ${this.err("end")}
         <p class="hint">${t("sailor.when_hint")}</p>
       </fieldset>
       <fieldset class="fld">
@@ -312,16 +311,21 @@ export class ScSailorDialog extends ProfileDialog {
     if (!name.trim()) return this.t("error.name_required");
     const boats = checked(form, "boats");
     const first = value(form, "default");
-    const start = value(form, "start");
-    const end = value(form, "end");
     const coldest = numberOrNull(form, "coldest");
-    const time = (hour: string): string | null => (hour ? `${hour.padStart(2, "0")}:00:00` : null);
+    // The days ticked, each with its own hours.
+    const hours = Object.fromEntries(
+      checked(form, "days").map((day) => [
+        day,
+        {
+          start: hourTime(value(form, `start_${day}`)),
+          end: hourTime(value(form, `end_${day}`)),
+        },
+      ]),
+    );
     return this.save("sailor", name, {
       skill: value(form, "skill"),
       boats: boats.includes(first) ? [first, ...boats.filter((boat) => boat !== first)] : boats,
-      days: checked(form, "days"),
-      start: time(start),
-      end: time(end),
+      hours,
       user: value(form, "user") || null,
       comfort: {
         ideal_low: numberOrNull(form, "ideal_low"),
@@ -407,6 +411,13 @@ export class ScBoatDialog extends ProfileDialog {
         </label>
       </div>
       <div class="fld">
+        <label class="check">
+          <input type="checkbox" name="lights" ?checked=${boat?.lights ?? false} />
+          <span>${t("boat.lights")}</span>
+        </label>
+        <p class="hint">${t("boat.lights_hint")}</p>
+      </div>
+      <div class="fld">
         <span class="lbl">${t("boat.limits")}</span>
         <div class="lims-preview">${limitBars(ctx, size)}</div>
       </div>
@@ -432,6 +443,7 @@ export class ScBoatDialog extends ProfileDialog {
     return this.save("boat", name, {
       size_class: value(form, "size_class"),
       length: Math.round(meters * 1000) / 1000,
+      lights: checked(form, "lights").length > 0,
     });
   }
 }

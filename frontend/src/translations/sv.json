@@ -44,7 +44,7 @@
     "best_eyebrow": "Bästa tiden den här veckan · {who}",
     "no_window": "Inget bra fönster den här veckan",
     "best_day": "Bästa dagen är {day}, med {score} poäng ({band}).",
-    "window_rule": "Ett bra fönster kräver minst två timmar i rad med 60 poäng eller mer, i dagsljus och inom dina seglingstider.",
+    "window_rule": "Ett bra fönster kräver minst två timmar i rad med 60 poäng eller mer, inom dina seglingstider och i dagsljus, om inte båten har lanternor.",
     "gusts": "Byar {gust} knop",
     "high": "Högvatten {time}",
     "low": "Lågvatten {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Ebbström {speed} knop",
     "current_slack": "Ström {speed} knop (stillvatten)",
     "hours": "Timme för timme",
-    "hours_sub": "Timmar i dagsljus"
+    "hours_sub": "Timmar i dagsljus",
+    "hours_sub_lights": "Alla timmar, med lanternor"
   },
   "ai": {
     "button": "Sammanfatta med AI",
@@ -311,9 +312,10 @@
     "loading": "Laddar vindkartan…",
     "failed": "Kartan kunde inte laddas.",
     "budget": "Vindkartan pausas till i morgon så att SailCast håller sig inom de kostnadsfria dagliga anropen till Open-Meteo. Själva prognosen fortsätter som vanligt.",
+    "view_budget": "För att hålla sig inom de kostnadsfria dagliga anropen till Open-Meteo visar kartan till i morgon bara vind i områden som SailCast redan har.",
     "unavailable": "Vindkartan kunde inte laddas: {message}",
     "stale": "Det här är vinden enligt prognosen från {time}; SailCast kunde inte hämta en nyare.",
-    "credits": "Vind © Open-Meteo (CC BY 4.0), från den bästa modellen för området, med cirka 2 km upplösning och timme för timme. Karta © OpenStreetMap-bidragsgivare, sjömärken © OpenSeaMap. Inte för navigering."
+    "credits": "Vind © Open-Meteo (CC BY 4.0), från den bästa modellen för området, timme för timme, med punkter cirka 2 km isär på nära håll och glesare när du zoomar ut. Karta © OpenStreetMap-bidragsgivare, sjömärken © OpenSeaMap. Inte för navigering."
   },
   "table": {
     "direction": "Riktning",
@@ -405,6 +407,7 @@
     "sunrise": "soluppgång",
     "sunset": "solnedgång",
     "sailed_by": "Seglas av {sailors}",
+    "lights": "lanternor",
     "no_sailors": "Inga seglare än",
     "sources": "Källor",
     "map_km": "vindkarta {value} km",
@@ -442,9 +445,11 @@
     "when": "När du kan segla",
     "from": "Från",
     "until": "Till",
+    "from_day": "{day}, från",
+    "until_day": "{day}, till",
     "sunrise": "Soluppgång",
     "sunset": "Solnedgång",
-    "when_hint": "Seglingsfönster hamnar bara inom de här tiderna. SailCast bedömer bara timmar i dagsljus.",
+    "when_hint": "Bocka för dagarna du seglar, var och en med egna tider; seglingsfönster hamnar bara inom dem. Står de kvar på soluppgång och solnedgång kan en båt med lanternor segla vilken timme som helst. En enskild dag, till exempel en ledig dag, ändrar du med tiderna under den dagen i veckan.",
     "comfort": "Komfort",
     "ideal_low": "Idealisk vind från (knop)",
     "ideal_high": "Idealisk vind upp till (knop)",
@@ -455,6 +460,28 @@
     "user": "Home Assistant-användare",
     "no_user": "Ingen",
     "user_hint": "SailCast öppnas med den här seglaren för den användaren."
+  },
+  "hours": {
+    "title": "Seglingstider: {day}",
+    "this_day": "Den här dagen",
+    "free": "Ledig hela dagen",
+    "free_hint": "{hours}.",
+    "off": "Ingen segling",
+    "off_hint": "Inga seglingsfönster den här dagen.",
+    "set": "De här tiderna",
+    "set_hint": "Välj start och slut.",
+    "usual": "Vanligtvis på {day}: {hours}.",
+    "hint": "Bara den här dagen ändras. De vanliga tiderna är kvar som de är.",
+    "back": "Tillbaka till de vanliga tiderna",
+    "changed": "{hours} (ändrat)",
+    "change_label": "Ändra tiderna ({day}): {hours}",
+    "undo_label": "Tillbaka till de vanliga tiderna ({day})",
+    "saved": "Tiderna ändrade ({day}).",
+    "reset": "Tillbaka till de vanliga tiderna ({day}).",
+    "span": "{start} till {end}",
+    "daylight": "Soluppgång till solnedgång",
+    "any_time": "När som helst",
+    "midnight": "midnatt"
   },
   "rain": {
     "avoid": "Undvik regn",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. Försiktighet från {caution} knop, farligt från {dangerous} knop.",
     "length_feet": "Längd (fot)",
     "length_meters": "Längd (m)",
+    "lights": "Lanternor",
+    "lights_hint": "Slå på om båten har fungerande lanternor. Då räknas även timmarna efter mörkrets inbrott, inom seglarens tider.",
     "limits": "Gränser för den här storleken, samma på alla färdighetsnivåer"
   },
   "spot": {

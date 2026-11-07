@@ -10,11 +10,13 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Container, Iterable, Mapping
 from dataclasses import asdict, dataclass, field
+from datetime import date
 from enum import StrEnum
+from types import MappingProxyType
 from typing import Any, Final
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
-from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS
+from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, WEEKDAYS
 
 from .const import (
     CONF_AHEAD,
@@ -32,9 +34,11 @@ from .const import (
     CONF_END,
     CONF_EXPOSED,
     CONF_FETCH,
+    CONF_HOURS,
     CONF_IDEAL_HIGH,
     CONF_IDEAL_LOW,
     CONF_LENGTH,
+    CONF_LIGHTS,
     CONF_MARINE_ZONE,
     CONF_MIN_SCORE,
     CONF_OFFSHORE,
@@ -188,21 +192,27 @@ class Spot:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Boat:
-    """A boat. Its length is in meters."""
+    """A boat. Its length is in meters.
+
+    A boat with navigation lights can sail after dark, so every hour counts
+    for it, not only daylight hours.
+    """
 
     id: str
     name: str
     size_class: SizeClass
     length: float
+    lights: bool = False
 
     @classmethod
     def from_subentry(cls, subentry: ConfigSubentry) -> Boat:
-        """Read a boat from its subentry."""
+        """Read a boat from its subentry. Older boats have no lights."""
         return cls(
             id=subentry.subentry_id,
             name=subentry.title,
             size_class=SizeClass(subentry.data[CONF_SIZE_CLASS]),
             length=subentry.data[CONF_LENGTH],
+            lights=subentry.data.get(CONF_LIGHTS, False),
         )
 
 
@@ -261,25 +271,57 @@ class AutoCalendar:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class Hours:
+    """When a sailor can sail on a day, from `start` to `end`.
+
+    Both are times of day such as "17:00:00". A missing start or end means
+    sunrise or sunset, or midnight in a boat with navigation lights.
+    """
+
+    start: str | None = None
+    end: str | None = None
+
+    @classmethod
+    def from_data(cls, data: Mapping[str, Any] | None) -> Hours:
+        """Read the hours, which may have neither time."""
+        data = data or {}
+        return cls(start=data.get(CONF_START), end=data.get(CONF_END))
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Sailor:
     """A sailor, with their boats and when they can sail.
 
-    The first boat is their default. A missing start or end means sunrise or
-    sunset. `user` is the Home Assistant user the panel opens on this sailor
-    for.
+    The first boat is their default. `week` has their hours on each day of
+    the week they sail, by key such as "sat"; the days left out they don't.
+    `user` is the Home Assistant user the panel opens on this sailor for.
     """
 
     id: str
     name: str
     skill: Skill
     boats: tuple[str, ...]
-    days: tuple[str, ...]
-    start: str | None = None
-    end: str | None = None
+    week: Mapping[str, Hours] = field(default_factory=dict, hash=False)
     user: str | None = None
     comfort: Comfort = Comfort()
     auto_calendar: AutoCalendar | None = None
+
+    @property
+    def days(self) -> tuple[str, ...]:
+        """Return the days of the week they sail, Monday first."""
+        return tuple(day for day in WEEKDAYS if day in self.week)
+
+    def hours_on(
+        self, day: date, changes: Mapping[date, Hours | None] = MappingProxyType({})
+    ) -> Hours | None:
+        """Return their hours on a date, or None if they don't sail that day.
+
+        A change made for the date comes first, then the weekday's hours.
+        """
+        if day in changes:
+            return changes[day]
+        return self.week.get(WEEKDAYS[day.weekday()])
 
     @classmethod
     def from_subentry(
@@ -295,13 +337,23 @@ class Sailor:
             name=subentry.title,
             skill=Skill(data[CONF_SKILL]),
             boats=tuple(boat for boat in data[CONF_BOATS] if boat in boats),
-            days=tuple(data[CONF_DAYS]),
-            start=data.get(CONF_START),
-            end=data.get(CONF_END),
+            week=week_hours(data),
             user=data.get(CONF_USER),
             comfort=Comfort.from_data(data.get(CONF_COMFORT)),
             auto_calendar=AutoCalendar.from_data(data.get(CONF_AUTO_CALENDAR), spots),
         )
+
+
+def week_hours(data: Mapping[str, Any]) -> dict[str, Hours]:
+    """Return a sailor's saved hours on each day they sail, Monday first.
+
+    Sailors saved before each day had hours of its own have one start and
+    end, which every day they sail gets.
+    """
+    days = in_order(data[CONF_DAYS], WEEKDAYS)
+    if (hours := data.get(CONF_HOURS)) is None:
+        return dict.fromkeys(days, Hours(data.get(CONF_START), data.get(CONF_END)))
+    return {day: Hours.from_data(hours.get(day)) for day in days}
 
 
 @dataclass(frozen=True, slots=True)
@@ -402,11 +454,19 @@ def check_sailor(
         errors[CONF_BOATS] = "unknown_boat"
     if not data[CONF_DAYS]:
         errors[CONF_DAYS] = "no_days"
-    start, end = data.get(CONF_START), data.get(CONF_END)
-    if start and end and start >= end:
-        errors[CONF_END] = "end_before_start"
+    errors.update(check_hours(data.get(CONF_HOURS) or {}))
     errors.update(check_comfort(data.get(CONF_COMFORT) or {}))
     errors.update(check_auto_calendar(data.get(CONF_AUTO_CALENDAR), spots))
+    return errors
+
+
+def check_hours(hours: Mapping[str, Mapping[str, Any]]) -> dict[str, str]:
+    """Return errors in each day's hours, under the day's end, such as mon_end."""
+    errors = {}
+    for day, times in hours.items():
+        start, end = times.get(CONF_START), times.get(CONF_END)
+        if start and end and start >= end:
+            errors[f"{day}_{CONF_END}"] = "end_before_start"
     return errors
 
 

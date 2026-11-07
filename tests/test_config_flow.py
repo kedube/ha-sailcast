@@ -38,7 +38,7 @@ SOURCES = {
     "airport": "KNZY",
 }
 # What the forms send for their folded sections when they're left alone.
-SECTIONS = {"comfort": {"rain": "some"}, "auto_calendar": {}}
+SECTIONS = {"hours": {}, "comfort": {"rain": "some"}, "auto_calendar": {}}
 NO_SENSORS = {"sensors": {}}
 # What a sailor saved with the sections left alone has.
 NO_EXTRAS = {
@@ -356,10 +356,15 @@ async def test_add_boat_in_feet(hass: HomeAssistant, entry: MockConfigEntry) -> 
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     boat = _only(entry, SUBENTRY_BOAT)
-    assert dict(boat.data) == {"size_class": "small_keelboat", "length": 6.096}
+    assert dict(boat.data) == {
+        "size_class": "small_keelboat",
+        "length": 6.096,
+        "lights": False,
+    }
 
     result = await _edit(hass, entry, boat.subentry_id)
     assert _suggested(result, "length") == 20.0
+    assert _suggested(result, "lights") is False
 
 
 async def test_add_boat_in_meters(hass: HomeAssistant, entry: MockConfigEntry) -> None:
@@ -368,10 +373,15 @@ async def test_add_boat_in_meters(hass: HomeAssistant, entry: MockConfigEntry) -
         hass,
         entry,
         SUBENTRY_BOAT,
-        {"name": "Cruiser", "size_class": "cruiser", "length": 10.4},
+        {"name": "Cruiser", "size_class": "cruiser", "length": 10.4, "lights": True},
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert _only(entry, SUBENTRY_BOAT).data["length"] == 10.4
+    boat = _only(entry, SUBENTRY_BOAT)
+    assert boat.data["length"] == 10.4
+    assert boat.data["lights"] is True
+
+    result = await _edit(hass, entry, boat.subentry_id)
+    assert _suggested(result, "lights") is True
 
 
 async def test_boat_length_out_of_range(
@@ -397,7 +407,10 @@ async def test_sailor_needs_a_boat(hass: HomeAssistant, entry: MockConfigEntry) 
 
 
 async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> None:
-    """A sailor's usual boat comes first, and days are kept in week order."""
+    """A sailor's usual boat comes first, and days are kept in week order.
+
+    Each day they sail keeps its own hours; the other days' are dropped.
+    """
     result = await _add(
         hass,
         full_entry,
@@ -408,9 +421,16 @@ async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> N
             "default_boat": "boat_cruiser",
             "other_boats": ["boat_keelboat", "boat_cruiser"],
             "days": ["sun", "fri", "sat"],
-            "end": "16:30:00",
         }
-        | SECTIONS,
+        | SECTIONS
+        | {
+            "hours": {
+                "fri_start": "17:00:00",
+                "fri_end": "20:30:00",
+                "sun_end": "16:30:00",
+                "mon_start": "06:00:00",
+            }
+        },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     sam = next(
@@ -422,8 +442,11 @@ async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> N
         "skill": "beginner",
         "boats": ["boat_cruiser", "boat_keelboat"],
         "days": ["fri", "sat", "sun"],
-        "start": None,
-        "end": "16:30:00",
+        "hours": {
+            "fri": {"start": "17:00:00", "end": "20:30:00"},
+            "sat": {"start": None, "end": None},
+            "sun": {"start": None, "end": "16:30:00"},
+        },
         **NO_EXTRAS,
     }
 
@@ -457,8 +480,8 @@ async def test_new_sailor_defaults(hass: HomeAssistant, entry: MockConfigEntry) 
     [
         ({"days": []}, {"days": "no_days"}),
         (
-            {"start": "15:00:00", "end": "09:00:00"},
-            {"end": "end_before_start"},
+            {"hours": {"sat_start": "15:00:00", "sat_end": "09:00:00"}},
+            {"sat_end": "end_before_start"},
         ),
     ],
 )
@@ -468,7 +491,7 @@ async def test_sailor_errors(
     changes: dict[str, Any],
     errors: dict[str, str],
 ) -> None:
-    """Missing days and a finish before the start are caught."""
+    """Missing days and a day's finish before its start are caught."""
     result = await _edit(hass, full_entry, "sailor_alex")
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -507,11 +530,16 @@ async def test_boat_removed_while_editing(
 
 
 async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> None:
-    """Editing a sailor shows their boats split into usual and other."""
+    """Editing a sailor shows their boats split into usual and other.
+
+    Alex was saved with one start for every day, which each of their days
+    now shows.
+    """
     result = await _edit(hass, full_entry, "sailor_alex")
     assert _suggested(result, "default_boat") == "boat_keelboat"
     assert _suggested(result, "other_boats") == ["boat_cruiser"]
-    assert _suggested(result, "start") == "09:00:00"
+    assert _suggested_in(result, "hours", "sat_start") == "09:00:00"
+    assert _suggested_in(result, "hours", "sun_start") == "09:00:00"
 
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -521,15 +549,18 @@ async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> 
             "default_boat": "boat_cruiser",
             "days": ["sat", "sun"],
         }
-        | SECTIONS,
+        | SECTIONS
+        | {"hours": {"sat_start": "09:00:00"}},
     )
     assert result["type"] is FlowResultType.ABORT
     assert dict(full_entry.subentries["sailor_alex"].data) == {
         "skill": "advanced",
         "boats": ["boat_cruiser"],
         "days": ["sat", "sun"],
-        "start": None,
-        "end": None,
+        "hours": {
+            "sat": {"start": "09:00:00", "end": None},
+            "sun": {"start": None, "end": None},
+        },
         **NO_EXTRAS,
     }
 
@@ -581,6 +612,7 @@ async def test_sailor_comfort_and_calendar(
         "skill": "beginner",
         "default_boat": "boat_keelboat",
         "days": ["sat"],
+        "hours": {},
         "user": person.id,
         "comfort": {"ideal_low": 6, "ideal_high": 10, "coldest": 59, "rain": "any"},
         "auto_calendar": {

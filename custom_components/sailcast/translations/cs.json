@@ -102,11 +102,13 @@
           "data": {
             "name": "Jméno",
             "size_class": "Velikost",
-            "length": "Délka"
+            "length": "Délka",
+            "lights": "Navigační světla"
           },
           "data_description": {
             "name": "Například jméno lodi.",
-            "size_class": "Každá velikost má vlastní bezpečnostní limity pro vítr, nárazy větru a vlny."
+            "size_class": "Každá velikost má vlastní bezpečnostní limity pro vítr, nárazy větru a vlny.",
+            "lights": "Zapněte, pokud má loď funkční navigační světla. Pak se počítají i hodiny po setmění, v rámci časů jachtaře."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Jméno",
             "size_class": "Velikost",
-            "length": "Délka"
+            "length": "Délka",
+            "lights": "Navigační světla"
           },
           "data_description": {
             "name": "Například jméno lodi.",
-            "size_class": "Každá velikost má vlastní bezpečnostní limity pro vítr, nárazy větru a vlny."
+            "size_class": "Každá velikost má vlastní bezpečnostní limity pro vítr, nárazy větru a vlny.",
+            "lights": "Zapněte, pokud má loď funkční navigační světla. Pak se počítají i hodiny po setmění, v rámci časů jachtaře."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Obvyklá loď",
             "other_boats": "Další lodě",
             "days": "Dny plavby",
-            "start": "Nejčasnější začátek",
-            "end": "Nejpozdější konec",
             "user": "Uživatel Home Assistant"
           },
           "data_description": {
             "skill": "Každý jachtař si svou úroveň určuje sám. Úroveň určuje jeho limit průměrného větru; nárazy větru se do něj nepočítají.",
             "default_boat": "SailCast hodnotí tuto loď, pokud jachtař nevybere jinou.",
             "other_boats": "Další lodě, na kterých tento jachtař vyplouvá.",
-            "start": "Necháte-li prázdné, začátek bude při východu slunce.",
-            "end": "Necháte-li prázdné, konec bude při západu slunce.",
             "user": "Tomuto uživateli se panel otevře s tímto jachtařem."
           },
           "sections": {
+            "hours": {
+              "name": "Hodiny pro každý den",
+              "description": "Pro výše zvolené dny plavby. Necháte-li čas prázdný, začátek bude při východu a konec při západu slunce, nebo v kteroukoli hodinu na lodi s navigačními světly. Jeden den, třeba volno, změníte v panelu SailCast.",
+              "data": {
+                "mon_start": "Pondělí: nejčasnější začátek",
+                "mon_end": "Pondělí: nejpozdější konec",
+                "tue_start": "Úterý: nejčasnější začátek",
+                "tue_end": "Úterý: nejpozdější konec",
+                "wed_start": "Středa: nejčasnější začátek",
+                "wed_end": "Středa: nejpozdější konec",
+                "thu_start": "Čtvrtek: nejčasnější začátek",
+                "thu_end": "Čtvrtek: nejpozdější konec",
+                "fri_start": "Pátek: nejčasnější začátek",
+                "fri_end": "Pátek: nejpozdější konec",
+                "sat_start": "Sobota: nejčasnější začátek",
+                "sat_end": "Sobota: nejpozdější konec",
+                "sun_start": "Neděle: nejčasnější začátek",
+                "sun_end": "Neděle: nejpozdější konec"
+              }
+            },
             "comfort": {
               "name": "Pohodlí",
               "description": "Co má tento jachtař rád. Mění to skóre, nikdy hodnocení bezpečnosti.",
@@ -197,19 +217,35 @@
             "default_boat": "Obvyklá loď",
             "other_boats": "Další lodě",
             "days": "Dny plavby",
-            "start": "Nejčasnější začátek",
-            "end": "Nejpozdější konec",
             "user": "Uživatel Home Assistant"
           },
           "data_description": {
             "skill": "Každý jachtař si svou úroveň určuje sám. Úroveň určuje jeho limit průměrného větru; nárazy větru se do něj nepočítají.",
             "default_boat": "SailCast hodnotí tuto loď, pokud jachtař nevybere jinou.",
             "other_boats": "Další lodě, na kterých tento jachtař vyplouvá.",
-            "start": "Necháte-li prázdné, začátek bude při východu slunce.",
-            "end": "Necháte-li prázdné, konec bude při západu slunce.",
             "user": "Tomuto uživateli se panel otevře s tímto jachtařem."
           },
           "sections": {
+            "hours": {
+              "name": "Hodiny pro každý den",
+              "description": "Pro výše zvolené dny plavby. Necháte-li čas prázdný, začátek bude při východu a konec při západu slunce, nebo v kteroukoli hodinu na lodi s navigačními světly. Jeden den, třeba volno, změníte v panelu SailCast.",
+              "data": {
+                "mon_start": "Pondělí: nejčasnější začátek",
+                "mon_end": "Pondělí: nejpozdější konec",
+                "tue_start": "Úterý: nejčasnější začátek",
+                "tue_end": "Úterý: nejpozdější konec",
+                "wed_start": "Středa: nejčasnější začátek",
+                "wed_end": "Středa: nejpozdější konec",
+                "thu_start": "Čtvrtek: nejčasnější začátek",
+                "thu_end": "Čtvrtek: nejpozdější konec",
+                "fri_start": "Pátek: nejčasnější začátek",
+                "fri_end": "Pátek: nejpozdější konec",
+                "sat_start": "Sobota: nejčasnější začátek",
+                "sat_end": "Sobota: nejpozdější konec",
+                "sun_start": "Neděle: nejčasnější začátek",
+                "sun_end": "Neděle: nejpozdější konec"
+              }
+            },
             "comfort": {
               "name": "Pohodlí",
               "description": "Co má tento jachtař rád. Mění to skóre, nikdy hodnocení bezpečnosti.",

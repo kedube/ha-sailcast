@@ -44,7 +44,7 @@
     "best_eyebrow": "Najlepszy termin w tym tygodniu · {who}",
     "no_window": "Brak dobrego okna w tym tygodniu",
     "best_day": "Najlepszy dzień to {day}, z wynikiem {score} ({band}).",
-    "window_rule": "Dobre okno to co najmniej dwie godziny z rzędu z wynikiem 60 lub wyższym, za dnia i w twoich godzinach żeglowania.",
+    "window_rule": "Dobre okno to co najmniej dwie godziny z rzędu z wynikiem 60 lub wyższym, w twoich godzinach żeglowania, i za dnia, chyba że łódź ma światła nawigacyjne.",
     "gusts": "Porywy {gust} kn",
     "high": "Wysoka woda {time}",
     "low": "Niska woda {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Prąd {speed} kn, odpływ",
     "current_slack": "Prąd {speed} kn (zastój)",
     "hours": "Godzina po godzinie",
-    "hours_sub": "Godziny dzienne"
+    "hours_sub": "Godziny dzienne",
+    "hours_sub_lights": "Wszystkie godziny, ze światłami nawigacyjnymi"
   },
   "ai": {
     "button": "Podsumuj za pomocą AI",
@@ -311,9 +312,10 @@
     "loading": "Ładowanie mapy wiatru…",
     "failed": "Nie udało się załadować mapy.",
     "budget": "Mapa wiatru jest wstrzymana do jutra, żeby SailCast nie przekroczył dziennego limitu darmowych zapytań do Open-Meteo. Sama prognoza nadal się aktualizuje.",
+    "view_budget": "Aby nie przekroczyć dziennego limitu darmowych zapytań do Open-Meteo, do jutra wiatr widać tylko w obszarach, które SailCast już ma.",
     "unavailable": "Nie udało się załadować mapy wiatru: {message}",
     "stale": "To wiatr według prognozy z {time}; nie udało się pobrać nowszej.",
-    "credits": "Wiatr © Open-Meteo (CC BY 4.0), z najlepszego modelu dla tego obszaru, w rozdzielczości ok. 2 km i co godzinę. Mapa © autorzy OpenStreetMap, znaki nawigacyjne © OpenSeaMap. Nie do nawigacji."
+    "credits": "Wiatr © Open-Meteo (CC BY 4.0), z najlepszego modelu dla tego obszaru, co godzinę, z punktami co ok. 2 km w zbliżeniu i rzadszymi po oddaleniu mapy. Mapa © autorzy OpenStreetMap, znaki nawigacyjne © OpenSeaMap. Nie do nawigacji."
   },
   "table": {
     "direction": "Kierunek",
@@ -405,6 +407,7 @@
     "sunrise": "wschodu słońca",
     "sunset": "zachodu słońca",
     "sailed_by": "Żeglarze: {sailors}",
+    "lights": "światła nawigacyjne",
     "no_sailors": "Brak żeglarzy",
     "sources": "Źródła",
     "map_km": "mapa wiatru {value} km",
@@ -442,9 +445,11 @@
     "when": "Kiedy możesz żeglować",
     "from": "Od",
     "until": "Do",
+    "from_day": "{day}, od",
+    "until_day": "{day}, do",
     "sunrise": "Wschód słońca",
     "sunset": "Zachód słońca",
-    "when_hint": "Okna żeglarskie mieszczą się tylko w tych godzinach. SailCast ocenia wyłącznie godziny dzienne.",
+    "when_hint": "Zaznacz dni, w które żeglujesz, każdy z własnymi godzinami; okna żeglarskie mieszczą się tylko w nich. Jeśli zostawisz wschód i zachód słońca, łódź ze światłami nawigacyjnymi może żeglować o każdej godzinie. Pojedynczy dzień, na przykład wolny, zmienisz godzinami pod tym dniem w tygodniu.",
     "comfort": "Komfort",
     "ideal_low": "Idealny wiatr od (kn)",
     "ideal_high": "Idealny wiatr do (kn)",
@@ -455,6 +460,28 @@
     "user": "Użytkownik Home Assistant",
     "no_user": "Brak",
     "user_hint": "Temu użytkownikowi SailCast otwiera się od razu z tym żeglarzem."
+  },
+  "hours": {
+    "title": "Godziny żeglowania: {day}",
+    "this_day": "Ten dzień",
+    "free": "Wolne cały dzień",
+    "free_hint": "{hours}.",
+    "off": "Bez żeglowania",
+    "off_hint": "Tego dnia bez okien żeglarskich.",
+    "set": "Te godziny",
+    "set_hint": "Wybierz początek i koniec.",
+    "usual": "Zwykle ({day}): {hours}.",
+    "hint": "Zmienia się tylko ten dzień. Zwykłe godziny pozostają bez zmian.",
+    "back": "Wróć do zwykłych godzin",
+    "changed": "{hours} (zmienione)",
+    "change_label": "Zmień godziny ({day}): {hours}",
+    "undo_label": "Wróć do zwykłych godzin ({day})",
+    "saved": "Godziny zmienione ({day}).",
+    "reset": "Przywrócono zwykłe godziny ({day}).",
+    "span": "od {start} do {end}",
+    "daylight": "Od wschodu do zachodu słońca",
+    "any_time": "O każdej porze",
+    "midnight": "północy"
   },
   "rain": {
     "avoid": "Unikam deszczu",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. „Uwaga” od {caution} kn, „niebezpieczne” od {dangerous} kn.",
     "length_feet": "Długość (ft)",
     "length_meters": "Długość (m)",
+    "lights": "Światła nawigacyjne",
+    "lights_hint": "Włącz, jeśli łódź ma sprawne światła nawigacyjne. Wtedy liczą się też godziny po zmroku, w godzinach żeglarza.",
     "limits": "Limity dla tej wielkości, takie same na każdym poziomie umiejętności"
   },
   "spot": {

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from types import MappingProxyType
 
 from homeassistant.config_entries import ConfigSubentry
@@ -31,8 +32,62 @@ def test_profiles_from_entry(full_entry: MockConfigEntry) -> None:
     alex = read.sailors["sailor_alex"]
     assert alex.skill is Skill.INTERMEDIATE
     assert alex.boats == ("boat_keelboat", "boat_cruiser")
-    assert alex.start == "09:00:00"
-    assert alex.end is None
+    assert alex.days == ("sat", "sun")
+    assert alex.week["sat"] == profiles.Hours("09:00:00", None)
+
+
+def test_hours_from_before_each_day_had_its_own() -> None:
+    """A sailor saved with one start and end gets them on every day they sail."""
+    old = {"days": ["sun", "sat"], "start": "09:00:00", "end": "15:00:00"}
+    assert profiles.week_hours(old) == {
+        "sat": profiles.Hours("09:00:00", "15:00:00"),
+        "sun": profiles.Hours("09:00:00", "15:00:00"),
+    }
+    new = {
+        "days": ["fri", "sat"],
+        "hours": {"fri": {"start": "17:00:00", "end": None}, "mon": {}},
+    }
+    # A sailing day without hours of its own runs sunrise to sunset.
+    assert profiles.week_hours(new) == {
+        "fri": profiles.Hours("17:00:00", None),
+        "sat": profiles.Hours(),
+    }
+
+
+def test_hours_on_a_date() -> None:
+    """A change made for a date comes before the weekday's hours."""
+    sailor = profiles.Sailor(
+        id="alex",
+        name="Alex",
+        skill=Skill.INTERMEDIATE,
+        boats=("boat",),
+        week={"sat": profiles.Hours("09:00:00")},
+    )
+    saturday, sunday = date(2026, 11, 7), date(2026, 11, 8)
+    assert sailor.hours_on(saturday) == profiles.Hours("09:00:00")
+    assert sailor.hours_on(sunday) is None
+    changes = {saturday: None, sunday: profiles.Hours()}
+    assert sailor.hours_on(saturday, changes) is None
+    assert sailor.hours_on(sunday, changes) == profiles.Hours()
+
+
+def test_boat_lights() -> None:
+    """Boats saved before navigation lights existed have none."""
+
+    def boat(**data: object) -> profiles.Boat:
+        return profiles.Boat.from_subentry(
+            ConfigSubentry(
+                data=MappingProxyType(
+                    {"size_class": "cruiser", "length": 10.4, **data}
+                ),
+                subentry_type="boat",
+                title="Cruiser",
+                unique_id=None,
+            )
+        )
+
+    assert boat().lights is False
+    assert boat(lights=True).lights is True
 
 
 def test_removed_boats_are_left_out(full_entry: MockConfigEntry) -> None:
@@ -54,9 +109,10 @@ def test_as_dict_is_sorted_by_name(full_entry: MockConfigEntry) -> None:
         "name": "Alex",
         "skill": "intermediate",
         "boats": ("boat_keelboat", "boat_cruiser"),
-        "days": ("sat", "sun"),
-        "start": "09:00:00",
-        "end": None,
+        "week": {
+            "sat": {"start": "09:00:00", "end": None},
+            "sun": {"start": "09:00:00", "end": None},
+        },
         "user": None,
         "comfort": {
             "ideal_low": None,
@@ -77,21 +133,24 @@ def test_check_name() -> None:
 
 
 def test_check_sailor() -> None:
-    """A sailor needs known boats, a day, and a finish after the start."""
+    """A sailor needs known boats, a day, and each day's finish after its start."""
     good = {
         "boats": ["a"],
-        "days": ["sat"],
-        "start": "08:00:00",
-        "end": "12:00:00",
+        "days": ["fri", "sat"],
+        "hours": {
+            "fri": {"start": "17:00:00", "end": None},
+            "sat": {"start": "08:00:00", "end": "12:00:00"},
+        },
     }
     assert profiles.check_sailor(good, {"a"}) == {}
     assert profiles.check_sailor(good | {"boats": []}, {"a"}) == {
         "boats": "unknown_boat"
     }
-    assert profiles.check_sailor(good | {"end": "08:00:00"}, {"a"}) == {
-        "end": "end_before_start"
+    assert profiles.check_sailor(good | {"days": []}, {"a"}) == {"days": "no_days"}
+    late = {"sat": {"start": "08:00:00", "end": "08:00:00"}}
+    assert profiles.check_sailor(good | {"hours": late}, {"a"}) == {
+        "sat_end": "end_before_start"
     }
-    assert profiles.check_sailor(good | {"start": None}, {"a"}) == {}
 
 
 def test_spots_from_before_sources(entry: MockConfigEntry) -> None:

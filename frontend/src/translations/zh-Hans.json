@@ -44,7 +44,7 @@
     "best_eyebrow": "本周最佳时段 · {who}",
     "no_window": "本周没有合适的航行窗口",
     "best_day": "最好的一天是{day}，评分 {score}（{band}）。",
-    "window_rule": "合适的航行窗口需要在白天、在您的航行时间内，连续至少两小时评分达到 60 或以上。",
+    "window_rule": "合适的航行窗口需要在您的航行时间内，连续至少两小时评分达到 60 或以上；除非船有航行灯，否则还须在白天。",
     "gusts": "阵风 {gust} 节",
     "high": "高潮 {time}",
     "low": "低潮 {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "潮流 {speed} 节（落潮流）",
     "current_slack": "潮流 {speed} 节（憩流）",
     "hours": "逐小时",
-    "hours_sub": "白天时段"
+    "hours_sub": "白天时段",
+    "hours_sub_lights": "所有时段（有航行灯）"
   },
   "ai": {
     "button": "用 AI 总结",
@@ -311,9 +312,10 @@
     "loading": "正在加载风场图…",
     "failed": "地图无法加载。",
     "budget": "风场图暂停至明天，以免 SailCast 超出 Open-Meteo 每日的免费调用次数。预报本身照常更新。",
+    "view_budget": "为了不超出 Open-Meteo 每日的免费调用次数，明天之前风场只显示 SailCast 已有数据的区域。",
     "unavailable": "风场图无法加载：{message}",
     "stale": "这是 {time} 预报的风况；SailCast 无法获取更新的预报。",
-    "credits": "风数据 © Open-Meteo（CC BY 4.0），来自其在该地区的最佳模型，分辨率约 2 公里，逐小时更新。地图 © OpenStreetMap 贡献者，航标 © OpenSeaMap。不可用于导航。"
+    "credits": "风数据 © Open-Meteo（CC BY 4.0），来自其在该地区的最佳模型，逐小时更新；近看时数据点间距约 2 公里，缩小地图时间距更大。地图 © OpenStreetMap 贡献者，航标 © OpenSeaMap。不可用于导航。"
   },
   "table": {
     "direction": "风向",
@@ -405,6 +407,7 @@
     "sunrise": "日出",
     "sunset": "日落",
     "sailed_by": "驾驶者：{sailors}",
+    "lights": "航行灯",
     "no_sailors": "暂无帆船手",
     "sources": "数据来源",
     "map_km": "风场图 {value} 公里",
@@ -442,9 +445,11 @@
     "when": "可航行时间",
     "from": "开始",
     "until": "结束",
+    "from_day": "{day}，开始",
+    "until_day": "{day}，结束",
     "sunrise": "日出",
     "sunset": "日落",
-    "when_hint": "航行窗口只会落在这些时间内。SailCast 只评估白天的时段。",
+    "when_hint": "勾选你航行的日子，每天各有自己的时间；航行窗口只会落在这些时间内。如果保持日出和日落，有航行灯的船可以在任何时段航行。要更改某一天（例如休假日），请使用一周视图中该天下方的时间。",
     "comfort": "舒适度",
     "ideal_low": "理想风速下限（节）",
     "ideal_high": "理想风速上限（节）",
@@ -455,6 +460,28 @@
     "user": "Home Assistant 用户",
     "no_user": "无",
     "user_hint": "该用户打开 SailCast 时，会默认显示此帆船手。"
+  },
+  "hours": {
+    "title": "航行时间：{day}",
+    "this_day": "这一天",
+    "free": "全天有空",
+    "free_hint": "{hours}。",
+    "off": "不航行",
+    "off_hint": "这一天没有航行窗口。",
+    "set": "指定时间",
+    "set_hint": "选择开始和结束时间。",
+    "usual": "通常（{day}）：{hours}。",
+    "hint": "只更改这一天，平时的时间保持不变。",
+    "back": "恢复平时的时间",
+    "changed": "{hours}（已更改）",
+    "change_label": "更改时间（{day}）：{hours}",
+    "undo_label": "恢复平时的时间（{day}）",
+    "saved": "时间已更改（{day}）。",
+    "reset": "已恢复平时的时间（{day}）。",
+    "span": "{start}–{end}",
+    "daylight": "日出至日落",
+    "any_time": "任何时间",
+    "midnight": "午夜"
   },
   "rain": {
     "avoid": "避开雨天",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}。风速 {caution} 节起为“注意”，{dangerous} 节起为“危险”。",
     "length_feet": "长度（英尺）",
     "length_meters": "长度（米）",
+    "lights": "航行灯",
+    "lights_hint": "如果船上有可正常使用的航行灯，请打开。这样天黑后的时段也会计入，但仍须在帆船手的时间之内。",
     "limits": "此尺寸的限值，在所有技能水平下都相同"
   },
   "spot": {

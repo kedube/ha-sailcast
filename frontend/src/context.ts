@@ -7,6 +7,7 @@ import type { Translate } from "./text";
 import type {
   Boat,
   Day,
+  DayHours,
   Forecast,
   HomeAssistant,
   PlannedList,
@@ -25,6 +26,10 @@ export interface Actions {
   openPlanned(sail: PlannedSail): void;
   removePlanned(sail: PlannedSail): void;
   openAuto(sailor: string): void;
+  /** Change the sailor's hours on a day of the week, for that date only. */
+  openHours(index: number): void;
+  /** Go back to the sailor's usual hours on a day of the week. */
+  resetHours(index: number): void;
   editSpot(id?: string): void;
   editSailor(id?: string): void;
   editBoat(id?: string): void;
@@ -82,5 +87,29 @@ export function dayAndDate(ctx: Ctx, day: Day): string {
   return ctx.t("week.day_date", {
     day: isToday(ctx, day) ? ctx.t("week.today") : ctx.fmt.weekday(day.date, "long"),
     date: ctx.fmt.shortDate(day.date),
+  });
+}
+
+/** Whether this user can change the chosen sailor's hours: admins, or the sailor's own. */
+export function canSetHours(ctx: Ctx): boolean {
+  const user = ctx.sailor?.user;
+  return ctx.admin || (!!user && user === ctx.hass.user?.id);
+}
+
+/**
+ * A day's hours in words, such as "5 PM to sunset", "Sunrise to sunset" or
+ * "Not sailing". In a boat with lights, a missing time is no limit.
+ */
+export function hoursText(ctx: Ctx, date: string, hours: DayHours | null, lights: boolean): string {
+  const { t, fmt } = ctx;
+  if (!hours) return t("week.not_sailing");
+  if (!hours.start && !hours.end) return t(lights ? "hours.any_time" : "hours.daylight");
+  const time = (value: string | null, fallback: string): string =>
+    value
+      ? fmt.hourOf(date, Number(value.slice(0, 2)) + Number(value.slice(3, 5)) / 60)
+      : t(fallback);
+  return t("hours.span", {
+    start: time(hours.start, lights ? "hours.midnight" : "settings.sunrise"),
+    end: time(hours.end, lights ? "hours.midnight" : "settings.sunset"),
   });
 }

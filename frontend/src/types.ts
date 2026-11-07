@@ -79,6 +79,8 @@ export interface Boat {
   size_class: SizeClass;
   /** Meters. */
   length: number;
+  /** Navigation lights: the boat can sail after dark. */
+  lights: boolean;
 }
 
 export interface Comfort {
@@ -98,15 +100,23 @@ export interface AutoCalendar {
   spots: string[];
 }
 
+/**
+ * When a sailor can sail on a day, as times such as "17:00:00". A missing
+ * start or end means sunrise or sunset, or any hour in a boat with lights.
+ */
+export interface DayHours {
+  start: string | null;
+  end: string | null;
+}
+
 export interface Sailor {
   id: string;
   name: string;
   skill: Skill;
   /** Boat IDs, the usual boat first. */
   boats: string[];
-  days: string[];
-  start: string | null;
-  end: string | null;
+  /** Their hours on each day of the week they sail, by key such as "sat". */
+  week: Partial<Record<string, DayHours>>;
   user: string | null;
   comfort: Comfort;
   auto_calendar: AutoCalendar | null;
@@ -241,10 +251,14 @@ export interface Day {
   date: string;
   sunrise: string;
   sunset: string;
-  /** True once the day's daylight is over. */
+  /** True once the hours the boat can sail in are over: daylight, or the whole day with lights. */
   over: boolean;
-  /** Whether the sailor is free at any daylight hour still to come. */
+  /** Whether the sailor is free at any of those hours still to come. */
   available: boolean;
+  /** The sailor's hours that day, or null if they don't sail. */
+  hours: DayHours | null;
+  /** Whether those hours were set for this date, rather than the weekday's. */
+  changed: boolean;
   score: number | null;
   confidence: "high" | "medium" | "low" | null;
   spread: number | null;
@@ -297,6 +311,8 @@ export interface Forecast {
   spot: string;
   sailor: string;
   boat: string;
+  /** The boat has navigation lights, so its hours after dark count too. */
+  lights: boolean;
   now: string;
   fetched: string | null;
   days: Day[];
@@ -401,6 +417,8 @@ export interface SourceSuggestions {
  * degrees the wind comes from.
  */
 export interface WindGrid {
+  /** What tells this grid from others: its points and when it was fetched. */
+  id: string;
   fetched: string;
   /** Whether it's older than SailCast would like, because it couldn't fetch another. */
   stale: boolean;
@@ -416,6 +434,24 @@ export interface WindGrid {
   speed: (number | null)[][];
   gust: (number | null)[][];
   direction: (number | null)[][];
+}
+
+/** What a map shows: its edges, in degrees. */
+export interface Bounds {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+
+/**
+ * The reply to `sailcast/wind_view`: a grid for what the map shows, or none
+ * when the map's own still serves or none can be had yet, and then how many
+ * seconds to wait before asking again.
+ */
+export interface WindView {
+  grid: WindGrid | null;
+  retry: number | null;
 }
 
 /** A settings change's result: the profile's ID, or what's wrong. */

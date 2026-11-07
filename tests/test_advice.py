@@ -119,6 +119,21 @@ def test_calm_day() -> None:
     assert not any(item.hot for item in advice)
 
 
+def test_tides_after_dark_with_lights() -> None:
+    """With navigation lights, the tides after sunset count too."""
+    night = [
+        Hour(**(vars_of(hour) | {"start": DAY.sunset + timedelta(hours=index)}))
+        for index, hour in enumerate(hours([9, 9, 8], daylight=False))
+    ]
+    tide = TideEvent(DAY.sunset + timedelta(hours=1, minutes=30), 1.6, True)
+    lit = advise(SPOT, C, INT, DAY, night, tides=[tide], lights=True)
+    assert keys(lit) == ["wind", "tides", "sunset"]
+    assert by_key(lit, "tides").values == {
+        "events": [{"time": tide.time.isoformat(), "height": 1.6, "high": True}]
+    }
+    assert "tides" not in keys(advise(SPOT, C, INT, DAY, night, tides=[tide]))
+
+
 def test_day_over() -> None:
     """With no daylight left, there's only one thing to say."""
     assert keys(advise(SPOT, K, INT, DAY, [])) == ["day_over"]

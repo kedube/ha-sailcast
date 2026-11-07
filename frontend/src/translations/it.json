@@ -44,7 +44,7 @@
     "best_eyebrow": "Momento migliore della settimana · {who}",
     "no_window": "Nessuna buona finestra questa settimana",
     "best_day": "Il giorno migliore è {day}, con un punteggio di {score} ({band}).",
-    "window_rule": "Una buona finestra richiede almeno due ore di fila con punteggio di 60 o più, di giorno e dentro i tuoi orari di navigazione.",
+    "window_rule": "Una buona finestra richiede almeno due ore di fila con punteggio di 60 o più, dentro i tuoi orari di navigazione, e di giorno a meno che la barca non abbia luci di navigazione.",
     "gusts": "Raffiche {gust} kn",
     "high": "Alta {time}",
     "low": "Bassa {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Corrente {speed} kn di riflusso",
     "current_slack": "Corrente {speed} kn (stanca)",
     "hours": "Ora per ora",
-    "hours_sub": "Ore di luce"
+    "hours_sub": "Ore di luce",
+    "hours_sub_lights": "Tutte le ore, con luci di navigazione"
   },
   "ai": {
     "button": "Riassumi con l'IA",
@@ -311,9 +312,10 @@
     "loading": "Caricamento della mappa del vento…",
     "failed": "Impossibile caricare la mappa.",
     "budget": "La mappa del vento si ferma fino a domani, così SailCast resta entro le chiamate gratuite giornaliere di Open-Meteo. La previsione invece continua ad aggiornarsi.",
+    "view_budget": "Per restare entro le chiamate gratuite giornaliere di Open-Meteo, fino a domani il vento compare solo nelle zone che SailCast ha già.",
     "unavailable": "Impossibile caricare la mappa del vento: {message}",
     "stale": "Questo è il vento secondo la previsione di {time}; SailCast non è riuscito a scaricarne una più recente.",
-    "credits": "Vento © Open-Meteo (CC BY 4.0), dal suo modello migliore per l'area, circa ogni 2 km e ogni ora. Mappa © contributori di OpenStreetMap, segnalamenti marittimi © OpenSeaMap. Non usare per la navigazione."
+    "credits": "Vento © Open-Meteo (CC BY 4.0), dal suo modello migliore per l'area, ogni ora, con punti circa ogni 2 km da vicino e più distanziati allontanando la mappa. Mappa © contributori di OpenStreetMap, segnalamenti marittimi © OpenSeaMap. Non usare per la navigazione."
   },
   "table": {
     "direction": "Direzione",
@@ -405,6 +407,7 @@
     "sunrise": "alba",
     "sunset": "tramonto",
     "sailed_by": "Usata da {sailors}",
+    "lights": "luci di navigazione",
     "no_sailors": "Ancora nessun velista",
     "sources": "Fonti",
     "map_km": "mappa del vento {value} km",
@@ -442,9 +445,11 @@
     "when": "Quando puoi uscire",
     "from": "Da",
     "until": "Fino a",
+    "from_day": "{day}, da",
+    "until_day": "{day}, fino a",
     "sunrise": "Alba",
     "sunset": "Tramonto",
-    "when_hint": "Le finestre di navigazione cadono solo dentro questi orari. SailCast valuta sempre e solo le ore di luce.",
+    "when_hint": "Spunta i giorni in cui navighi, ognuno con i suoi orari; le finestre di navigazione cadono solo al loro interno. Se lasci alba e tramonto, una barca con luci di navigazione può navigare a qualsiasi ora. Per cambiare un solo giorno, come un giorno libero, usa gli orari sotto quel giorno nella settimana.",
     "comfort": "Comfort",
     "ideal_low": "Vento ideale da (kn)",
     "ideal_high": "Vento ideale fino a (kn)",
@@ -455,6 +460,28 @@
     "user": "Utente Home Assistant",
     "no_user": "Nessuno",
     "user_hint": "Per quell'utente, SailCast si apre su questo velista."
+  },
+  "hours": {
+    "title": "Orari di navigazione: {day}",
+    "this_day": "Questo giorno",
+    "free": "Libero tutto il giorno",
+    "free_hint": "{hours}.",
+    "off": "Niente vela",
+    "off_hint": "Nessuna finestra di navigazione quel giorno.",
+    "set": "Questi orari",
+    "set_hint": "Scegli inizio e fine.",
+    "usual": "Orario abituale ({day}): {hours}.",
+    "hint": "Cambia solo questo giorno. Gli orari abituali restano come sono.",
+    "back": "Torna agli orari abituali",
+    "changed": "{hours} (modificato)",
+    "change_label": "Cambia gli orari ({day}): {hours}",
+    "undo_label": "Torna agli orari abituali ({day})",
+    "saved": "Orari modificati ({day}).",
+    "reset": "Di nuovo gli orari abituali ({day}).",
+    "span": "{start}–{end}",
+    "daylight": "Dall'alba al tramonto",
+    "any_time": "A qualsiasi ora",
+    "midnight": "mezzanotte"
   },
   "rain": {
     "avoid": "Evita la pioggia",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. «Attenzione» da {caution} kn, «pericoloso» da {dangerous} kn.",
     "length_feet": "Lunghezza (ft)",
     "length_meters": "Lunghezza (m)",
+    "lights": "Luci di navigazione",
+    "lights_hint": "Attiva se la barca ha luci di navigazione funzionanti. Così contano anche le ore dopo il buio, dentro gli orari del velista.",
     "limits": "Limiti per questa dimensione, uguali a ogni livello"
   },
   "spot": {

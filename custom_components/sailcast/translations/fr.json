@@ -102,11 +102,13 @@
           "data": {
             "name": "Nom",
             "size_class": "Taille",
-            "length": "Longueur"
+            "length": "Longueur",
+            "lights": "Feux de navigation"
           },
           "data_description": {
             "name": "Par exemple, le nom du bateau.",
-            "size_class": "Chaque taille a ses propres limites de sécurité pour le vent, les rafales et les vagues."
+            "size_class": "Chaque taille a ses propres limites de sécurité pour le vent, les rafales et les vagues.",
+            "lights": "Activez si le bateau a des feux de navigation en état de marche. Les heures après la tombée de la nuit comptent alors aussi, dans les horaires du marin."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Nom",
             "size_class": "Taille",
-            "length": "Longueur"
+            "length": "Longueur",
+            "lights": "Feux de navigation"
           },
           "data_description": {
             "name": "Par exemple, le nom du bateau.",
-            "size_class": "Chaque taille a ses propres limites de sécurité pour le vent, les rafales et les vagues."
+            "size_class": "Chaque taille a ses propres limites de sécurité pour le vent, les rafales et les vagues.",
+            "lights": "Activez si le bateau a des feux de navigation en état de marche. Les heures après la tombée de la nuit comptent alors aussi, dans les horaires du marin."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Bateau habituel",
             "other_boats": "Autres bateaux",
             "days": "Jours de navigation",
-            "start": "Départ au plus tôt",
-            "end": "Retour au plus tard",
             "user": "Utilisateur Home Assistant"
           },
           "data_description": {
             "skill": "Chaque marin évalue lui-même son niveau. Ce niveau fixe sa limite de vent moyen ; les rafales n'entrent pas en compte.",
             "default_boat": "SailCast évalue ce bateau, sauf si le marin en choisit un autre.",
             "other_boats": "Les autres bateaux avec lesquels ce marin sort.",
-            "start": "Laissez vide pour partir au lever du soleil.",
-            "end": "Laissez vide pour rentrer au coucher du soleil.",
             "user": "Le panneau SailCast s'ouvre sur ce marin pour cet utilisateur."
           },
           "sections": {
+            "hours": {
+              "name": "Horaires de chaque jour",
+              "description": "Pour les jours de navigation choisis plus haut. Laissez une heure vide pour partir au lever du soleil ou rentrer au coucher du soleil, ou à toute heure avec un bateau équipé de feux de navigation. Un seul jour, comme un jour de congé, se modifie dans le panneau SailCast.",
+              "data": {
+                "mon_start": "Lundi : départ au plus tôt",
+                "mon_end": "Lundi : retour au plus tard",
+                "tue_start": "Mardi : départ au plus tôt",
+                "tue_end": "Mardi : retour au plus tard",
+                "wed_start": "Mercredi : départ au plus tôt",
+                "wed_end": "Mercredi : retour au plus tard",
+                "thu_start": "Jeudi : départ au plus tôt",
+                "thu_end": "Jeudi : retour au plus tard",
+                "fri_start": "Vendredi : départ au plus tôt",
+                "fri_end": "Vendredi : retour au plus tard",
+                "sat_start": "Samedi : départ au plus tôt",
+                "sat_end": "Samedi : retour au plus tard",
+                "sun_start": "Dimanche : départ au plus tôt",
+                "sun_end": "Dimanche : retour au plus tard"
+              }
+            },
             "comfort": {
               "name": "Confort",
               "description": "Ce que ce marin apprécie. Ces réglages modifient les notes, jamais un niveau de sécurité.",
@@ -197,19 +217,35 @@
             "default_boat": "Bateau habituel",
             "other_boats": "Autres bateaux",
             "days": "Jours de navigation",
-            "start": "Départ au plus tôt",
-            "end": "Retour au plus tard",
             "user": "Utilisateur Home Assistant"
           },
           "data_description": {
             "skill": "Chaque marin évalue lui-même son niveau. Ce niveau fixe sa limite de vent moyen ; les rafales n'entrent pas en compte.",
             "default_boat": "SailCast évalue ce bateau, sauf si le marin en choisit un autre.",
             "other_boats": "Les autres bateaux avec lesquels ce marin sort.",
-            "start": "Laissez vide pour partir au lever du soleil.",
-            "end": "Laissez vide pour rentrer au coucher du soleil.",
             "user": "Le panneau SailCast s'ouvre sur ce marin pour cet utilisateur."
           },
           "sections": {
+            "hours": {
+              "name": "Horaires de chaque jour",
+              "description": "Pour les jours de navigation choisis plus haut. Laissez une heure vide pour partir au lever du soleil ou rentrer au coucher du soleil, ou à toute heure avec un bateau équipé de feux de navigation. Un seul jour, comme un jour de congé, se modifie dans le panneau SailCast.",
+              "data": {
+                "mon_start": "Lundi : départ au plus tôt",
+                "mon_end": "Lundi : retour au plus tard",
+                "tue_start": "Mardi : départ au plus tôt",
+                "tue_end": "Mardi : retour au plus tard",
+                "wed_start": "Mercredi : départ au plus tôt",
+                "wed_end": "Mercredi : retour au plus tard",
+                "thu_start": "Jeudi : départ au plus tôt",
+                "thu_end": "Jeudi : retour au plus tard",
+                "fri_start": "Vendredi : départ au plus tôt",
+                "fri_end": "Vendredi : retour au plus tard",
+                "sat_start": "Samedi : départ au plus tôt",
+                "sat_end": "Samedi : retour au plus tard",
+                "sun_start": "Dimanche : départ au plus tôt",
+                "sun_end": "Dimanche : retour au plus tard"
+              }
+            },
             "comfort": {
               "name": "Confort",
               "description": "Ce que ce marin apprécie. Ces réglages modifient les notes, jamais un niveau de sécurité.",

@@ -1,31 +1,32 @@
 """The week the panel shows for a sailor in one boat at one spot.
 
 Today's earlier hours keep their conditions for the charts, but a day's
-windows, score and ratings count only the hours still to come, as the panel
-shows them. Values are in the timeline's units (knots, meters and °C) and
-times in UTC; the panel converts them to the user's units and time zone.
+windows, score and ratings count only the hours still to come that the boat
+can sail in, as the panel shows them: its daylight hours, or every hour with
+navigation lights. Values are in the timeline's units (knots, meters and °C)
+and times in UTC; the panel converts them to the user's units and time zone.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
 from .advice import advise
 from .nowcast import Observation, latest
-from .outlook import BoatOutlook, HourOutlook, Outlook, SpotConditions
+from .outlook import (
+    BoatOutlook,
+    HourOutlook,
+    Outlook,
+    SpotConditions,
+    day_windows,
+    sails,
+)
 from .profiles import SizeClass
 from .rating import Rating
-from .scoring import (
-    Slot,
-    Window,
-    best_window,
-    confidence,
-    day_score,
-    find_windows,
-    steady_level,
-)
+from .scoring import Slot, Window, best_window, confidence, day_score, steady_level
 from .summary import Summary, hours_between, summarize
 from .timeline import HOUR, Hour
 
@@ -46,17 +47,18 @@ def week(
         ahead = [
             index
             for index in indexes
-            if hours[index].daylight and hours[index].start + HOUR > now
+            if sails(boat.boat, hours[index]) and hours[index].start + HOUR > now
         ]
         slots = [
             Slot(hours[index].start, score, boat.hours[index].available)
             for index in ahead
             if (score := boat.hours[index].score) is not None
         ]
-        windows = find_windows(slots, day.sunrise, day.sunset)
+        windows = day_windows(boat.boat, slots, day)
         best = best_window(windows)
         agreement = confidence([hours[index] for index in ahead])
         summary = summarize([hours[index] for index in ahead])
+        sailor_hours = outlook.hours_on(day.date)
         days.append(
             {
                 "date": day.date.isoformat(),
@@ -64,6 +66,10 @@ def week(
                 "sunset": day.sunset.isoformat(),
                 "over": not ahead,
                 "available": any(boat.hours[index].available for index in ahead),
+                # The sailor's hours that day, None if they don't sail, and
+                # whether they were set for this date.
+                "hours": None if sailor_hours is None else asdict(sailor_hours),
+                "changed": day.date in outlook.changes,
                 "score": day_score(slots, windows),
                 "confidence": agreement[0] if agreement else None,
                 "spread": agreement[1] if agreement else None,
@@ -101,6 +107,7 @@ def week(
                         day,
                         [hours[index] for index in ahead],
                         tides=conditions.tide_events,
+                        lights=boat.boat.lights,
                     )
                 ],
             }
@@ -110,6 +117,7 @@ def week(
         "spot": outlook.spot.id,
         "sailor": outlook.sailor.id,
         "boat": boat.boat.id,
+        "lights": boat.boat.lights,
         "now": now.isoformat(),
         "days": days,
         "hours": [

@@ -48,7 +48,7 @@ This is the plan SailCast is built from. The [milestones](#15-milestones) sectio
 | Water temperature | Shown with each day and in the advice. It doesn't change the rating, and SailCast doesn't recommend wetsuits or drysuits. |
 | Households | Several boats and sailors. Each Home Assistant user picks their own default. |
 | Test boats | A 20 ft small keelboat and a 34 ft cruiser. |
-| When to sail | Daylight by default. Each sailor sets the days and hours they can go. |
+| When to sail | Daylight by default, or any hour in a boat with navigation lights. Each sailor sets the days and hours they can go. |
 | Units | Wind in knots. Everything else follows Home Assistant's unit system. |
 | Data | Free sources are the baseline and API keys are optional. Nearby buoys and weather stations are used when available. |
 | Confidence | Compare three forecast models and show how closely they agree. |
@@ -135,7 +135,7 @@ ha-sailcast/
 │   ├── advice.py              # rule-based advice as translation keys
 │   ├── week.py                # the week the panel shows, from now on
 │   ├── planner.py             # windows in your own calendars: added, moved, watched
-│   ├── wind.py                # the wind map's grid, shared by nearby spots, within the budget
+│   ├── wind.py                # the wind map's grids, for spots and map views, within the budget
 │   ├── nowcast.py             # readings nudge the next hours
 │   ├── waves.py               # wind waves over a fetch, and shelter from model waves
 │   ├── shoreline.py           # fetch and exposure, measured once per pin from map tiles
@@ -169,8 +169,8 @@ Everything is set up in the Home Assistant UI under **Settings → Devices & ser
 | Subentry | What you set |
 | --- | --- |
 | **Spot** | A name. A pin on the water, with a radius that sets the wind map's area. The water type: open coast, bay, estuary or river, or lake. Which wind directions blow offshore. Which directions are exposed to waves. For sheltered water and lakes, the open-water distance upwind. Optionally, the lowest tide you can launch at. The data sources: tide station, current station, buoy, airport or your own sensors, and warning zone. SailCast suggests the nearest of each, and you can change them. |
-| **Boat** | A name, a size class and a length. Custom limits can come later, stricter only. |
-| **Sailor** | A name. Skill, which the sailor chooses: Beginner, Intermediate or Advanced. The boats they sail, the first being their default. When they can sail (days and hours, daylight only by default). Comfort preferences: ideal wind range, lowest air temperature and rain tolerance. Automatic calendar adding: off, or on with a calendar, days, lowest score, how far ahead and spots. Optionally, a linked Home Assistant user. |
+| **Boat** | A name, a size class and a length. Whether it has navigation lights, which lets its hours after dark count. Custom limits can come later, stricter only. |
+| **Sailor** | A name. Skill, which the sailor chooses: Beginner, Intermediate or Advanced. The boats they sail, the first being their default. When they can sail (days and hours, daylight only by default, or any hour in a boat with navigation lights). Comfort preferences: ideal wind range, lowest air temperature and rain tolerance. Automatic calendar adding: off, or on with a calendar, days, lowest score, how far ahead and spots. Optionally, a linked Home Assistant user. |
 
 The main entry's options hold the API keys for optional providers, the AI summary setting, and refresh preferences. Setup ends with a short safety note: SailCast is advisory, official forecasts and warnings come first, and the skipper decides.
 
@@ -178,7 +178,7 @@ The main entry's options hold the API keys for optional providers, the AI summar
 
 The panel's Settings tab lists the sailors, boats and spots and edits them in place. The mockup's Settings tab shows the layout.
 
-- **Sailors:** name, skill, boats and default boat, sailing days and hours, and linked Home Assistant user. Automatic calendar adding has its own dialog, reached from Settings or the week view.
+- **Sailors:** name, skill, boats and default boat, sailing days with each day's hours, and linked Home Assistant user. Automatic calendar adding has its own dialog, reached from Settings or the week view. One date's hours, such as a day off, are changed from the week view instead (free all day, not sailing, or hours of its own), by an administrator or the sailor's linked user; SailCast keeps those in its own store until the date has passed.
 - **Boats:** name, size and length. Each boat shows its size's limits as a scale, so you can see where caution and dangerous start.
 - **Spots:** a pin on a map, the wind map's radius, name, water type and data sources. To add a spot, you select the water to drop the pin, and SailCast suggests the nearest tide, current and buoy stations and airport, with their distances, and shows them on the map. Your own sensors can be picked for wind, gusts, direction, air and water. As the pin moves, SailCast measures the open water around it, warns when it's on land, and checks the directions open to the sea for a new spot. Rivers and lakes can override the measured fetch with one distance. You can drag the pin later.
 
@@ -207,10 +207,10 @@ The free sources work everywhere. Regional free sources and optional keyed provi
 
 | Data | Source | Notes |
 | --- | --- | --- |
-| Wind, gusts and weather from three models | Open-Meteo Forecast API | Models: `ecmwf_ifs` (9 km), `ncep_gfs_seamless` and `dwd_icon_seamless`. One request covers every spot, with `wind_speed_unit=kn`. In the US, `ncep_gfs_seamless` is HRRR (3 km) for about 40 hours, then GFS. At the test spots, Open-Meteo's `best_match` gives exactly the same values. ICON has no visibility there, and rain probability comes from the GEFS ensemble. |
+| Wind, gusts and weather from three models | Open-Meteo Forecast API | Models: `ecmwf_ifs` (9 km), `ncep_gfs_seamless` and `dwd_icon_seamless`. One request covers every spot, with `wind_speed_unit=kn` and `cell_selection=sea`. Without it, Open-Meteo picks a cell on land, and for pins near the shore that can be one inland cell shared by several spots: in a November 2026 check, its wind ran 13–30% lighter than the nearest sea cell's over three days. Buoys' forecast also comes from sea cells, and airports' from land. In the US, `ncep_gfs_seamless` is HRRR (3 km) for about 40 hours, then GFS. At the test spots, Open-Meteo's `best_match` gives exactly the same values. ICON has no visibility there, and rain probability comes from the GEFS ensemble. |
 | Forecast spread | Open-Meteo Ensemble API, ensemble-mean models | `ecmwf_ifs025_ensemble_mean` returns the mean and the standard deviation of wind and gusts for about 1 call per spot. Full ensembles count every member as a variable (15 or more calls per spot), so they aren't used. |
 | Waves, swell, water temperature, sea level | Open-Meteo Marine API | 5–25 km models, and one cell can cover several spots. Not used for sheltered water or lakes. Its sea level is described as "not suitable for coastal navigation", so it's only a last-resort tide curve, labeled as rough, and never used for launch-depth rules. |
-| Wind grid for the map | Open-Meteo Forecast API, many points in one request | About 225 points per area. |
+| Wind grid for the map | Open-Meteo Forecast API, many points in one request | Up to 225 points per area, each from the cell nearest it (`cell_selection=nearest`), on land or sea. Calls are also limited to 600 a minute and 5,000 an hour. |
 | Sunrise and sunset | Computed locally | Home Assistant's astronomy helpers. No API needed. |
 | Airport weather reports | aviationweather.gov Data API (METAR) | Worldwide, JSON, wind in knots. Stations are found by bounding box. Limit 100 requests a minute, custom User-Agent required. At the test spots, the nearest airport is about 21 km away. A report leaves gusts out unless they're well over the mean wind, gives `VRB` for variable wind, and gives visibility as text such as `10+` (miles). |
 | Shoreline | OpenFreeMap's map tiles (OpenMapTiles schema) | The `water` layer holds OpenStreetMap's sea, lakes, rivers and ponds as polygons. Zoom 12, about 36 tiles for 20 km around a pin, read with a small decoder of SailCast's own. Free with no key; attribution required, no service guarantee. The address changes with each weekly build, so it's read from the TileJSON first. |
@@ -250,7 +250,7 @@ Open-Meteo counts each location as `max(1, V/10 × max(1, D/14))` calls. V is th
 | Forecast: 3 models × 13 variables, 7 days | Every hour | about 280 |
 | Ensemble spread | Every 6 hours | about 12 |
 | Marine | Every 3 hours | about 24 |
-| Wind grid, about 225 points | On demand, cached 3 hours | up to 1,800 per map area |
+| Wind grid, up to 225 points | When the map opens or moves, cached 3 hours | up to 1,800 per map area; at most 450 a minute and 4,000 an hour |
 | Forecast at each buoy and airport: 3 models × 4 variables, 2 days | Every hour | about 29 per station |
 | Marine data at each buoy | Every 3 hours | about 8 per buoy |
 | The ocean model's rough tide, for spots that use it | Once a day | 1 per spot |
@@ -494,11 +494,11 @@ A sailor's comfort settings change their scores, never a safety rating:
 
 A **sailing window** is at least two hours in a row that meet all of these conditions:
 
-- in daylight
+- in daylight, unless the boat has navigation lights
 - inside the sailor's available days and hours
 - a score of 60 or more
 
-The best window of the day has the highest average score. Windows end at sunset, not on the hour. If a day has no window, its score is capped at 59, so a single good hour can't make a day look "great".
+The best window of the day has the highest average score. Without navigation lights, windows end at sunset, not on the hour; the rules of the road call for lights from sunset to sunrise. If a day has no window, its score is capped at 59, so a single good hour can't make a day look "great".
 
 **Confidence** compares the hourly wind from three models: ECMWF IFS, GFS (HRRR for the first 40 hours in the US) and ICON. It's "high" when the models typically agree within 3 kt over the day, "medium" within 6 kt, and "low" beyond that. The ECMWF ensemble's spread (its ensemble mean's standard deviation, one call per spot every 6 hours) can also lower it: "medium" when it's typically over 1.75 kt and "low" over 3.5 kt. Three models typically span about 1.7 standard deviations, so the two scales match. The day view shows the spread between models as a shaded band.
 
@@ -593,9 +593,9 @@ The panel is a single JavaScript module that ships inside the integration and is
 | Look | Home Assistant theme variables (`--primary-background-color`, `--card-background-color`, `--primary-text-color` and so on), so it follows the user's theme and dark mode, and Roboto and Material Design Icons like the rest of Home Assistant. SailCast's own day and night palettes fill in anything a theme doesn't set. Deep sea blue marks sailing windows; green, amber, orange and red only ever mean safety ratings. |
 | Day and night | A switch in the toolbar. Auto, the default, follows Home Assistant's light or dark mode. Day and Night override it for SailCast only, like a chart plotter's day and night palettes. The choice is saved per user, and Home Assistant's own sidebar keeps its theme. |
 | Charts | Small hand-written SVG charts, as in the mockup, rather than a large charting library. |
-| Data | WebSocket commands: `sailcast/config` (settings, limits and the calendars that accept events), `sailcast/forecast` (week and hours for a spot, sailor and boat), `sailcast/subscribe` (says when results, planned sails or settings change), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/save`, `delete` and `sources` (for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list` and `skipped`, and `sailcast/ai_summary`. |
+| Data | WebSocket commands: `sailcast/config` (settings, limits and the calendars that accept events), `sailcast/forecast` (week and hours for a spot, sailor and boat), `sailcast/subscribe` (says when results, planned sails or settings change), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/save`, `delete` and `sources` (for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list` and `skipped`, `sailcast/hours` (one date's hours, for administrators and the sailor's linked user), and `sailcast/ai_summary`. |
 | Per-user settings | The spot, sailor, boat, last view, day or night choice and calendar are stored server-side, keyed by Home Assistant user, in SailCast's own store. They follow you across devices. A user with no choice yet starts on the sailor linked to them. |
-| Phones | The week calendar becomes one row per day, with the day's timeline running across. Wide tables scroll inside their own card. The map fits the screen. |
+| Phones | The week calendar becomes one row per day, with the day's timeline running across; in a boat with navigation lights it scrolls sideways through the whole day. Wide tables scroll inside their own card. The map fits the screen. |
 | Accessibility | Keyboard navigation and labeled controls. The particle animation turns into static arrows when the device asks for reduced motion. |
 
 The four views follow the mockup:
@@ -605,11 +605,11 @@ The four views follow the mockup:
   - live readings from the spot's buoy, airport or your own sensors, each with who read it and how long ago, and the forecast for the hour now under way for anything not read
   - official warnings
   - the sailor's automatic calendar setting, and the windows already in their calendars, with a warning when one's forecast gets worse
-  - a seven-day calendar, one column per day from dawn to dusk:
+  - a seven-day calendar, one column per day, from an hour before the week's earliest sunrise to an hour after its latest sunset; in a boat with navigation lights the columns hold all 24 hours, open there, or earlier for an earlier window, and scroll to the rest
     - sailing windows drawn as events; select one to add it to a calendar or take it out
-    - hours shaded by score, or by safety rating when it isn't "good"
+    - hours shaded by score, or by safety rating when it isn't "good"; with navigation lights, the hours after dark too, under the night shading
     - sunrise, sunset, the current time, and hours outside the sailor's sailing times
-    - under each day: the score, the weather, the wind range and direction, gusts, waves, water temperature, the tide turns, a rating for each boat size at the sailor's skill level, and the forecast confidence
+    - under each day: the sailor's hours that day, which can be changed for that date, then the score, the weather, the wind range and direction, gusts, waves, water temperature, the tide turns, a rating for each boat size at the sailor's skill level, and the forecast confidence
 - **Day:**
   - the verdict and advice, with **Add to calendar** for each window
   - the rating for each boat size, with the reason and the hour it changes
@@ -625,8 +625,8 @@ The four views follow the mockup:
 
 | Part | Choice |
 | --- | --- |
-| Wind data | When the map opens, SailCast asks Open-Meteo for wind speed, direction and gusts on a grid covering the spot's radius, for 7 days hourly: points 2 km apart, at most 15 × 15, spreading out for a bigger radius. One request of this kind returns about 1 MB (73 KB compressed) in under a second. Grids are kept for 3 hours. Spots whose circles overlap share one grid, as long as its points stay within 3 km of each other. |
-| Budget | Each point counts as one of Open-Meteo's 10,000 daily calls, so a full grid costs 225. SailCast stops fetching grids at 6,000 calls in a day, as the [budget](#refresh-schedule-and-the-open-meteo-budget) says, and shows the last grid it has, for up to a day, with a note of when it's from. Three spots far enough apart to need a grid each, with the map open all day, use 5,400. |
+| Wind data | When the map opens, SailCast asks Open-Meteo for wind speed, direction and gusts on a grid covering the spot's radius, for 7 days hourly: points 2 km apart, at most 15 × 15, spreading out for a bigger radius. One request of this kind returns about 1 MB (73 KB compressed) in under a second. Grids are kept for 3 hours. Spots whose circles overlap share one grid, as long as its points stay within 3 km of each other. The map opens on the spot's circle, filling the screen. Once it stops moving, it asks for what it shows: a kept grid that covers the view with points no more than a quarter further apart than it would need, or else a new grid reaching 15% past each edge. A new grid's points sit on a lattice of the finest spacing from 2 to 96 km that fits 15 points a side, so nearby views share it. The map zooms out to about 1,000 km across. |
+| Budget | Each point counts as one of Open-Meteo's 10,000 daily calls, so a full grid costs 225. SailCast stops fetching grids at 6,000 calls in a day, as the [budget](#refresh-schedule-and-the-open-meteo-budget) says, and shows the last grid it has, for up to a day, with a note of when it's from. Three spots far enough apart to need a grid each, with the map open all day, use 5,400. Open-Meteo also stops at 600 calls a minute and 5,000 an hour, so grids keep to 450 a minute and 4,000 an hour, leaving the rest for the forecast. When a new grid would go over, SailCast says how long to wait, and the panel shows the wind it has meanwhile. |
 | Base map | Home Assistant 2026.10's new map uses MapLibre with OpenStreetMap vector tiles, proxied and cached by Home Assistant itself (the `map_tiles` integration). The panel can use the same tiles: it fetches a short-lived token with the `map_tiles/access_token` WebSocket command, which another custom card already does. That interface is internal and undocumented, so if it changes the panel falls back to OpenFreeMap: free vector tiles with no key, attribution required, and no service guarantee. CARTO, which Home Assistant used before, now needs a key per user, so it's out. The spot editor uses the same base map for placing pins. |
 | Seamarks | The OpenSeaMap seamark layer on top (`tiles.openseamap.org/seamark/{z}/{x}/{y}.png`): buoys, lights and channels. Its data is CC BY-SA 2.0. I found no published tile usage policy, so SailCast requests only what's on screen and uses the browser's cache. |
 | Optional layers | Not built yet. **Nautical chart (US):** NOAA's Chart Display Service draws official ENC data in the paper-chart style. NOAA's raster charts were retired at the end of 2024, so this is the replacement. **Depth shading:** EMODnet or GEBCO bathymetry. Both are marked as not for navigation. |
@@ -674,7 +674,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - a higher skill level never gives a worse rating or a lower score
   - each skill limit, at and just past each number
   - the skill limit uses sustained wind only; gusts never trigger it
-  - windows stay inside the sailor's sailing days and hours
+  - windows stay inside the sailor's sailing days and each day's hours, with a date's own hours first
 - **Test profiles:** a 20 ft small keelboat and a 34 ft cruiser, at the three test spots, at all three skill levels.
 - **Providers:** tests against recorded responses. They were recorded on November 2 at three made-up spots in San Diego, chosen to cover the same cases as the home spots: a harmonic and a subordinate tide station, a subordinate current station, a pin that's in its marine zone and one that isn't, and a live Small Craft Advisory. Sources abroad were recorded on November 3 in the Solent, the Wadden Sea and on Lake Garda, with Lake Tahoe's Lake Wind Advisory, a Canadian marine area and a KNMI coastal warning. CHS's predictions, WorldTides' and MeteoAlarm's region outlines are made up for the tests, since they can't be passed on or need a key. `scripts/record_fixtures.py` records them again.
 - **Config flow, subentries, entities, the WebSocket API and the calendar:** tested with `pytest-homeassistant-custom-component`, version 0.13.375 (matches 2026.10.4). Home Assistant now publishes that package from core as `pytest-homeassistant`, which has a 2026.11 beta on PyPI, so SailCast switches to it with 2026.11.0.

@@ -6,6 +6,7 @@ import { components, fromDirection, legendGradient, windColor, WindField } from 
 /** A 3 x 3 grid over two hours: a westerly building to the north. */
 function grid(): WindGrid {
   return {
+    id: "32.6,-117.4,32.8,-117.0,3,3@2026-11-02T22:05:00+00:00",
     fetched: "2026-11-02T22:05:00+00:00",
     stale: false,
     south: 32.6,

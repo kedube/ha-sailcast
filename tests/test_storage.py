@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
+from custom_components.sailcast.profiles import Hours
 from custom_components.sailcast.storage import STORAGE_KEY, PlannedSail, SailCastStore
 
 START = datetime(2026, 11, 7, 21, tzinfo=UTC)
@@ -80,6 +81,39 @@ async def test_forgetting(hass: HomeAssistant) -> None:
     assert store.skipped("sailor_alex") == set()
     assert store.remove("sail2") is not None
     assert store.remove("sail2") is None
+
+
+async def test_hours_for_dates(
+    hass: HomeAssistant, hass_storage: dict[str, Any], freezer: FrozenDateTimeFactory
+) -> None:
+    """Hours set for dates are saved, undone, and dropped once the date passes."""
+    store = SailCastStore(hass)
+    await store.async_load()
+    store.set_hours("sailor_alex", date(2026, 11, 6), Hours())
+    store.set_hours("sailor_alex", date(2026, 11, 7), None)
+    store.set_hours("sailor_alex", date(2026, 11, 8), Hours("10:00:00", "12:00:00"))
+    store.set_hours("sailor_sam", date(2026, 11, 8), None)
+    freezer.tick(timedelta(seconds=5))
+    async_fire_time_changed(hass, dt_util.utcnow())
+    await hass.async_block_till_done()
+    assert hass_storage[STORAGE_KEY]["data"]["hours"]["sailor_alex"] == {
+        "2026-11-06": {"start": None, "end": None},
+        "2026-11-07": None,
+        "2026-11-08": {"start": "10:00:00", "end": "12:00:00"},
+    }
+
+    again = SailCastStore(hass)
+    await again.async_load()
+    assert again.hours("sailor_alex") == {
+        date(2026, 11, 6): Hours(),
+        date(2026, 11, 7): None,
+        date(2026, 11, 8): Hours("10:00:00", "12:00:00"),
+    }
+    again.clear_hours("sailor_alex", date(2026, 11, 8))
+    again.forget_before(date(2026, 11, 7))
+    assert again.hours("sailor_alex") == {date(2026, 11, 7): None}
+    again.forget_sailor("sailor_sam")
+    assert again.hours("sailor_sam") == {}
 
 
 async def test_saved_by_another_version(

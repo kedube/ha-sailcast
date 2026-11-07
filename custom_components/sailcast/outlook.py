@@ -7,12 +7,13 @@ the panel read the results.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
+from types import MappingProxyType
 
 from .nowcast import Adjustment, Observation
-from .profiles import Boat, Profiles, Sailor, SizeClass, Spot
+from .profiles import Boat, Hours, Profiles, Sailor, SizeClass, Spot
 from .providers import TideEvent, Tides
 from .providers.noaa_coops import CurrentEvent
 from .rating import Rating, rate
@@ -61,7 +62,11 @@ class SpotConditions:
 
 @dataclass(frozen=True, slots=True)
 class HourOutlook:
-    """One hour for a sailor in a boat. Only daylight hours have a score."""
+    """One hour for a sailor in a boat.
+
+    Only the hours the boat can sail in have a score: its daylight hours, or
+    every hour with navigation lights.
+    """
 
     hour: Hour
     rating: Rating
@@ -95,18 +100,24 @@ class Outlook:
     """A sailor's week at one spot, in each of their boats.
 
     `sizes` rates every boat size at the sailor's skill, hour by hour, in the
-    same order as the spot's hours.
+    same order as the spot's hours. `changes` are the hours the sailor set for
+    single dates, None for not sailing, which come before their weekdays'.
     """
 
     sailor: Sailor
     spot: Spot
     boats: tuple[BoatOutlook, ...]
     sizes: Mapping[SizeClass, tuple[Rating, ...]]
+    changes: Mapping[date, Hours | None] = field(default_factory=dict)
 
     @property
     def default(self) -> BoatOutlook | None:
         """Return the sailor's usual boat's outlook."""
         return self.boats[0] if self.boats else None
+
+    def hours_on(self, day: date) -> Hours | None:
+        """Return the sailor's hours on a date, or None if they don't sail."""
+        return self.sailor.hours_on(day, self.changes)
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,10 +132,31 @@ class Results:
         return self.outlooks.get((sailor, spot))
 
 
-def compute(profiles: Profiles, conditions: Mapping[str, SpotConditions]) -> Results:
-    """Return the outlook for every sailor at every spot with conditions."""
+def sails(boat: Boat, hour: Hour) -> bool:
+    """Return whether a boat can sail in an hour: in daylight, or with lights."""
+    return hour.daylight or boat.lights
+
+
+def day_windows(boat: Boat, slots: Sequence[Slot], day: Daylight) -> list[Window]:
+    """Return a day's windows, kept to daylight unless the boat has lights."""
+    if boat.lights:
+        return find_windows(slots, None, None)
+    return find_windows(slots, day.sunrise, day.sunset)
+
+
+def compute(
+    profiles: Profiles,
+    conditions: Mapping[str, SpotConditions],
+    changes: Mapping[str, Mapping[date, Hours | None]] = MappingProxyType({}),
+) -> Results:
+    """Return the outlook for every sailor at every spot with conditions.
+
+    `changes` are each sailor's hours for single dates, by sailor ID.
+    """
     outlooks = {
-        (sailor.id, spot_id): outlook(sailor, spot_conditions, profiles.boats)
+        (sailor.id, spot_id): outlook(
+            sailor, spot_conditions, profiles.boats, changes.get(sailor.id, {})
+        )
         for sailor in profiles.sailors.values()
         for spot_id, spot_conditions in conditions.items()
     }
@@ -132,9 +164,16 @@ def compute(profiles: Profiles, conditions: Mapping[str, SpotConditions]) -> Res
 
 
 def outlook(
-    sailor: Sailor, conditions: SpotConditions, boats: Mapping[str, Boat]
+    sailor: Sailor,
+    conditions: SpotConditions,
+    boats: Mapping[str, Boat],
+    changes: Mapping[date, Hours | None] = MappingProxyType({}),
 ) -> Outlook:
-    """Return a sailor's week at a spot, for every boat size and their boats."""
+    """Return a sailor's week at a spot, for every boat size and their boats.
+
+    The sailor's free hours follow the hours set for a date, if any, and
+    otherwise their hours on that day of the week.
+    """
     spot = conditions.spot
     sizes = {
         size: tuple(
@@ -143,22 +182,20 @@ def outlook(
         for size in SizeClass
     }
     zone = conditions.days[0].zone if conditions.days else None
-    available = tuple(
-        hour.daylight
-        and is_available(
-            sailor.days, sailor.start, sailor.end, hour.start.astimezone(zone)
-        )
-        for hour in conditions.hours
+    free = tuple(
+        is_available(sailor.hours_on(local.date(), changes), local)
+        for local in (hour.start.astimezone(zone) for hour in conditions.hours)
     )
     return Outlook(
         sailor=sailor,
         spot=spot,
         boats=tuple(
-            _boat_outlook(boats[boat_id], sailor, conditions, sizes, available)
+            _boat_outlook(boats[boat_id], sailor, conditions, sizes, free)
             for boat_id in sailor.boats
             if boat_id in boats
         ),
         sizes=sizes,
+        changes=dict(changes),
     )
 
 
@@ -167,24 +204,25 @@ def _boat_outlook(
     sailor: Sailor,
     conditions: SpotConditions,
     sizes: Mapping[SizeClass, tuple[Rating, ...]],
-    available: tuple[bool, ...],
+    free: tuple[bool, ...],
 ) -> BoatOutlook:
+    """Return a boat's week. `free` says when the sailor's days and times allow."""
     ratings = sizes[boat.size_class]
     hours = tuple(
         HourOutlook(
             hour=hour,
             rating=rating,
             score=score(hour, boat.size_class, sailor.skill, rating, sailor.comfort)
-            if hour.daylight
+            if sails(boat, hour)
             else None,
-            available=free,
+            available=allowed and sails(boat, hour),
         )
-        for hour, rating, free in zip(conditions.hours, ratings, available, strict=True)
+        for hour, rating, allowed in zip(conditions.hours, ratings, free, strict=True)
     )
     zone = conditions.days[0].zone if conditions.days else None
     days = []
     for day in conditions.days:
-        daytime = [
+        sailable = [
             item
             for item in hours
             if item.score is not None
@@ -192,11 +230,11 @@ def _boat_outlook(
         ]
         slots = [
             Slot(item.hour.start, item.score, item.available)
-            for item in daytime
+            for item in sailable
             if item.score is not None
         ]
-        windows = find_windows(slots, day.sunrise, day.sunset)
-        agreement = confidence([item.hour for item in daytime])
+        windows = day_windows(boat, slots, day)
+        agreement = confidence([item.hour for item in sailable])
         days.append(
             DayOutlook(
                 daylight=day,

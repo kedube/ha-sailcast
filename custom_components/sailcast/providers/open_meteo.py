@@ -2,12 +2,15 @@
 
 One request covers every spot. Times are requested as Unix seconds in UTC,
 with a day of past hours so the timeline can start at local midnight
-anywhere. Buoys and airports get a lighter forecast of their own, so their
-readings can be compared with the forecast for the same place. The ECMWF
-ensemble's spread comes from its ensemble mean, which costs one variable. The
-wind map's grid is one request for all its points, from Open-Meteo's best
-model for the place, with no past hours. The ocean model's sea level, which
-includes the tide, stands in for tide predictions where a spot has none.
+anywhere. Spots and buoys are on the water, so their data comes from the
+models' sea cells: left to itself, Open-Meteo picks a cell on land, where the
+wind is often much lighter. Buoys and airports get a lighter forecast of
+their own, so their readings can be compared with the forecast for the same
+place; an airport's comes from land. The ECMWF ensemble's spread comes from
+its ensemble mean, which costs one variable. The wind map's grid is one
+request for all its points, from Open-Meteo's best model for the place and
+the cell nearest each point, with no past hours. The ocean model's sea level,
+which includes the tide, stands in for tide predictions where a spot has none.
 """
 
 from __future__ import annotations
@@ -157,20 +160,30 @@ def sea_level_calls(points: int) -> float:
 async def async_get_forecast(
     session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
 ) -> list[Forecast]:
-    """Return the hourly forecast for each point."""
+    """Return the hourly forecast for each point, from the nearest sea."""
     payload = await fetch_json(
         session,
         FORECAST_URL,
         _params(points, FORECAST_VARIABLES)
-        | {"models": ",".join(MODELS), "wind_speed_unit": "kn"},
+        | {
+            "models": ",".join(MODELS),
+            "wind_speed_unit": "kn",
+            "cell_selection": "sea",
+        },
     )
     return parse_forecast(payload, len(points))
 
 
 async def async_get_nearby(
-    session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
+    session: aiohttp.ClientSession,
+    points: Sequence[tuple[float, float]],
+    *,
+    sea: bool,
 ) -> list[Forecast]:
-    """Return today's wind and air temperature from the three models at each point."""
+    """Return today's wind and air temperature from the three models at each point.
+
+    Buoys' comes from the nearest sea (`sea`), and airports' from land.
+    """
     payload = await fetch_json(
         session,
         FORECAST_URL,
@@ -179,6 +192,7 @@ async def async_get_nearby(
             "models": ",".join(MODELS),
             "wind_speed_unit": "kn",
             "forecast_days": NEARBY_DAYS,
+            "cell_selection": "sea" if sea else "land",
         },
     )
     return parse_forecast(payload, len(points), NEARBY_VARIABLES)
@@ -212,12 +226,12 @@ async def async_get_buoy_marine(
 async def async_get_spread(
     session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
 ) -> list[Spread]:
-    """Return the ECMWF ensemble's wind spread at each point."""
+    """Return the ECMWF ensemble's wind spread at each point, from the nearest sea."""
     payload = await fetch_json(
         session,
         ENSEMBLE_URL,
         _params(points, (SPREAD_VARIABLE,))
-        | {"models": SPREAD_MODEL, "wind_speed_unit": "kn"},
+        | {"models": SPREAD_MODEL, "wind_speed_unit": "kn", "cell_selection": "sea"},
     )
     return [
         Spread(_times(place["hourly"]), _series(place["hourly"], SPREAD_VARIABLE))
@@ -251,11 +265,15 @@ async def async_get_sea_level(
 async def async_get_wind(
     session: aiohttp.ClientSession, points: Sequence[tuple[float, float]]
 ) -> WindPoints:
-    """Return the hourly wind at each point, from now for a week."""
+    """Return the hourly wind at each point, from now for a week.
+
+    Each point's comes from the cell nearest it, on land or sea.
+    """
     payload = await fetch_json(
         session,
         FORECAST_URL,
-        _params(points, WIND_VARIABLES) | {"past_days": 0, "wind_speed_unit": "kn"},
+        _params(points, WIND_VARIABLES)
+        | {"past_days": 0, "wind_speed_unit": "kn", "cell_selection": "nearest"},
     )
     return parse_wind(payload, len(points))
 
@@ -315,9 +333,10 @@ def parse_wind(payload: Any, count: int) -> WindPoints:
 def _params(
     points: Sequence[tuple[float, float]], variables: Sequence[str]
 ) -> dict[str, str | int | float]:
+    # A wind map panned round the world can ask for longitudes past 180°.
     return {
         "latitude": ",".join(f"{lat:.4f}" for lat, _ in points),
-        "longitude": ",".join(f"{lon:.4f}" for _, lon in points),
+        "longitude": ",".join(f"{(lon + 180) % 360 - 180:.4f}" for _, lon in points),
         "hourly": ",".join(variables),
         "timeformat": "unixtime",
         "timezone": "GMT",

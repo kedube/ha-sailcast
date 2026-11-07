@@ -44,7 +44,7 @@
     "best_eyebrow": "Beste moment deze week · {who}",
     "no_window": "Deze week geen goed zeilvenster",
     "best_day": "De beste dag is {day}, met een score van {score} ({band}).",
-    "window_rule": "Een goed zeilvenster heeft minstens twee uur achter elkaar een score van 60 of meer, bij daglicht en binnen je zeiltijden.",
+    "window_rule": "Een goed zeilvenster heeft minstens twee uur achter elkaar een score van 60 of meer, binnen je zeiltijden, en bij daglicht tenzij de boot navigatieverlichting heeft.",
     "gusts": "Windstoten {gust} kn",
     "high": "Hoogwater {time}",
     "low": "Laagwater {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Ebstroom {speed} kn",
     "current_slack": "Stroom {speed} kn (kentering)",
     "hours": "Uur voor uur",
-    "hours_sub": "Uren met daglicht"
+    "hours_sub": "Uren met daglicht",
+    "hours_sub_lights": "Alle uren, met navigatieverlichting"
   },
   "ai": {
     "button": "Samenvatten met AI",
@@ -311,9 +312,10 @@
     "loading": "Windkaart laden…",
     "failed": "De kaart kon niet worden geladen.",
     "budget": "De windkaart pauzeert tot morgen, zodat SailCast binnen de gratis dagelijkse aanroepen bij Open-Meteo blijft. De verwachting zelf gaat gewoon door.",
+    "view_budget": "Om binnen de gratis dagelijkse aanroepen bij Open-Meteo te blijven, toont de kaart tot morgen alleen wind in gebieden die SailCast al heeft.",
     "unavailable": "De windkaart kon niet worden geladen: {message}",
     "stale": "Dit is de wind zoals voorspeld op {time}; SailCast kon geen nieuwere verwachting ophalen.",
-    "credits": "Wind © Open-Meteo (CC BY 4.0), uit het beste model voor dit gebied, ongeveer elke 2 km en elk uur. Kaart © OpenStreetMap-bijdragers, betonning © OpenSeaMap. Niet voor navigatie."
+    "credits": "Wind © Open-Meteo (CC BY 4.0), uit het beste model voor dit gebied, elk uur, met punten ongeveer elke 2 km van dichtbij en verder uit elkaar als je uitzoomt. Kaart © OpenStreetMap-bijdragers, betonning © OpenSeaMap. Niet voor navigatie."
   },
   "table": {
     "direction": "Richting",
@@ -405,6 +407,7 @@
     "sunrise": "zonsopkomst",
     "sunset": "zonsondergang",
     "sailed_by": "Gezeild door {sailors}",
+    "lights": "navigatieverlichting",
     "no_sailors": "Nog geen zeilers",
     "sources": "Bronnen",
     "map_km": "windkaart {value} km",
@@ -442,9 +445,11 @@
     "when": "Wanneer je kunt zeilen",
     "from": "Van",
     "until": "Tot",
+    "from_day": "{day}, van",
+    "until_day": "{day}, tot",
     "sunrise": "Zonsopkomst",
     "sunset": "Zonsondergang",
-    "when_hint": "Zeilvensters vallen alleen binnen deze tijden. SailCast beoordeelt alleen uren met daglicht.",
+    "when_hint": "Vink de dagen aan waarop je zeilt, elk met eigen tijden; zeilvensters vallen alleen daarbinnen. Laat je zonsopkomst en zonsondergang staan, dan kan een boot met navigatieverlichting op elk uur zeilen. Eén dag wijzigen, zoals een vrije dag, doe je met de tijden onder die dag in de week.",
     "comfort": "Comfort",
     "ideal_low": "Ideale wind vanaf (kn)",
     "ideal_high": "Ideale wind tot (kn)",
@@ -455,6 +460,28 @@
     "user": "Home Assistant-gebruiker",
     "no_user": "Geen",
     "user_hint": "Voor deze gebruiker opent SailCast met deze zeiler."
+  },
+  "hours": {
+    "title": "Zeiltijden: {day}",
+    "this_day": "Deze dag",
+    "free": "De hele dag vrij",
+    "free_hint": "{hours}.",
+    "off": "Geen zeildag",
+    "off_hint": "Op deze dag geen zeilvensters.",
+    "set": "Deze tijden",
+    "set_hint": "Kies een begin- en eindtijd.",
+    "usual": "Normaal op {day}: {hours}.",
+    "hint": "Alleen deze dag verandert. De gewone tijden blijven zoals ze zijn.",
+    "back": "Terug naar de gewone tijden",
+    "changed": "{hours} (gewijzigd)",
+    "change_label": "Tijden wijzigen ({day}): {hours}",
+    "undo_label": "Terug naar de gewone tijden ({day})",
+    "saved": "Tijden gewijzigd ({day}).",
+    "reset": "Weer de gewone tijden ({day}).",
+    "span": "{start} tot {end}",
+    "daylight": "Zonsopkomst tot zonsondergang",
+    "any_time": "Op elk uur",
+    "midnight": "middernacht"
   },
   "rain": {
     "avoid": "Regen vermijden",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. Voorzichtig vanaf {caution} kn, gevaarlijk vanaf {dangerous} kn.",
     "length_feet": "Lengte (ft)",
     "length_meters": "Lengte (m)",
+    "lights": "Navigatieverlichting",
+    "lights_hint": "Zet aan als de boot werkende navigatieverlichting heeft. Dan tellen ook de uren na het donker worden mee, binnen de tijden van de zeiler.",
     "limits": "Grenzen voor deze grootte, op elk niveau hetzelfde"
   },
   "spot": {

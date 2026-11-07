@@ -102,11 +102,13 @@
           "data": {
             "name": "Nome",
             "size_class": "Dimensione",
-            "length": "Lunghezza"
+            "length": "Lunghezza",
+            "lights": "Luci di navigazione"
           },
           "data_description": {
             "name": "Per esempio, il nome della barca.",
-            "size_class": "Ogni dimensione ha i propri limiti di sicurezza per vento, raffiche e onde."
+            "size_class": "Ogni dimensione ha i propri limiti di sicurezza per vento, raffiche e onde.",
+            "lights": "Attiva se la barca ha luci di navigazione funzionanti. Così contano anche le ore dopo il buio, dentro gli orari del velista."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Nome",
             "size_class": "Dimensione",
-            "length": "Lunghezza"
+            "length": "Lunghezza",
+            "lights": "Luci di navigazione"
           },
           "data_description": {
             "name": "Per esempio, il nome della barca.",
-            "size_class": "Ogni dimensione ha i propri limiti di sicurezza per vento, raffiche e onde."
+            "size_class": "Ogni dimensione ha i propri limiti di sicurezza per vento, raffiche e onde.",
+            "lights": "Attiva se la barca ha luci di navigazione funzionanti. Così contano anche le ore dopo il buio, dentro gli orari del velista."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Barca abituale",
             "other_boats": "Altre barche",
             "days": "Giorni di navigazione",
-            "start": "Partenza non prima delle",
-            "end": "Rientro entro le",
             "user": "Utente Home Assistant"
           },
           "data_description": {
             "skill": "Ogni velista valuta da sé il proprio livello. Il livello fissa il suo limite di vento medio; le raffiche non contano per questo limite.",
             "default_boat": "SailCast valuta questa barca, a meno che il velista non ne scelga un'altra.",
             "other_boats": "Altre barche che questo velista usa.",
-            "start": "Lascia vuoto per partire all'alba.",
-            "end": "Lascia vuoto per rientrare al tramonto.",
             "user": "Per quell'utente, il pannello si apre su questo velista."
           },
           "sections": {
+            "hours": {
+              "name": "Orari di ogni giorno",
+              "description": "Per i giorni di navigazione scelti sopra. Lascia vuoto un orario per partire all'alba o rientrare al tramonto, o a qualsiasi ora con una barca con luci di navigazione. Un singolo giorno, come un giorno libero, si cambia nel pannello di SailCast.",
+              "data": {
+                "mon_start": "Lunedì: partenza non prima delle",
+                "mon_end": "Lunedì: rientro entro le",
+                "tue_start": "Martedì: partenza non prima delle",
+                "tue_end": "Martedì: rientro entro le",
+                "wed_start": "Mercoledì: partenza non prima delle",
+                "wed_end": "Mercoledì: rientro entro le",
+                "thu_start": "Giovedì: partenza non prima delle",
+                "thu_end": "Giovedì: rientro entro le",
+                "fri_start": "Venerdì: partenza non prima delle",
+                "fri_end": "Venerdì: rientro entro le",
+                "sat_start": "Sabato: partenza non prima delle",
+                "sat_end": "Sabato: rientro entro le",
+                "sun_start": "Domenica: partenza non prima delle",
+                "sun_end": "Domenica: rientro entro le"
+              }
+            },
             "comfort": {
               "name": "Comfort",
               "description": "Cosa piace a questo velista. Queste preferenze cambiano il punteggio, mai la valutazione di sicurezza.",
@@ -197,19 +217,35 @@
             "default_boat": "Barca abituale",
             "other_boats": "Altre barche",
             "days": "Giorni di navigazione",
-            "start": "Partenza non prima delle",
-            "end": "Rientro entro le",
             "user": "Utente Home Assistant"
           },
           "data_description": {
             "skill": "Ogni velista valuta da sé il proprio livello. Il livello fissa il suo limite di vento medio; le raffiche non contano per questo limite.",
             "default_boat": "SailCast valuta questa barca, a meno che il velista non ne scelga un'altra.",
             "other_boats": "Altre barche che questo velista usa.",
-            "start": "Lascia vuoto per partire all'alba.",
-            "end": "Lascia vuoto per rientrare al tramonto.",
             "user": "Per quell'utente, il pannello si apre su questo velista."
           },
           "sections": {
+            "hours": {
+              "name": "Orari di ogni giorno",
+              "description": "Per i giorni di navigazione scelti sopra. Lascia vuoto un orario per partire all'alba o rientrare al tramonto, o a qualsiasi ora con una barca con luci di navigazione. Un singolo giorno, come un giorno libero, si cambia nel pannello di SailCast.",
+              "data": {
+                "mon_start": "Lunedì: partenza non prima delle",
+                "mon_end": "Lunedì: rientro entro le",
+                "tue_start": "Martedì: partenza non prima delle",
+                "tue_end": "Martedì: rientro entro le",
+                "wed_start": "Mercoledì: partenza non prima delle",
+                "wed_end": "Mercoledì: rientro entro le",
+                "thu_start": "Giovedì: partenza non prima delle",
+                "thu_end": "Giovedì: rientro entro le",
+                "fri_start": "Venerdì: partenza non prima delle",
+                "fri_end": "Venerdì: rientro entro le",
+                "sat_start": "Sabato: partenza non prima delle",
+                "sat_end": "Sabato: rientro entro le",
+                "sun_start": "Domenica: partenza non prima delle",
+                "sun_end": "Domenica: rientro entro le"
+              }
+            },
             "comfort": {
               "name": "Comfort",
               "description": "Cosa piace a questo velista. Queste preferenze cambiano il punteggio, mai la valutazione di sicurezza.",

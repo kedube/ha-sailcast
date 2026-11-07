@@ -44,7 +44,7 @@
     "best_eyebrow": "Beste Zeit diese Woche · {who}",
     "no_window": "Kein gutes Segelfenster diese Woche",
     "best_day": "Der beste Tag ist {day} mit einer Wertung von {score} ({band}).",
-    "window_rule": "Ein gutes Segelfenster braucht mindestens zwei Stunden am Stück mit einer Wertung ab 60, bei Tageslicht und innerhalb deiner Segelzeiten.",
+    "window_rule": "Ein gutes Segelfenster braucht mindestens zwei Stunden am Stück mit einer Wertung ab 60, innerhalb deiner Segelzeiten und bei Tageslicht, außer das Boot hat Positionslichter.",
     "gusts": "Böen {gust} kn",
     "high": "Hochwasser {time}",
     "low": "Niedrigwasser {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Ebbstrom {speed} kn",
     "current_slack": "Strömung {speed} kn (Stauwasser)",
     "hours": "Stunde für Stunde",
-    "hours_sub": "Stunden mit Tageslicht"
+    "hours_sub": "Stunden mit Tageslicht",
+    "hours_sub_lights": "Alle Stunden, mit Positionslichtern"
   },
   "ai": {
     "button": "Mit KI zusammenfassen",
@@ -311,9 +312,10 @@
     "loading": "Windkarte wird geladen …",
     "failed": "Die Karte konnte nicht geladen werden.",
     "budget": "Die Windkarte pausiert bis morgen, damit SailCast im kostenlosen Tageskontingent von Open-Meteo bleibt. Die Vorhersage selbst läuft weiter.",
+    "view_budget": "Damit SailCast im kostenlosen Tageskontingent von Open-Meteo bleibt, zeigt die Karte bis morgen nur den Wind in Gebieten, die schon geladen sind.",
     "unavailable": "Die Windkarte konnte nicht geladen werden: {message}",
     "stale": "Das ist der Wind laut der Vorhersage von {time}; SailCast konnte keine neuere abrufen.",
-    "credits": "Wind © Open-Meteo (CC BY 4.0), aus dem besten Modell für die Gegend, etwa alle 2 km und stündlich. Karte © OpenStreetMap-Mitwirkende, Seezeichen © OpenSeaMap. Nicht zur Navigation geeignet."
+    "credits": "Wind © Open-Meteo (CC BY 4.0), stündlich aus dem besten Modell für die Gegend, mit Punkten etwa alle 2 km in der Nahansicht und weiter auseinander beim Herauszoomen. Karte © OpenStreetMap-Mitwirkende, Seezeichen © OpenSeaMap. Nicht zur Navigation geeignet."
   },
   "table": {
     "direction": "Richtung",
@@ -405,6 +407,7 @@
     "sunrise": "Sonnenaufgang",
     "sunset": "Sonnenuntergang",
     "sailed_by": "Gesegelt von {sailors}",
+    "lights": "Positionslichter",
     "no_sailors": "Noch keine Segler",
     "sources": "Quellen",
     "map_km": "Windkarte {value} km",
@@ -442,9 +445,11 @@
     "when": "Wann du segeln kannst",
     "from": "Von",
     "until": "Bis",
+    "from_day": "{day}, von",
+    "until_day": "{day}, bis",
     "sunrise": "Sonnenaufgang",
     "sunset": "Sonnenuntergang",
-    "when_hint": "Segelfenster liegen nur innerhalb dieser Zeiten. SailCast bewertet grundsätzlich nur Stunden mit Tageslicht.",
+    "when_hint": "Wähle die Tage, an denen du segelst, jeden mit eigenen Zeiten; Segelfenster liegen nur innerhalb dieser Zeiten. Stehen sie auf Sonnenaufgang und Sonnenuntergang, kann ein Boot mit Positionslichtern zu jeder Stunde segeln. Einen einzelnen Tag, etwa einen freien Tag, änderst du über die Zeiten unter diesem Tag in der Woche.",
     "comfort": "Komfort",
     "ideal_low": "Idealer Wind ab (kn)",
     "ideal_high": "Idealer Wind bis (kn)",
@@ -455,6 +460,28 @@
     "user": "Home-Assistant-Benutzer",
     "no_user": "Keiner",
     "user_hint": "SailCast öffnet sich für diesen Benutzer mit diesem Segler."
+  },
+  "hours": {
+    "title": "Segelzeit: {day}",
+    "this_day": "An diesem Tag",
+    "free": "Den ganzen Tag frei",
+    "free_hint": "{hours}.",
+    "off": "Kein Segeltag",
+    "off_hint": "An diesem Tag keine Segelfenster.",
+    "set": "Diese Zeiten",
+    "set_hint": "Wähle Beginn und Ende.",
+    "usual": "Sonst am {day}: {hours}.",
+    "hint": "Das ändert nur diesen Tag. Die üblichen Zeiten bleiben, wie sie sind.",
+    "back": "Zurück zu den üblichen Zeiten",
+    "changed": "{hours} (geändert)",
+    "change_label": "Segelzeit ändern ({day}): {hours}",
+    "undo_label": "Zurück zu den üblichen Zeiten ({day})",
+    "saved": "Segelzeit geändert ({day}).",
+    "reset": "Wieder die üblichen Zeiten ({day}).",
+    "span": "{start} bis {end}",
+    "daylight": "Sonnenaufgang bis Sonnenuntergang",
+    "any_time": "Jederzeit",
+    "midnight": "Mitternacht"
   },
   "rain": {
     "avoid": "Regen vermeiden",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. Vorsicht ab {caution} kn, gefährlich ab {dangerous} kn.",
     "length_feet": "Länge (ft)",
     "length_meters": "Länge (m)",
+    "lights": "Positionslichter",
+    "lights_hint": "Einschalten, wenn das Boot funktionierende Positionslichter hat. Dann zählen auch die Stunden nach Einbruch der Dunkelheit, innerhalb der Zeiten des Seglers.",
     "limits": "Grenzen für diese Größe, auf jeder Könnensstufe gleich"
   },
   "spot": {

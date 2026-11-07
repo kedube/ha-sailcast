@@ -215,19 +215,23 @@ def test_calls_for_readings() -> None:
 async def test_forecast_at_stations(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
-    """Buoys and airports get today's wind and air from the three models."""
+    """Buoys and airports get today's wind and air from the three models.
+
+    A buoy's comes from the sea, as the spots' does, and an airport's from land.
+    """
     mock_readings(aioclient_mock)
     session = async_get_clientsession(hass)
-    forecasts = await open_meteo.async_get_nearby(
-        session, list(STATION_POINTS.values())
-    )
+    buoys = [STATION_POINTS["46258"], STATION_POINTS["SDBC1"]]
+    airports = [STATION_POINTS["KSAN"], STATION_POINTS["KNZY"]]
+    forecasts = await open_meteo.async_get_nearby(session, buoys, sea=True)
+    forecasts += await open_meteo.async_get_nearby(session, airports, sea=False)
+    cells = [url.query["cell_selection"] for _, url, _, _ in aioclient_mock.mock_calls]
+    assert cells == ["sea", "land"]
     assert len(forecasts) == 4
     assert len(forecasts[0].times) == 48
     assert set(forecasts[2].values) == set(open_meteo.NEARBY_VARIABLES)
     assert forecasts[2].at("wind_speed_10m", 22) == (4.4, 6.6, 6.1)
-    marine = await open_meteo.async_get_buoy_marine(
-        session, [STATION_POINTS["46258"], STATION_POINTS["SDBC1"]]
-    )
+    marine = await open_meteo.async_get_buoy_marine(session, buoys)
     assert marine[0].values["wave_height"][22] == 1.48
 
 
@@ -243,3 +247,4 @@ async def test_spread(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) 
     assert all(value is not None for value in spreads[0].values[:48])
     _, url, _, _ = aioclient_mock.mock_calls[0]
     assert url.query["models"] == open_meteo.SPREAD_MODEL
+    assert url.query["cell_selection"] == "sea"

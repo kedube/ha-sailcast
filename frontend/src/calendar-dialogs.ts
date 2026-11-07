@@ -1,14 +1,16 @@
 /**
  * Dialogs for sailing windows in your own calendars: adding one, looking at
- * one that's in a calendar already, and automatic adding.
+ * one that's in a calendar already, and automatic adding. Also changing a
+ * sailor's hours for one date.
  */
 import { html, nothing, type TemplateResult } from "lit";
 
-import { checked, define, ScDialog, value } from "./dialog";
+import { dayAndDate, hoursText } from "./context";
+import { checked, define, errorText, hourSelect, hourTime, ScDialog, value } from "./dialog";
 import { band, localTime, ms, WEEKDAYS } from "./format";
 import { icon, ring } from "./glyphs";
 import { compass, heightRange } from "./text";
-import type { AutoCalendar, CalendarInfo, PlannedSail } from "./types";
+import type { AutoCalendar, CalendarInfo, Day, PlannedSail } from "./types";
 import { addIcon, addText, plannedStatus } from "./week";
 
 const AHEAD = [1, 2, 4, 6];
@@ -476,8 +478,14 @@ export class ScAutoDialog extends ScDialog {
         spots,
       };
     }
-    const { id, name, ...data } = sailor;
-    const result = await ctx.api.save("sailor", name, { ...data, auto_calendar: auto }, id);
+    // The rest of the profile goes back as it was; its week is saved as hours.
+    const { id, name, week, ...data } = sailor;
+    const result = await ctx.api.save(
+      "sailor",
+      name,
+      { ...data, hours: week, auto_calendar: auto },
+      id,
+    );
     if (result.errors) {
       return Object.values(result.errors)
         .map((key) => this.t(`error.${key}`))
@@ -490,14 +498,147 @@ export class ScAutoDialog extends ScDialog {
   }
 }
 
+type HoursChoice = "free" | "off" | "set";
+
+/**
+ * Change the sailor's hours for one date, such as a day off: free all day,
+ * not sailing, or hours of its own. The usual hours stay as they are.
+ */
+export class ScHoursDialog extends ScDialog {
+  static override properties = {
+    ...ScDialog.properties,
+    dayIndex: { type: Number },
+    choice: { state: true },
+  };
+  declare dayIndex: number;
+  declare choice?: HoursChoice;
+
+  private get day(): Day {
+    return this.ctx.forecast!.days[this.dayIndex];
+  }
+
+  protected heading(): string {
+    return this.t("hours.title", { day: dayAndDate(this.ctx, this.day) });
+  }
+
+  protected body(): TemplateResult {
+    const { ctx } = this;
+    const { t, fmt } = ctx;
+    const day = this.day;
+    const lights = ctx.forecast!.lights;
+    const hours = day.hours;
+    const choice = this.choice ?? (!hours ? "off" : !hours.start && !hours.end ? "free" : "set");
+    // The weekday's own hours, Monday first.
+    const weekday = WEEKDAYS[(new Date(`${day.date}T12:00:00Z`).getUTCDay() + 6) % 7];
+    const usual = ctx.sailor!.week[weekday] ?? null;
+    return html`
+      <p class="small">
+        ${t("hours.usual", {
+          day: fmt.weekday(day.date, "long"),
+          hours: hoursText(ctx, day.date, usual, lights),
+        })}
+      </p>
+      <fieldset class="fld">
+        <legend class="lbl">${t("hours.this_day")}</legend>
+        <div class="opts">
+          ${(["free", "off", "set"] as const).map(
+            (key) =>
+              html`<label class="opt"
+                ><input
+                  type="radio"
+                  name="choice"
+                  value=${key}
+                  ?checked=${choice === key}
+                  @change=${() => (this.choice = key)}
+                /><span class="opt-t"
+                  ><b>${t(`hours.${key}`)}</b
+                  ><span
+                    >${t(`hours.${key}_hint`, {
+                      hours: hoursText(ctx, day.date, { start: null, end: null }, lights),
+                    })}</span
+                  ></span
+                ></label
+              >`,
+          )}
+        </div>
+        ${
+          choice === "set"
+            ? html`<div class="two">
+                <label class="fld">
+                  <span class="lbl">${t("sailor.from")}</span>
+                  ${hourSelect(ctx, "start", false, hours?.start)}
+                </label>
+                <label class="fld">
+                  <span class="lbl">${t("sailor.until")}</span>
+                  ${hourSelect(ctx, "end", true, hours?.end)}
+                </label>
+              </div>`
+            : nothing
+        }
+      </fieldset>
+      <p class="hint">${t("hours.hint")}</p>
+    `;
+  }
+
+  protected footer(): TemplateResult {
+    return html`${
+      this.day.changed
+        ? html`<button
+            type="button"
+            class="btn btn-text"
+            ?disabled=${this.busy}
+            @click=${() => void this.usual()}
+          >
+            ${this.t("hours.back")}
+          </button>`
+        : nothing
+    }
+    ${this.actions(this.t("dialog.save"))}`;
+  }
+
+  /** Go back to the usual hours on this date. */
+  private async usual(): Promise<void> {
+    this.busy = true;
+    try {
+      await this.ctx.api.setHours(this.ctx.sailor!.id, this.day.date, "usual");
+      this.ctx.act.toast(this.t("hours.reset", { day: dayAndDate(this.ctx, this.day) }));
+      this.close();
+    } catch (err) {
+      this.error = errorText(err);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  protected async submit(form: HTMLFormElement): Promise<string | void> {
+    const { ctx } = this;
+    const choice = value(form, "choice") as HoursChoice;
+    const hours =
+      choice === "off"
+        ? "off"
+        : choice === "free"
+          ? { start: null, end: null }
+          : { start: hourTime(value(form, "start")), end: hourTime(value(form, "end")) };
+    const result = await ctx.api.setHours(ctx.sailor!.id, this.day.date, hours);
+    if (result.errors) {
+      return Object.values(result.errors)
+        .map((key) => this.t(`error.${key}`))
+        .join(" ");
+    }
+    ctx.act.toast(this.t("hours.saved", { day: dayAndDate(ctx, this.day) }));
+  }
+}
+
 define("sc-window-dialog", ScWindowDialog);
 define("sc-planned-dialog", ScPlannedDialog);
 define("sc-auto-dialog", ScAutoDialog);
+define("sc-hours-dialog", ScHoursDialog);
 
 declare global {
   interface HTMLElementTagNameMap {
     "sc-window-dialog": ScWindowDialog;
     "sc-planned-dialog": ScPlannedDialog;
     "sc-auto-dialog": ScAutoDialog;
+    "sc-hours-dialog": ScHoursDialog;
   }
 }

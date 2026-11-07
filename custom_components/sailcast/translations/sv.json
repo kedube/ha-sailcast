@@ -102,11 +102,13 @@
           "data": {
             "name": "Namn",
             "size_class": "Storlek",
-            "length": "Längd"
+            "length": "Längd",
+            "lights": "Lanternor"
           },
           "data_description": {
             "name": "Till exempel båtens namn.",
-            "size_class": "Varje storlek har egna säkerhetsgränser för vind, byar och vågor."
+            "size_class": "Varje storlek har egna säkerhetsgränser för vind, byar och vågor.",
+            "lights": "Slå på om båten har fungerande lanternor. Då räknas även timmarna efter mörkrets inbrott, inom seglarens tider."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Namn",
             "size_class": "Storlek",
-            "length": "Längd"
+            "length": "Längd",
+            "lights": "Lanternor"
           },
           "data_description": {
             "name": "Till exempel båtens namn.",
-            "size_class": "Varje storlek har egna säkerhetsgränser för vind, byar och vågor."
+            "size_class": "Varje storlek har egna säkerhetsgränser för vind, byar och vågor.",
+            "lights": "Slå på om båten har fungerande lanternor. Då räknas även timmarna efter mörkrets inbrott, inom seglarens tider."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Ordinarie båt",
             "other_boats": "Andra båtar",
             "days": "Seglingsdagar",
-            "start": "Tidigaste start",
-            "end": "Senaste sluttid",
             "user": "Home Assistant-användare"
           },
           "data_description": {
             "skill": "Varje seglare bedömer sin egen färdighetsnivå. Den bestämmer gränsen för medelvind; byar räknas inte in.",
             "default_boat": "SailCast bedömer den här båten om inte seglaren väljer en annan.",
             "other_boats": "Andra båtar som den här seglaren tar ut.",
-            "start": "Lämna tomt för att börja vid soluppgången.",
-            "end": "Lämna tomt för att sluta vid solnedgången.",
             "user": "Panelen öppnas med den här seglaren för den användaren."
           },
           "sections": {
+            "hours": {
+              "name": "Tider per dag",
+              "description": "För seglingsdagarna ovan. Lämna en tid tom för att börja vid soluppgången eller sluta vid solnedgången, eller vilken timme som helst i en båt med lanternor. En enskild dag, till exempel en ledig dag, ändrar du i SailCast-panelen.",
+              "data": {
+                "mon_start": "Måndag: tidigaste start",
+                "mon_end": "Måndag: senaste sluttid",
+                "tue_start": "Tisdag: tidigaste start",
+                "tue_end": "Tisdag: senaste sluttid",
+                "wed_start": "Onsdag: tidigaste start",
+                "wed_end": "Onsdag: senaste sluttid",
+                "thu_start": "Torsdag: tidigaste start",
+                "thu_end": "Torsdag: senaste sluttid",
+                "fri_start": "Fredag: tidigaste start",
+                "fri_end": "Fredag: senaste sluttid",
+                "sat_start": "Lördag: tidigaste start",
+                "sat_end": "Lördag: senaste sluttid",
+                "sun_start": "Söndag: tidigaste start",
+                "sun_end": "Söndag: senaste sluttid"
+              }
+            },
             "comfort": {
               "name": "Komfort",
               "description": "Vad den här seglaren trivs med. Det här påverkar poängen, aldrig en säkerhetsbedömning.",
@@ -197,19 +217,35 @@
             "default_boat": "Ordinarie båt",
             "other_boats": "Andra båtar",
             "days": "Seglingsdagar",
-            "start": "Tidigaste start",
-            "end": "Senaste sluttid",
             "user": "Home Assistant-användare"
           },
           "data_description": {
             "skill": "Varje seglare bedömer sin egen färdighetsnivå. Den bestämmer gränsen för medelvind; byar räknas inte in.",
             "default_boat": "SailCast bedömer den här båten om inte seglaren väljer en annan.",
             "other_boats": "Andra båtar som den här seglaren tar ut.",
-            "start": "Lämna tomt för att börja vid soluppgången.",
-            "end": "Lämna tomt för att sluta vid solnedgången.",
             "user": "Panelen öppnas med den här seglaren för den användaren."
           },
           "sections": {
+            "hours": {
+              "name": "Tider per dag",
+              "description": "För seglingsdagarna ovan. Lämna en tid tom för att börja vid soluppgången eller sluta vid solnedgången, eller vilken timme som helst i en båt med lanternor. En enskild dag, till exempel en ledig dag, ändrar du i SailCast-panelen.",
+              "data": {
+                "mon_start": "Måndag: tidigaste start",
+                "mon_end": "Måndag: senaste sluttid",
+                "tue_start": "Tisdag: tidigaste start",
+                "tue_end": "Tisdag: senaste sluttid",
+                "wed_start": "Onsdag: tidigaste start",
+                "wed_end": "Onsdag: senaste sluttid",
+                "thu_start": "Torsdag: tidigaste start",
+                "thu_end": "Torsdag: senaste sluttid",
+                "fri_start": "Fredag: tidigaste start",
+                "fri_end": "Fredag: senaste sluttid",
+                "sat_start": "Lördag: tidigaste start",
+                "sat_end": "Lördag: senaste sluttid",
+                "sun_start": "Söndag: tidigaste start",
+                "sun_end": "Söndag: senaste sluttid"
+              }
+            },
             "comfort": {
               "name": "Komfort",
               "description": "Vad den här seglaren trivs med. Det här påverkar poängen, aldrig en säkerhetsbedömning.",

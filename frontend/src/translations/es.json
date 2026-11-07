@@ -44,7 +44,7 @@
     "best_eyebrow": "Mejor momento de la semana · {who}",
     "no_window": "Ninguna ventana buena esta semana",
     "best_day": "El mejor día es el {day}, con una puntuación de {score} ({band}).",
-    "window_rule": "Una ventana buena necesita al menos dos horas seguidas con una puntuación de 60 o más, con luz de día y dentro de tu horario de navegación.",
+    "window_rule": "Una ventana buena necesita al menos dos horas seguidas con una puntuación de 60 o más, dentro de tu horario de navegación, y con luz de día salvo que el barco tenga luces de navegación.",
     "gusts": "Rachas de {gust} kn",
     "high": "Pleamar {time}",
     "low": "Bajamar {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Corriente de {speed} kn de vaciante",
     "current_slack": "Corriente de {speed} kn (repunte)",
     "hours": "Hora a hora",
-    "hours_sub": "Horas de luz"
+    "hours_sub": "Horas de luz",
+    "hours_sub_lights": "Todas las horas, con luces de navegación"
   },
   "ai": {
     "button": "Resumir con IA",
@@ -311,9 +312,10 @@
     "loading": "Cargando el mapa de viento…",
     "failed": "No se pudo cargar el mapa.",
     "budget": "El mapa de viento queda en pausa hasta mañana para que SailCast no supere las llamadas diarias gratuitas de Open-Meteo. El pronóstico sigue actualizándose.",
+    "view_budget": "Para no superar las llamadas diarias gratuitas de Open-Meteo, hasta mañana el viento solo aparece en las zonas que SailCast ya tiene.",
     "unavailable": "No se pudo cargar el mapa de viento: {message}",
     "stale": "Este es el viento según el pronóstico del {time}; SailCast no pudo descargar uno más reciente.",
-    "credits": "Viento © Open-Meteo (CC BY 4.0), de su mejor modelo para la región, con una malla de unos 2 km y datos horarios. Mapa © colaboradores de OpenStreetMap, marcas náuticas © OpenSeaMap. No apto para la navegación."
+    "credits": "Viento © Open-Meteo (CC BY 4.0), de su mejor modelo para la región, con datos horarios y puntos cada unos 2 km de cerca, más separados al alejar el mapa. Mapa © colaboradores de OpenStreetMap, marcas náuticas © OpenSeaMap. No apto para la navegación."
   },
   "table": {
     "direction": "Dirección",
@@ -405,6 +407,7 @@
     "sunrise": "amanecer",
     "sunset": "puesta de sol",
     "sailed_by": "Usado por {sailors}",
+    "lights": "luces de navegación",
     "no_sailors": "Aún sin navegantes",
     "sources": "Fuentes",
     "map_km": "mapa de viento {value} km",
@@ -442,9 +445,11 @@
     "when": "Cuándo puedes navegar",
     "from": "Desde",
     "until": "Hasta",
+    "from_day": "{day}, desde",
+    "until_day": "{day}, hasta",
     "sunrise": "Amanecer",
     "sunset": "Puesta de sol",
-    "when_hint": "Las ventanas de navegación solo caen dentro de este horario. SailCast solo valora las horas de luz.",
+    "when_hint": "Marca los días en que navegas, cada uno con su horario; las ventanas de navegación solo caen dentro de él. Si lo dejas en amanecer y puesta de sol, un barco con luces de navegación puede navegar a cualquier hora. Para cambiar un solo día, como un día libre, usa el horario debajo de ese día en la semana.",
     "comfort": "Comodidad",
     "ideal_low": "Viento ideal desde (kn)",
     "ideal_high": "Viento ideal hasta (kn)",
@@ -455,6 +460,28 @@
     "user": "Usuario de Home Assistant",
     "no_user": "Ninguno",
     "user_hint": "Para ese usuario, SailCast se abre con este navegante."
+  },
+  "hours": {
+    "title": "Horario de navegación: {day}",
+    "this_day": "Este día",
+    "free": "Libre todo el día",
+    "free_hint": "{hours}.",
+    "off": "Sin navegar",
+    "off_hint": "Ese día no hay ventanas de navegación.",
+    "set": "Este horario",
+    "set_hint": "Elige el inicio y el fin.",
+    "usual": "Horario habitual ({day}): {hours}.",
+    "hint": "Solo cambia este día. El horario habitual se queda igual.",
+    "back": "Volver al horario habitual",
+    "changed": "{hours} (cambiado)",
+    "change_label": "Cambiar el horario ({day}): {hours}",
+    "undo_label": "Volver al horario habitual ({day})",
+    "saved": "Horario cambiado ({day}).",
+    "reset": "De vuelta al horario habitual ({day}).",
+    "span": "de {start} a {end}",
+    "daylight": "Del amanecer a la puesta de sol",
+    "any_time": "A cualquier hora",
+    "midnight": "medianoche"
   },
   "rain": {
     "avoid": "Evitar la lluvia",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. Precaución a partir de {caution} kn, peligroso a partir de {dangerous} kn.",
     "length_feet": "Eslora (ft)",
     "length_meters": "Eslora (m)",
+    "lights": "Luces de navegación",
+    "lights_hint": "Actívalo si el barco tiene luces de navegación que funcionan. Así también cuentan las horas después del anochecer, dentro del horario del navegante.",
     "limits": "Límites para este tamaño, iguales en todos los niveles"
   },
   "spot": {

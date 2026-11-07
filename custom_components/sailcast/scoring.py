@@ -5,8 +5,9 @@ from how well the wind fits the sailor's ideal range, takes off points for
 gusts, waves, rain, cold and poor visibility, and is capped by the safety
 rating. A sailor's comfort settings change the ideal range, the rain penalty
 and where cold starts to count, but never the rating. A sailing window is two
-or more hours in a row, in daylight and in the sailor's time, scoring 60 or
-more.
+or more hours in a row, in daylight and in the sailor's hours that day,
+scoring 60 or more. In a boat with navigation lights, hours after dark count
+too.
 """
 
 from __future__ import annotations
@@ -20,10 +21,8 @@ import math
 from types import MappingProxyType
 from typing import Final
 
-from homeassistant.const import WEEKDAYS
-
 from .limits import BOAT_LIMITS, FOOT, SKILL_WIND_LIMITS, Level
-from .profiles import Comfort, RainTolerance, SizeClass, Skill
+from .profiles import Comfort, Hours, RainTolerance, SizeClass, Skill
 from .rating import Rating
 from .timeline import Hour
 
@@ -148,27 +147,27 @@ def score(
     return max(0, round_half_up(value))
 
 
-def is_available(
-    days: Sequence[str], start: str | None, end: str | None, hour: datetime
-) -> bool:
+def is_available(hours: Hours | None, hour: datetime) -> bool:
     """Return whether a sailor can sail in the hour that begins at `hour`.
 
-    `hour` is in local time. `days` are keys such as "sat", and `start` and
-    `end` are times of day such as "09:00:00", or None for sunrise or sunset.
+    `hour` is in local time, and `hours` are the sailor's hours that day, or
+    None if they don't sail then. A missing start or end is no limit here:
+    without navigation lights, the boat's daylight keeps it to sunrise and
+    sunset.
     """
-    if WEEKDAYS[hour.weekday()] not in days:
+    if hours is None:
         return False
-    if start is not None and hour.time() < time.fromisoformat(start):
+    if hours.start is not None and hour.time() < time.fromisoformat(hours.start):
         return False
-    if end is not None:
-        limit = datetime.combine(hour.date(), time.fromisoformat(end), hour.tzinfo)
-        return hour + HOUR <= limit
+    if hours.end is not None:
+        end = time.fromisoformat(hours.end)
+        return hour + HOUR <= datetime.combine(hour.date(), end, hour.tzinfo)
     return True
 
 
 @dataclass(frozen=True, slots=True)
 class Slot:
-    """One daylight hour of a day: its score and whether the sailor is free."""
+    """One hour the boat can sail in: its score and whether the sailor is free."""
 
     start: datetime
     score: int
@@ -177,7 +176,11 @@ class Slot:
 
 @dataclass(frozen=True, slots=True)
 class Window:
-    """A sailing window. It starts no earlier than sunrise and ends by sunset."""
+    """A sailing window.
+
+    Without navigation lights, it starts no earlier than sunrise and ends by
+    sunset.
+    """
 
     start: datetime
     end: datetime
@@ -195,7 +198,9 @@ def find_windows(
 ) -> list[Window]:
     """Return every run of two or more available hours scoring 60 or more.
 
-    `slots` are a day's daylight hours, in order.
+    `slots` are the day's hours the boat can sail in, in order. Windows are
+    kept between sunrise and sunset, unless those are None, as they are for
+    a boat with navigation lights.
     """
     windows: list[Window] = []
     run: list[Slot] = []

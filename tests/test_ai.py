@@ -172,7 +172,11 @@ async def test_summary(
     data = json.loads(asked.split("The data, as JSON:\n", 1)[1])
     # The river spot's Saturday, for Alex in the keelboat, in metric units.
     assert data["date"] == "2026-11-07"
-    assert data["boat"] == {"name": "Keelboat", "size": "small keelboat"}
+    assert data["boat"] == {
+        "name": "Keelboat",
+        "size": "small keelboat",
+        "navigation_lights": False,
+    }
     assert data["sailor"] == {"skill": "intermediate", "wind_limit": 16}
     assert data["units"]["height"] == "m"
     assert data["windows"] == [

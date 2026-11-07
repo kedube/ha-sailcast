@@ -102,11 +102,13 @@
           "data": {
             "name": "Nome",
             "size_class": "Tamanho",
-            "length": "Comprimento"
+            "length": "Comprimento",
+            "lights": "Luzes de navegação"
           },
           "data_description": {
             "name": "Por exemplo, o nome do barco.",
-            "size_class": "Cada tamanho tem os próprios limites de segurança para vento, rajadas e ondas."
+            "size_class": "Cada tamanho tem os próprios limites de segurança para vento, rajadas e ondas.",
+            "lights": "Ative se o barco tem luzes de navegação funcionando. Assim as horas depois que escurece também contam, dentro dos horários do velejador."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Nome",
             "size_class": "Tamanho",
-            "length": "Comprimento"
+            "length": "Comprimento",
+            "lights": "Luzes de navegação"
           },
           "data_description": {
             "name": "Por exemplo, o nome do barco.",
-            "size_class": "Cada tamanho tem os próprios limites de segurança para vento, rajadas e ondas."
+            "size_class": "Cada tamanho tem os próprios limites de segurança para vento, rajadas e ondas.",
+            "lights": "Ative se o barco tem luzes de navegação funcionando. Assim as horas depois que escurece também contam, dentro dos horários do velejador."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Barco habitual",
             "other_boats": "Outros barcos",
             "days": "Dias de velejar",
-            "start": "Início mais cedo",
-            "end": "Término mais tarde",
             "user": "Usuário do Home Assistant"
           },
           "data_description": {
             "skill": "Cada velejador avalia o próprio nível. Ele define o limite de vento médio do velejador; as rajadas não contam para esse limite.",
             "default_boat": "O SailCast classifica este barco, a menos que o velejador escolha outro.",
             "other_boats": "Outros barcos que este velejador usa.",
-            "start": "Deixe em branco para começar ao nascer do sol.",
-            "end": "Deixe em branco para terminar ao pôr do sol.",
             "user": "O painel abre neste velejador para esse usuário."
           },
           "sections": {
+            "hours": {
+              "name": "Horário de cada dia",
+              "description": "Para os dias de velejar escolhidos acima. Deixe um horário em branco para começar ao nascer do sol ou terminar ao pôr do sol, ou a qualquer hora num barco com luzes de navegação. Um único dia, como uma folga, se muda no painel do SailCast.",
+              "data": {
+                "mon_start": "Segunda-feira: início mais cedo",
+                "mon_end": "Segunda-feira: término mais tarde",
+                "tue_start": "Terça-feira: início mais cedo",
+                "tue_end": "Terça-feira: término mais tarde",
+                "wed_start": "Quarta-feira: início mais cedo",
+                "wed_end": "Quarta-feira: término mais tarde",
+                "thu_start": "Quinta-feira: início mais cedo",
+                "thu_end": "Quinta-feira: término mais tarde",
+                "fri_start": "Sexta-feira: início mais cedo",
+                "fri_end": "Sexta-feira: término mais tarde",
+                "sat_start": "Sábado: início mais cedo",
+                "sat_end": "Sábado: término mais tarde",
+                "sun_start": "Domingo: início mais cedo",
+                "sun_end": "Domingo: término mais tarde"
+              }
+            },
             "comfort": {
               "name": "Conforto",
               "description": "Do que este velejador gosta. Isso muda as pontuações, nunca uma classificação de segurança.",
@@ -197,19 +217,35 @@
             "default_boat": "Barco habitual",
             "other_boats": "Outros barcos",
             "days": "Dias de velejar",
-            "start": "Início mais cedo",
-            "end": "Término mais tarde",
             "user": "Usuário do Home Assistant"
           },
           "data_description": {
             "skill": "Cada velejador avalia o próprio nível. Ele define o limite de vento médio do velejador; as rajadas não contam para esse limite.",
             "default_boat": "O SailCast classifica este barco, a menos que o velejador escolha outro.",
             "other_boats": "Outros barcos que este velejador usa.",
-            "start": "Deixe em branco para começar ao nascer do sol.",
-            "end": "Deixe em branco para terminar ao pôr do sol.",
             "user": "O painel abre neste velejador para esse usuário."
           },
           "sections": {
+            "hours": {
+              "name": "Horário de cada dia",
+              "description": "Para os dias de velejar escolhidos acima. Deixe um horário em branco para começar ao nascer do sol ou terminar ao pôr do sol, ou a qualquer hora num barco com luzes de navegação. Um único dia, como uma folga, se muda no painel do SailCast.",
+              "data": {
+                "mon_start": "Segunda-feira: início mais cedo",
+                "mon_end": "Segunda-feira: término mais tarde",
+                "tue_start": "Terça-feira: início mais cedo",
+                "tue_end": "Terça-feira: término mais tarde",
+                "wed_start": "Quarta-feira: início mais cedo",
+                "wed_end": "Quarta-feira: término mais tarde",
+                "thu_start": "Quinta-feira: início mais cedo",
+                "thu_end": "Quinta-feira: término mais tarde",
+                "fri_start": "Sexta-feira: início mais cedo",
+                "fri_end": "Sexta-feira: término mais tarde",
+                "sat_start": "Sábado: início mais cedo",
+                "sat_end": "Sábado: término mais tarde",
+                "sun_start": "Domingo: início mais cedo",
+                "sun_end": "Domingo: término mais tarde"
+              }
+            },
             "comfort": {
               "name": "Conforto",
               "description": "Do que este velejador gosta. Isso muda as pontuações, nunca uma classificação de segurança.",

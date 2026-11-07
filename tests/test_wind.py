@@ -16,12 +16,16 @@ from custom_components.sailcast.coordinator import Budget
 from custom_components.sailcast.profiles import Spot, WaterType
 from custom_components.sailcast.providers import ProviderError, open_meteo
 from custom_components.sailcast.wind import (
+    HOUR_CALLS,
     KEEP,
+    MINUTE_CALLS,
     STOP_AT,
+    Bounds,
     BudgetSpentError,
     WindGrids,
     area_for,
     areas,
+    view_area,
 )
 
 from .conftest import BAY_POINT, HARBOR_POINT, RECORDED, RIVER_POINT, mock_wind
@@ -114,6 +118,8 @@ async def test_kept_for_three_hours(
     grid, stale = await grids.async_get(session, area, budget)
     assert not stale
     assert aioclient_mock.call_count == 1
+    # Each point's wind comes from the cell nearest it, on land or sea.
+    assert aioclient_mock.mock_calls[0][1].query["cell_selection"] == "nearest"
     assert budget.today == 121
     assert len(grid.times) == 168
     assert len(grid.speed[0]) == 121
@@ -208,7 +214,8 @@ async def test_a_day_with_three_spots(
     Each grid is fetched every three hours, 8 times a day: 3 x 8 x 225 =
     5,400 calls. The forecast and marine data use about 300 more, so the
     day never reaches the 6,000 where grids stop, and stays well under
-    Open-Meteo's 10,000.
+    Open-Meteo's 10,000. The maps are opened half a minute apart, since two
+    full grids are all a minute allows.
     """
     mock_wind(aioclient_mock)
     freezer.move_to(RECORDED.replace(hour=0, minute=0))
@@ -217,8 +224,10 @@ async def test_a_day_with_three_spots(
     session = async_get_clientsession(hass)
     for step in range(24 * 6):
         if step:
-            freezer.tick(timedelta(minutes=10))
-        for far in FAR:
+            freezer.tick(timedelta(minutes=9))
+        for index, far in enumerate(FAR):
+            if index:
+                freezer.tick(timedelta(seconds=30))
             await grids.async_get(session, found[far.id], budget)
     assert aioclient_mock.call_count == 3 * 8
     assert budget.today == 3 * 8 * 225
@@ -242,7 +251,142 @@ async def test_more_spots_than_the_budget_allows(
         if step:
             freezer.tick(KEEP)
         for each in many:
+            # Three of these grids fit in a minute.
+            freezer.tick(timedelta(seconds=20))
             with contextlib.suppress(BudgetSpentError):
                 await grids.async_get(session, found[each.id], budget)
     assert budget.today <= STOP_AT
     assert budget.today > STOP_AT - 121
+
+
+def view_around(point: tuple[float, float], km: float) -> Bounds:
+    """Return a square map view `km` across, centered on a point."""
+    lat = km / 2 / 111.32
+    lon = lat / math.cos(math.radians(point[0]))
+    return (point[0] - lat, point[1] - lon, point[0] + lat, point[1] + lon)
+
+
+def test_view_area() -> None:
+    """A view's grid reaches past its edges, on a lattice, 15 points a side at most."""
+    view = view_around(HARBOR_POINT, 20)
+    area = view_area(view, [HARBOR, BAY, RIVER, *FAR])
+    assert area.covers(view)
+    assert max(area.rows, area.cols) <= 15
+    assert area.spacing_km == pytest.approx(2, rel=0.05)
+    assert area.spots == ("bay", "harbor", "river")
+    # Its edges sit on lines 2 km apart, so nearby views line up.
+    step = 2 / 111.32
+    assert area.south / step == pytest.approx(round(area.south / step))
+    assert area.north / step == pytest.approx(round(area.north / step))
+
+    # Zoomed out, the points spread out.
+    wide = view_around(HARBOR_POINT, 600)
+    area = view_area(wide, [])
+    assert area.covers(wide)
+    assert max(area.rows, area.cols) <= 15
+    assert area.spacing_km == pytest.approx(64, rel=0.05)
+
+    # Too wide for the widest spacing, the grid covers the middle.
+    huge = view_around(HARBOR_POINT, 3000)
+    area = view_area(huge, [])
+    assert (area.rows, area.cols) == (15, 15)
+    assert not area.covers(huge)
+    assert area.south < HARBOR_POINT[0] < area.north
+    assert area.west < HARBOR_POINT[1] < area.east
+
+
+async def test_views_share_kept_grids(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A kept grid that covers a view finely enough serves it for free."""
+    mock_wind(aioclient_mock)
+    freezer.move_to(RECORDED.replace(hour=1))
+    grids, budget = WindGrids(), Budget()
+    session = async_get_clientsession(hass)
+    spots = [HARBOR, BAY, RIVER]
+    close = view_around(HARBOR_POINT, 12)
+    harbor, _ = await grids.async_get(session, area_for([HARBOR]), budget)
+    assert await grids.async_get_view(session, close, spots, budget) == (
+        harbor,
+        False,
+        None,
+    )
+    assert aioclient_mock.call_count == 1
+
+    # Zoomed out, a grid on a wider lattice, with the spots it covers.
+    zoomed_out = view_around(HARBOR_POINT, 100)
+    wide, stale, retry = await grids.async_get_view(session, zoomed_out, spots, budget)
+    assert wide is not None
+    assert (stale, retry) == (False, None)
+    assert wide.area.spacing_km == pytest.approx(12, rel=0.05)
+    assert wide.area.spots == ("bay", "harbor", "river")
+    assert aioclient_mock.call_count == 2
+
+    # A small pan stays on it, and close in, the harbor's finer grid serves.
+    south, west, north, east = zoomed_out
+    panned = (south + 0.05, west + 0.05, north + 0.05, east + 0.05)
+    assert (await grids.async_get_view(session, panned, spots, budget))[0] is wide
+    assert (await grids.async_get_view(session, close, spots, budget))[0] is harbor
+    assert aioclient_mock.call_count == 2
+
+
+async def test_views_keep_to_the_minute_and_hour(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """New grids keep to 450 calls a minute and 4,000 an hour, then say when."""
+    mock_wind(aioclient_mock)
+    freezer.move_to(RECORDED.replace(hour=1))
+    grids, budget = WindGrids(), Budget()
+    session = async_get_clientsession(hass)
+    # Views a degree apart, so none covers another.
+    views = [view_around((10.0 + n, -117.0), 30) for n in range(30)]
+    costs = [len(view_area(view, []).points) for view in views]
+    assert costs[0] + costs[1] <= MINUTE_CALLS < costs[0] + costs[1] + costs[2]
+
+    for view in views[:2]:
+        assert (await grids.async_get_view(session, view, [], budget))[0] is not None
+    assert await grids.async_get_view(session, views[2], [], budget) == (
+        None,
+        False,
+        60,
+    )
+    freezer.tick(timedelta(minutes=1))
+    assert (await grids.async_get_view(session, views[2], [], budget))[0] is not None
+
+    # Two a minute until the hour's calls run out.
+    for index in range(3, len(views)):
+        freezer.tick(timedelta(seconds=30))
+        grid, _, retry = await grids.async_get_view(session, views[index], [], budget)
+        if grid is None:
+            break
+    else:
+        pytest.fail("The hour's limit never came")
+    assert sum(costs[:index]) <= HOUR_CALLS < sum(costs[: index + 1])
+    assert retry is not None
+    assert retry > 60
+    assert budget.today == sum(costs[:index])
+
+
+async def test_view_when_the_day_is_spent(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """With the day's calls spent, an old grid that covers the view stands in."""
+    mock_wind(aioclient_mock)
+    freezer.move_to(RECORDED.replace(hour=1))
+    grids, budget = WindGrids(), Budget()
+    session = async_get_clientsession(hass)
+    wide, _, _ = await grids.async_get_view(
+        session, view_around(HARBOR_POINT, 100), [], budget
+    )
+    budget.add(STOP_AT)
+    freezer.tick(KEEP + timedelta(minutes=1))
+    close = view_around(HARBOR_POINT, 12)
+    assert await grids.async_get_view(session, close, [], budget) == (wide, True, None)
+    with pytest.raises(BudgetSpentError):
+        await grids.async_get_view(session, view_around((40.0, -117.0), 12), [], budget)

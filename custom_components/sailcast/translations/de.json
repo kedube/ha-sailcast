@@ -102,11 +102,13 @@
           "data": {
             "name": "Name",
             "size_class": "Größe",
-            "length": "Länge"
+            "length": "Länge",
+            "lights": "Positionslichter"
           },
           "data_description": {
             "name": "Zum Beispiel der Name des Bootes.",
-            "size_class": "Jede Größe hat eigene Sicherheitsgrenzen für Wind, Böen und Wellen."
+            "size_class": "Jede Größe hat eigene Sicherheitsgrenzen für Wind, Böen und Wellen.",
+            "lights": "Einschalten, wenn das Boot funktionierende Positionslichter hat. Dann zählen auch die Stunden nach Einbruch der Dunkelheit, innerhalb der Zeiten des Seglers."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Name",
             "size_class": "Größe",
-            "length": "Länge"
+            "length": "Länge",
+            "lights": "Positionslichter"
           },
           "data_description": {
             "name": "Zum Beispiel der Name des Bootes.",
-            "size_class": "Jede Größe hat eigene Sicherheitsgrenzen für Wind, Böen und Wellen."
+            "size_class": "Jede Größe hat eigene Sicherheitsgrenzen für Wind, Böen und Wellen.",
+            "lights": "Einschalten, wenn das Boot funktionierende Positionslichter hat. Dann zählen auch die Stunden nach Einbruch der Dunkelheit, innerhalb der Zeiten des Seglers."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Übliches Boot",
             "other_boats": "Weitere Boote",
             "days": "Segeltage",
-            "start": "Frühester Beginn",
-            "end": "Spätestes Ende",
             "user": "Home-Assistant-Benutzer"
           },
           "data_description": {
             "skill": "Jeder Segler schätzt sein Können selbst ein. Das Können legt seine Grenze für den mittleren Wind fest; Böen zählen dabei nicht mit.",
             "default_boat": "SailCast bewertet dieses Boot, solange der Segler kein anderes wählt.",
             "other_boats": "Weitere Boote, mit denen dieser Segler rausfährt.",
-            "start": "Leer lassen, um bei Sonnenaufgang zu beginnen.",
-            "end": "Leer lassen, um bei Sonnenuntergang aufzuhören.",
             "user": "Das Panel öffnet sich für diesen Benutzer mit diesem Segler."
           },
           "sections": {
+            "hours": {
+              "name": "Zeiten je Tag",
+              "description": "Für die oben gewählten Segeltage. Leer gelassen beginnt der Tag bei Sonnenaufgang und endet bei Sonnenuntergang, oder zu jeder Stunde in einem Boot mit Positionslichtern. Einen einzelnen Tag, etwa einen freien Tag, änderst du im SailCast-Panel.",
+              "data": {
+                "mon_start": "Montag: frühester Beginn",
+                "mon_end": "Montag: spätestes Ende",
+                "tue_start": "Dienstag: frühester Beginn",
+                "tue_end": "Dienstag: spätestes Ende",
+                "wed_start": "Mittwoch: frühester Beginn",
+                "wed_end": "Mittwoch: spätestes Ende",
+                "thu_start": "Donnerstag: frühester Beginn",
+                "thu_end": "Donnerstag: spätestes Ende",
+                "fri_start": "Freitag: frühester Beginn",
+                "fri_end": "Freitag: spätestes Ende",
+                "sat_start": "Samstag: frühester Beginn",
+                "sat_end": "Samstag: spätestes Ende",
+                "sun_start": "Sonntag: frühester Beginn",
+                "sun_end": "Sonntag: spätestes Ende"
+              }
+            },
             "comfort": {
               "name": "Komfort",
               "description": "Was diesem Segler gefällt. Das ändert die Wertungen, nie eine Sicherheitseinstufung.",
@@ -197,19 +217,35 @@
             "default_boat": "Übliches Boot",
             "other_boats": "Weitere Boote",
             "days": "Segeltage",
-            "start": "Frühester Beginn",
-            "end": "Spätestes Ende",
             "user": "Home-Assistant-Benutzer"
           },
           "data_description": {
             "skill": "Jeder Segler schätzt sein Können selbst ein. Das Können legt seine Grenze für den mittleren Wind fest; Böen zählen dabei nicht mit.",
             "default_boat": "SailCast bewertet dieses Boot, solange der Segler kein anderes wählt.",
             "other_boats": "Weitere Boote, mit denen dieser Segler rausfährt.",
-            "start": "Leer lassen, um bei Sonnenaufgang zu beginnen.",
-            "end": "Leer lassen, um bei Sonnenuntergang aufzuhören.",
             "user": "Das Panel öffnet sich für diesen Benutzer mit diesem Segler."
           },
           "sections": {
+            "hours": {
+              "name": "Zeiten je Tag",
+              "description": "Für die oben gewählten Segeltage. Leer gelassen beginnt der Tag bei Sonnenaufgang und endet bei Sonnenuntergang, oder zu jeder Stunde in einem Boot mit Positionslichtern. Einen einzelnen Tag, etwa einen freien Tag, änderst du im SailCast-Panel.",
+              "data": {
+                "mon_start": "Montag: frühester Beginn",
+                "mon_end": "Montag: spätestes Ende",
+                "tue_start": "Dienstag: frühester Beginn",
+                "tue_end": "Dienstag: spätestes Ende",
+                "wed_start": "Mittwoch: frühester Beginn",
+                "wed_end": "Mittwoch: spätestes Ende",
+                "thu_start": "Donnerstag: frühester Beginn",
+                "thu_end": "Donnerstag: spätestes Ende",
+                "fri_start": "Freitag: frühester Beginn",
+                "fri_end": "Freitag: spätestes Ende",
+                "sat_start": "Samstag: frühester Beginn",
+                "sat_end": "Samstag: spätestes Ende",
+                "sun_start": "Sonntag: frühester Beginn",
+                "sun_end": "Sonntag: spätestes Ende"
+              }
+            },
             "comfort": {
               "name": "Komfort",
               "description": "Was diesem Segler gefällt. Das ändert die Wertungen, nie eine Sicherheitseinstufung.",

@@ -3,7 +3,7 @@ import { html, LitElement, nothing, render, type PropertyValues, type TemplateRe
 import { Api } from "./api";
 import { brandIcon } from "./brand";
 import "./calendar-dialogs";
-import type { Actions, Ctx } from "./context";
+import { dayAndDate, type Actions, type Ctx } from "./context";
 import { dayView } from "./day";
 import { errorText } from "./dialog";
 import { Formatter, ms } from "./format";
@@ -14,6 +14,7 @@ import { settingsView } from "./settings";
 import { styles } from "./styles";
 import { PALETTES, THEME_VARIABLES, type Mode } from "./theme";
 import type {
+  Bounds,
   Forecast,
   HomeAssistant,
   PlannedList,
@@ -24,7 +25,7 @@ import type {
   View,
   WindGrid,
 } from "./types";
-import { weekView } from "./week";
+import { placeCalendar, weekView } from "./week";
 import "./wind-map";
 
 const VIEWS: View[] = ["week", "day", "map", "settings"];
@@ -33,6 +34,8 @@ const THEMES: Theme[] = ["auto", "day", "night"];
 // Updates can come in bursts, such as a reload after a settings change.
 const REFRESH_DELAY = 400;
 const TOAST_TIME = 3200;
+// When SailCast is keeping to Open-Meteo's calls a minute, ask again after this.
+const BUSY_RETRY = 20_000;
 
 interface Route {
   prefix: string;
@@ -66,6 +69,8 @@ export class SailCastPanel extends LitElement {
     width: { state: true },
     grid: { state: true },
     gridError: { state: true },
+    gridBusy: { state: true },
+    gridNote: { state: true },
     aiBusy: { state: true },
     aiError: { state: true },
   };
@@ -93,6 +98,12 @@ export class SailCastPanel extends LitElement {
   declare grid?: WindGrid;
   declare gridError?: string;
   private gridSpot?: string;
+  /** Whether wind for what the map shows is on its way, or why it can't be. */
+  declare gridBusy: boolean;
+  declare gridNote?: string;
+  /** What the map shows, and when to ask for its wind again. */
+  private mapBounds?: Bounds;
+  private gridRetry?: number;
   /** The date whose AI summary is being written, and the last one that failed. */
   declare aiBusy?: string;
   declare aiError?: { date: string; text: string };
@@ -115,6 +126,7 @@ export class SailCastPanel extends LitElement {
     this.view = "week";
     this.theme = "auto";
     this.width = 0;
+    this.gridBusy = false;
   }
 
   override connectedCallback(): void {
@@ -128,6 +140,7 @@ export class SailCastPanel extends LitElement {
     void this.unsubscribe?.then((unsubscribe) => unsubscribe()).catch(() => undefined);
     this.unsubscribe = undefined;
     window.clearTimeout(this.refreshTimer);
+    window.clearTimeout(this.gridRetry);
     this.resizer?.disconnect();
     this.resizer = undefined;
   }
@@ -154,6 +167,7 @@ export class SailCastPanel extends LitElement {
     if (this.currentView() === "map" && this.spotId && this.gridSpot !== this.spotId) {
       void this.loadGrid(this.spotId);
     }
+    placeCalendar(this.renderRoot);
     const content = this.renderRoot.querySelector(".content");
     if (content && !this.resizer) {
       this.resizer = new ResizeObserver(([entry]) => {
@@ -259,23 +273,61 @@ export class SailCastPanel extends LitElement {
     );
   }
 
-  /** Ask for the wind map's grid; SailCast keeps it three hours. */
+  /** Ask for the wind map's grid around a spot; SailCast keeps it three hours. */
   private async loadGrid(spot: string): Promise<void> {
     if (!this.api) return;
     this.gridSpot = spot;
     this.gridError = undefined;
+    this.gridNote = undefined;
+    this.gridBusy = false;
+    this.mapBounds = undefined;
+    window.clearTimeout(this.gridRetry);
     if (this.grid && !this.grid.spots.includes(spot)) this.grid = undefined;
     try {
       const grid = await this.api.windGrid(spot);
       if (this.gridSpot === spot) this.grid = grid;
     } catch (err) {
       if (this.gridSpot !== spot) return;
-      const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
+      const code = errorCode(err);
+      if (code === "busy") {
+        // SailCast is keeping to Open-Meteo's calls a minute.
+        this.gridRetry = window.setTimeout(() => {
+          if (this.gridSpot === spot) void this.loadGrid(spot);
+        }, BUSY_RETRY);
+        return;
+      }
       this.grid = undefined;
       this.gridError =
         code === "budget"
           ? this.t("map.budget")
           : this.t("map.unavailable", { message: errorText(err) });
+    }
+  }
+
+  /** Ask for the wind over what the map shows; SailCast reuses the grids it has. */
+  private async loadView(bounds: Bounds): Promise<void> {
+    if (!this.api) return;
+    const spot = this.gridSpot;
+    this.mapBounds = bounds;
+    window.clearTimeout(this.gridRetry);
+    this.gridBusy = true;
+    let retry: number | null = null;
+    try {
+      const reply = await this.api.windView(bounds, this.grid?.id);
+      if (this.mapBounds !== bounds || this.gridSpot !== spot) return;
+      this.gridNote = undefined;
+      if (reply.grid) this.grid = reply.grid;
+      retry = reply.retry;
+    } catch (err) {
+      if (this.mapBounds !== bounds || this.gridSpot !== spot) return;
+      this.gridNote =
+        errorCode(err) === "budget"
+          ? this.t("map.view_budget")
+          : this.t("map.unavailable", { message: errorText(err) });
+    }
+    this.gridBusy = retry !== null;
+    if (retry !== null) {
+      this.gridRetry = window.setTimeout(() => void this.loadView(bounds), retry * 1000);
     }
   }
 
@@ -457,6 +509,27 @@ export class SailCastPanel extends LitElement {
           @closed=${this.closeDialog}
         ></sc-auto-dialog>`,
       );
+    },
+    openHours: (index) => {
+      if (!this.forecast?.days[index]) return;
+      this.openDialog(
+        html`<sc-hours-dialog
+          .ctx=${this.ctx()}
+          .dayIndex=${index}
+          @closed=${this.closeDialog}
+        ></sc-hours-dialog>`,
+      );
+    },
+    resetHours: async (index) => {
+      const day = this.forecast?.days[index];
+      const ctx = this.ctx();
+      if (!day || !ctx || !this.sailorId) return;
+      try {
+        await this.api!.setHours(this.sailorId, day.date, "usual");
+        this.toast(this.t("hours.reset", { day: dayAndDate(ctx, day) }));
+      } catch (err) {
+        this.toast(errorText(err));
+      }
     },
     editSpot: (id) =>
       this.openDialog(
@@ -750,7 +823,8 @@ export class SailCastPanel extends LitElement {
         <p>${this.gridError}</p>
       </div>`;
     }
-    if (!this.grid || !this.spotId || !this.grid.spots.includes(this.spotId)) {
+    // Once the map is open, a grid for what it shows needn't cover the spot.
+    if (!this.grid || !this.spotId || this.gridSpot !== this.spotId) {
       return html`<p class="muted">${this.t("map.loading")}</p>`;
     }
     return html`<sc-wind-map
@@ -758,10 +832,18 @@ export class SailCastPanel extends LitElement {
       .grid=${this.grid}
       .spots=${ctx.config.spots}
       .spotId=${this.spotId}
+      .busy=${this.gridBusy}
+      .note=${this.gridNote}
       .t=${this.t}
       .fmt=${ctx.fmt}
+      @view=${(event: CustomEvent<Bounds>) => void this.loadView(event.detail)}
     ></sc-wind-map>`;
   }
+}
+
+/** A Home Assistant error's code, such as "budget". */
+function errorCode(err: unknown): string {
+  return typeof err === "object" && err && "code" in err ? String(err.code) : "";
 }
 
 // A new build can load while the old one is still defined.

@@ -44,7 +44,7 @@
     "best_eyebrow": "Best time this week · {who}",
     "no_window": "No good window this week",
     "best_day": "The best day is {day}, with a score of {score} ({band}).",
-    "window_rule": "A good window needs at least two hours in a row scoring 60 or more, in daylight and inside your sailing times.",
+    "window_rule": "A good window needs at least two hours in a row scoring 60 or more, inside your sailing times, and in daylight unless the boat has navigation lights.",
     "gusts": "Gusts {gust} kt",
     "high": "High {time}",
     "low": "Low {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Current {speed} kt ebb",
     "current_slack": "Current {speed} kt (slack)",
     "hours": "Hour by hour",
-    "hours_sub": "Daylight hours"
+    "hours_sub": "Daylight hours",
+    "hours_sub_lights": "Every hour, with navigation lights"
   },
   "ai": {
     "button": "Summarize with AI",
@@ -311,9 +312,10 @@
     "loading": "Loading the wind map…",
     "failed": "The map couldn't load.",
     "budget": "The wind map rests until tomorrow, so SailCast stays within Open-Meteo's free daily calls. The forecast itself keeps going.",
+    "view_budget": "To stay within Open-Meteo's free daily calls, the wind covers only the areas SailCast already has until tomorrow.",
     "unavailable": "The wind map couldn't load: {message}",
     "stale": "This is the wind as forecast on {time}; SailCast couldn't fetch a newer one.",
-    "credits": "Wind © Open-Meteo (CC BY 4.0), from its best model for the area, about every 2 km and hourly. Map © OpenStreetMap contributors, seamarks © OpenSeaMap. Not for navigation."
+    "credits": "Wind © Open-Meteo (CC BY 4.0), hourly from its best model for the area, with points about 2 km apart up close and wider apart as you zoom out. Map © OpenStreetMap contributors, seamarks © OpenSeaMap. Not for navigation."
   },
   "table": {
     "direction": "Direction",
@@ -405,6 +407,7 @@
     "sunrise": "sunrise",
     "sunset": "sunset",
     "sailed_by": "Sailed by {sailors}",
+    "lights": "navigation lights",
     "no_sailors": "No sailors yet",
     "sources": "Sources",
     "map_km": "wind map {value} km",
@@ -442,9 +445,11 @@
     "when": "When you can sail",
     "from": "From",
     "until": "Until",
+    "from_day": "{day}, from",
+    "until_day": "{day}, until",
     "sunrise": "Sunrise",
     "sunset": "Sunset",
-    "when_hint": "Sailing windows only fall inside these times. SailCast only ever rates daylight hours.",
+    "when_hint": "Tick the days you sail, each with its own hours; sailing windows only fall inside them. Left at sunrise and sunset, a boat with navigation lights can sail at any hour. To change one day, such as a day off, use the hours under that day in the week.",
     "comfort": "Comfort",
     "ideal_low": "Ideal wind from (kt)",
     "ideal_high": "Ideal wind up to (kt)",
@@ -455,6 +460,28 @@
     "user": "Home Assistant user",
     "no_user": "None",
     "user_hint": "SailCast opens on this sailor for them."
+  },
+  "hours": {
+    "title": "Sailing hours: {day}",
+    "this_day": "This day",
+    "free": "Free all day",
+    "free_hint": "{hours}.",
+    "off": "Not sailing",
+    "off_hint": "No sailing windows on this day.",
+    "set": "These hours",
+    "set_hint": "Choose a start and an end.",
+    "usual": "Usually on {day}: {hours}.",
+    "hint": "This changes this day only. The usual hours stay as they are.",
+    "back": "Back to usual hours",
+    "changed": "{hours} (changed)",
+    "change_label": "Change the hours ({day}): {hours}",
+    "undo_label": "Back to the usual hours ({day})",
+    "saved": "Hours changed ({day}).",
+    "reset": "Back to the usual hours ({day}).",
+    "span": "{start} to {end}",
+    "daylight": "Sunrise to sunset",
+    "any_time": "Any time",
+    "midnight": "midnight"
   },
   "rain": {
     "avoid": "Avoid rain",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. Caution from {caution} kt, dangerous from {dangerous} kt.",
     "length_feet": "Length (ft)",
     "length_meters": "Length (m)",
+    "lights": "Navigation lights",
+    "lights_hint": "Turn on if the boat has working navigation lights. Hours after dark then count too, within the sailor's times.",
     "limits": "Limits for this size, the same at every skill level"
   },
   "spot": {

@@ -102,11 +102,13 @@
           "data": {
             "name": "Name",
             "size_class": "Size",
-            "length": "Length"
+            "length": "Length",
+            "lights": "Navigation lights"
           },
           "data_description": {
             "name": "For example, the boat's name.",
-            "size_class": "Each size has its own safety limits for wind, gusts and waves."
+            "size_class": "Each size has its own safety limits for wind, gusts and waves.",
+            "lights": "Turn on if the boat has working navigation lights. Hours after dark then count too, within the sailor's times."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Name",
             "size_class": "Size",
-            "length": "Length"
+            "length": "Length",
+            "lights": "Navigation lights"
           },
           "data_description": {
             "name": "For example, the boat's name.",
-            "size_class": "Each size has its own safety limits for wind, gusts and waves."
+            "size_class": "Each size has its own safety limits for wind, gusts and waves.",
+            "lights": "Turn on if the boat has working navigation lights. Hours after dark then count too, within the sailor's times."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Usual boat",
             "other_boats": "Other boats",
             "days": "Sailing days",
-            "start": "Earliest start",
-            "end": "Latest finish",
             "user": "Home Assistant user"
           },
           "data_description": {
             "skill": "Each sailor rates their own skill. It sets their limit for sustained wind; gusts don't count toward it.",
             "default_boat": "SailCast rates this boat unless the sailor picks another.",
             "other_boats": "Other boats this sailor takes out.",
-            "start": "Leave empty to start at sunrise.",
-            "end": "Leave empty to finish at sunset.",
             "user": "The panel opens on this sailor for them."
           },
           "sections": {
+            "hours": {
+              "name": "Hours each day",
+              "description": "For the sailing days above. Leave a time empty to start at sunrise or finish at sunset, or for any hour in a boat with navigation lights. One day, such as a day off, can be changed in the SailCast panel.",
+              "data": {
+                "mon_start": "Monday: earliest start",
+                "mon_end": "Monday: latest finish",
+                "tue_start": "Tuesday: earliest start",
+                "tue_end": "Tuesday: latest finish",
+                "wed_start": "Wednesday: earliest start",
+                "wed_end": "Wednesday: latest finish",
+                "thu_start": "Thursday: earliest start",
+                "thu_end": "Thursday: latest finish",
+                "fri_start": "Friday: earliest start",
+                "fri_end": "Friday: latest finish",
+                "sat_start": "Saturday: earliest start",
+                "sat_end": "Saturday: latest finish",
+                "sun_start": "Sunday: earliest start",
+                "sun_end": "Sunday: latest finish"
+              }
+            },
             "comfort": {
               "name": "Comfort",
               "description": "What this sailor enjoys. These change scores, never a safety rating.",
@@ -197,19 +217,35 @@
             "default_boat": "Usual boat",
             "other_boats": "Other boats",
             "days": "Sailing days",
-            "start": "Earliest start",
-            "end": "Latest finish",
             "user": "Home Assistant user"
           },
           "data_description": {
             "skill": "Each sailor rates their own skill. It sets their limit for sustained wind; gusts don't count toward it.",
             "default_boat": "SailCast rates this boat unless the sailor picks another.",
             "other_boats": "Other boats this sailor takes out.",
-            "start": "Leave empty to start at sunrise.",
-            "end": "Leave empty to finish at sunset.",
             "user": "The panel opens on this sailor for them."
           },
           "sections": {
+            "hours": {
+              "name": "Hours each day",
+              "description": "For the sailing days above. Leave a time empty to start at sunrise or finish at sunset, or for any hour in a boat with navigation lights. One day, such as a day off, can be changed in the SailCast panel.",
+              "data": {
+                "mon_start": "Monday: earliest start",
+                "mon_end": "Monday: latest finish",
+                "tue_start": "Tuesday: earliest start",
+                "tue_end": "Tuesday: latest finish",
+                "wed_start": "Wednesday: earliest start",
+                "wed_end": "Wednesday: latest finish",
+                "thu_start": "Thursday: earliest start",
+                "thu_end": "Thursday: latest finish",
+                "fri_start": "Friday: earliest start",
+                "fri_end": "Friday: latest finish",
+                "sat_start": "Saturday: earliest start",
+                "sat_end": "Saturday: latest finish",
+                "sun_start": "Sunday: earliest start",
+                "sun_end": "Sunday: latest finish"
+              }
+            },
             "comfort": {
               "name": "Comfort",
               "description": "What this sailor enjoys. These change scores, never a safety rating.",

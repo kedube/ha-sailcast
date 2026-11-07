@@ -102,11 +102,13 @@
           "data": {
             "name": "Naam",
             "size_class": "Grootte",
-            "length": "Lengte"
+            "length": "Lengte",
+            "lights": "Navigatieverlichting"
           },
           "data_description": {
             "name": "Bijvoorbeeld de naam van de boot.",
-            "size_class": "Elke grootte heeft eigen veiligheidsgrenzen voor wind, windstoten en golven."
+            "size_class": "Elke grootte heeft eigen veiligheidsgrenzen voor wind, windstoten en golven.",
+            "lights": "Zet aan als de boot werkende navigatieverlichting heeft. Dan tellen ook de uren na het donker worden mee, binnen de tijden van de zeiler."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Naam",
             "size_class": "Grootte",
-            "length": "Lengte"
+            "length": "Lengte",
+            "lights": "Navigatieverlichting"
           },
           "data_description": {
             "name": "Bijvoorbeeld de naam van de boot.",
-            "size_class": "Elke grootte heeft eigen veiligheidsgrenzen voor wind, windstoten en golven."
+            "size_class": "Elke grootte heeft eigen veiligheidsgrenzen voor wind, windstoten en golven.",
+            "lights": "Zet aan als de boot werkende navigatieverlichting heeft. Dan tellen ook de uren na het donker worden mee, binnen de tijden van de zeiler."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Vaste boot",
             "other_boats": "Andere boten",
             "days": "Zeildagen",
-            "start": "Vroegste begintijd",
-            "end": "Laatste eindtijd",
             "user": "Home Assistant-gebruiker"
           },
           "data_description": {
             "skill": "Elke zeiler schat zelf het eigen niveau in. Dat bepaalt de grens voor gemiddelde wind; windstoten tellen daarvoor niet mee.",
             "default_boat": "SailCast beoordeelt deze boot, tenzij de zeiler een andere kiest.",
             "other_boats": "Andere boten waarmee deze zeiler het water op gaat.",
-            "start": "Laat leeg om bij zonsopkomst te beginnen.",
-            "end": "Laat leeg om bij zonsondergang te stoppen.",
             "user": "Voor deze gebruiker opent het paneel met deze zeiler."
           },
           "sections": {
+            "hours": {
+              "name": "Tijden per dag",
+              "description": "Voor de zeildagen hierboven. Laat een tijd leeg om bij zonsopkomst te beginnen of bij zonsondergang te stoppen, of voor elk uur met een boot met navigatieverlichting. Eén dag, zoals een vrije dag, wijzig je in het SailCast-paneel.",
+              "data": {
+                "mon_start": "Maandag: vroegste begintijd",
+                "mon_end": "Maandag: laatste eindtijd",
+                "tue_start": "Dinsdag: vroegste begintijd",
+                "tue_end": "Dinsdag: laatste eindtijd",
+                "wed_start": "Woensdag: vroegste begintijd",
+                "wed_end": "Woensdag: laatste eindtijd",
+                "thu_start": "Donderdag: vroegste begintijd",
+                "thu_end": "Donderdag: laatste eindtijd",
+                "fri_start": "Vrijdag: vroegste begintijd",
+                "fri_end": "Vrijdag: laatste eindtijd",
+                "sat_start": "Zaterdag: vroegste begintijd",
+                "sat_end": "Zaterdag: laatste eindtijd",
+                "sun_start": "Zondag: vroegste begintijd",
+                "sun_end": "Zondag: laatste eindtijd"
+              }
+            },
             "comfort": {
               "name": "Comfort",
               "description": "Waar deze zeiler van houdt. Dit verandert de scores, nooit een veiligheidsbeoordeling.",
@@ -197,19 +217,35 @@
             "default_boat": "Vaste boot",
             "other_boats": "Andere boten",
             "days": "Zeildagen",
-            "start": "Vroegste begintijd",
-            "end": "Laatste eindtijd",
             "user": "Home Assistant-gebruiker"
           },
           "data_description": {
             "skill": "Elke zeiler schat zelf het eigen niveau in. Dat bepaalt de grens voor gemiddelde wind; windstoten tellen daarvoor niet mee.",
             "default_boat": "SailCast beoordeelt deze boot, tenzij de zeiler een andere kiest.",
             "other_boats": "Andere boten waarmee deze zeiler het water op gaat.",
-            "start": "Laat leeg om bij zonsopkomst te beginnen.",
-            "end": "Laat leeg om bij zonsondergang te stoppen.",
             "user": "Voor deze gebruiker opent het paneel met deze zeiler."
           },
           "sections": {
+            "hours": {
+              "name": "Tijden per dag",
+              "description": "Voor de zeildagen hierboven. Laat een tijd leeg om bij zonsopkomst te beginnen of bij zonsondergang te stoppen, of voor elk uur met een boot met navigatieverlichting. Eén dag, zoals een vrije dag, wijzig je in het SailCast-paneel.",
+              "data": {
+                "mon_start": "Maandag: vroegste begintijd",
+                "mon_end": "Maandag: laatste eindtijd",
+                "tue_start": "Dinsdag: vroegste begintijd",
+                "tue_end": "Dinsdag: laatste eindtijd",
+                "wed_start": "Woensdag: vroegste begintijd",
+                "wed_end": "Woensdag: laatste eindtijd",
+                "thu_start": "Donderdag: vroegste begintijd",
+                "thu_end": "Donderdag: laatste eindtijd",
+                "fri_start": "Vrijdag: vroegste begintijd",
+                "fri_end": "Vrijdag: laatste eindtijd",
+                "sat_start": "Zaterdag: vroegste begintijd",
+                "sat_end": "Zaterdag: laatste eindtijd",
+                "sun_start": "Zondag: vroegste begintijd",
+                "sun_end": "Zondag: laatste eindtijd"
+              }
+            },
             "comfort": {
               "name": "Comfort",
               "description": "Waar deze zeiler van houdt. Dit verandert de scores, nooit een veiligheidsbeoordeling.",

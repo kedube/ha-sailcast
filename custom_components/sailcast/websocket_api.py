@@ -11,6 +11,7 @@ calendar commands do.
 from __future__ import annotations
 
 from datetime import date, timedelta
+import math
 from types import MappingProxyType
 from typing import Any, Final
 
@@ -46,9 +47,11 @@ from .const import (
     CONF_END,
     CONF_EXPOSED,
     CONF_FETCH,
+    CONF_HOURS,
     CONF_IDEAL_HIGH,
     CONF_IDEAL_LOW,
     CONF_LENGTH,
+    CONF_LIGHTS,
     CONF_MARINE_ZONE,
     CONF_MIN_SCORE,
     CONF_OFFSHORE,
@@ -80,12 +83,15 @@ from .shoreline import DATA_SHORELINES, Shorelines
 from .sources import async_suggest, suggested
 from .storage import DATA_STORE, PREFERENCES, PlannedSail
 from .week import readings_now, week
-from .wind import DATA_WIND, BudgetSpentError, WindGrids, areas
+from .wind import DATA_WIND, BudgetSpentError, TooSoonError, WindGrids, areas
 
 # A sail added from the panel lasts at least an hour, and at most a day.
 SHORTEST_SAIL: Final = timedelta(hours=1)
 LONGEST_SAIL: Final = timedelta(days=1)
 MAX_TITLE: Final = 80
+BUDGET_SPENT: Final = (
+    "Open-Meteo's free daily calls are nearly used up, so the wind map is back tomorrow"
+)
 
 
 def _time_of_day(value: Any) -> str | None:
@@ -131,6 +137,7 @@ BOAT_DATA: Final = probatio.Schema(
     {
         probatio.Required(CONF_SIZE_CLASS): _choices(profiles.SizeClass),
         probatio.Required(CONF_LENGTH): probatio.Coerce(float),
+        probatio.Optional(CONF_LIGHTS, default=False): cv.boolean,
     }
 )
 COMFORT_DATA: Final = probatio.Schema(
@@ -158,13 +165,19 @@ AUTO_CALENDAR_DATA: Final = probatio.Schema(
         probatio.Required(CONF_SPOTS): [cv.string],
     }
 )
+# A day's hours; a missing time means sunrise or sunset, or any hour with lights.
+HOURS_DATA: Final = probatio.Schema(
+    {
+        probatio.Optional(CONF_START, default=None): _time_of_day,
+        probatio.Optional(CONF_END, default=None): _time_of_day,
+    }
+)
 SAILOR_DATA: Final = probatio.Schema(
     {
         probatio.Required(CONF_SKILL): _choices(profiles.Skill),
         probatio.Required(CONF_BOATS): [cv.string],
-        probatio.Required(CONF_DAYS): [_choices(WEEKDAYS)],
-        probatio.Optional(CONF_START, default=None): _time_of_day,
-        probatio.Optional(CONF_END, default=None): _time_of_day,
+        # The hours on each day of the week they sail; the others they don't.
+        probatio.Required(CONF_HOURS): {_choices(WEEKDAYS): HOURS_DATA},
         probatio.Optional(CONF_USER, default=None): probatio.Maybe(cv.string),
         probatio.Optional(CONF_COMFORT, default=dict): COMFORT_DATA,
         probatio.Optional(CONF_AUTO_CALENDAR, default=None): probatio.Maybe(
@@ -196,7 +209,9 @@ def async_register_commands(hass: HomeAssistant) -> None:
         ws_calendar_remove,
         ws_planned_list,
         ws_planned_skipped,
+        ws_hours,
         ws_wind_grid,
+        ws_wind_view,
         ws_ai_summary,
     ):
         websocket_api.async_register_command(hass, command)
@@ -639,7 +654,9 @@ async def _async_check(
         return errors
     boats = {s.subentry_id for s in subentries if s.subentry_type == SUBENTRY_BOAT}
     spots = {s.subentry_id for s in subentries if s.subentry_type == SUBENTRY_SPOT}
-    data[CONF_DAYS] = profiles.in_order(data[CONF_DAYS], WEEKDAYS)
+    # Saved as the setup dialogs save it: the days, and the hours on each.
+    data[CONF_DAYS] = profiles.in_order(data[CONF_HOURS], WEEKDAYS)
+    data[CONF_HOURS] = {day: data[CONF_HOURS][day] for day in data[CONF_DAYS]}
     data[CONF_BOATS] = list(dict.fromkeys(data[CONF_BOATS]))
     errors.update(profiles.check_sailor(data, boats, spots))
     if (user := data.get(CONF_USER)) and await hass.auth.async_get_user(user) is None:
@@ -923,6 +940,62 @@ def ws_planned_skipped(
 
 @websocket_api.websocket_command(
     {
+        probatio.Required("type"): "sailcast/hours",
+        probatio.Required("sailor"): cv.string,
+        probatio.Required("date"): cv.date,
+        # "usual" goes back to the sailor's hours on that day of the week and
+        # "off" is not sailing; hours without times are the whole day.
+        probatio.Required(CONF_HOURS): probatio.Any("usual", "off", HOURS_DATA),
+    }
+)
+@callback
+def ws_hours(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Set a sailor's hours for one date, such as a day off, or undo it.
+
+    Administrators can change any sailor's, and other users the sailor the
+    panel opens on for them. A date that has passed can't be changed.
+    """
+    if (data := _data(hass, connection, msg)) is None:
+        return
+    sailor = data.profiles.sailors.get(msg["sailor"])
+    if sailor is None:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Unknown sailor")
+        return
+    if not connection.user.is_admin and sailor.user != connection.user.id:
+        raise Unauthorized
+    day: date = msg["date"]
+    if day < dt_util.now().date():
+        connection.send_error(
+            msg["id"], websocket_api.ERR_INVALID_FORMAT, "That date has passed"
+        )
+        return
+    store = hass.data[DATA_STORE]
+    hours = msg[CONF_HOURS]
+    if hours == "usual":
+        store.clear_hours(sailor.id, day)
+    elif hours == "off":
+        store.set_hours(sailor.id, day, None)
+    elif errors := profiles.check_hours({day.isoformat(): hours}):
+        connection.send_result(
+            msg["id"], {"errors": {CONF_END: next(iter(errors.values()))}}
+        )
+        return
+    else:
+        store.set_hours(sailor.id, day, profiles.Hours.from_data(hours))
+    entry = _entry(hass)
+    if entry is not None:
+        entry.async_create_background_task(
+            hass, data.results.async_request_refresh(), "sailcast results"
+        )
+    connection.send_result(msg["id"], {"date": day.isoformat()})
+
+
+@websocket_api.websocket_command(
+    {
         probatio.Required("type"): "sailcast/wind_grid",
         probatio.Required("spot"): cv.string,
     }
@@ -947,14 +1020,70 @@ async def ws_wind_grid(
             async_get_clientsession(hass), area, data.budget
         )
     except BudgetSpentError:
-        connection.send_error(
-            msg["id"],
-            "budget",
-            "Open-Meteo's free daily calls are nearly used up, so the wind map "
-            "is back tomorrow",
-        )
+        connection.send_error(msg["id"], "budget", BUDGET_SPENT)
+        return
+    except TooSoonError as err:
+        connection.send_error(msg["id"], "busy", str(err))
         return
     except ProviderError as err:
         connection.send_error(msg["id"], "unavailable", str(err))
         return
     connection.send_result(msg["id"], grid.as_dict(dt_util.utcnow(), stale=stale))
+
+
+@websocket_api.websocket_command(
+    {
+        probatio.Required("type"): "sailcast/wind_view",
+        probatio.Required("south"): cv.latitude,
+        probatio.Required("west"): probatio.All(
+            probatio.Coerce(float), probatio.Range(min=-540, max=540)
+        ),
+        probatio.Required("north"): cv.latitude,
+        probatio.Required("east"): probatio.All(
+            probatio.Coerce(float), probatio.Range(min=-540, max=540)
+        ),
+        probatio.Optional("have"): cv.string,
+    }
+)
+@websocket_api.async_response
+async def ws_wind_view(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Send the wind over what the wind map shows.
+
+    `grid` is None when the map's own grid (`have`) still serves, or when none
+    can be had yet; then `retry` says in how many seconds to ask again.
+    """
+    if (data := _data(hass, connection, msg)) is None:
+        return
+    view = (msg["south"], msg["west"], msg["north"], msg["east"])
+    if not (view[0] < view[2] and view[1] < view[3]):
+        connection.send_error(
+            msg["id"], websocket_api.ERR_INVALID_FORMAT, "The view has no area"
+        )
+        return
+    grids = hass.data.setdefault(DATA_WIND, WindGrids())
+    try:
+        grid, stale, retry = await grids.async_get_view(
+            async_get_clientsession(hass),
+            view,
+            data.profiles.spots.values(),
+            data.budget,
+        )
+    except BudgetSpentError:
+        connection.send_error(msg["id"], "budget", BUDGET_SPENT)
+        return
+    except ProviderError as err:
+        connection.send_error(msg["id"], "unavailable", str(err))
+        return
+    connection.send_result(
+        msg["id"],
+        {
+            "grid": None
+            if grid is None or grid.id == msg.get("have")
+            else grid.as_dict(dt_util.utcnow(), stale=stale),
+            "retry": None if retry is None else math.ceil(retry),
+        },
+    )

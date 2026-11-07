@@ -198,12 +198,14 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
     <section class="card">
       <div class="card-head">
         <h2>${t("day.hours")}</h2>
-        <span class="small">${t("day.hours_sub")}</span>
+        <span class="small"
+          >${t(ctx.forecast!.lights ? "day.hours_sub_lights" : "day.hours_sub")}</span
+        >
       </div>
       <div class="tbl-wrap">
         ${hourTable(
           ctx,
-          hours.filter((hour) => hour.daylight),
+          hours.filter((hour) => hour.daylight || ctx.forecast!.lights),
         )}
       </div>
     </section>
@@ -379,12 +381,13 @@ function windChart(ctx: Ctx, day: Day, hours: Hour[], width: number): TemplateRe
           : nothing
       }
       ${
-        hour.daylight
+        hour.daylight || ctx.forecast!.lights
           ? html`<div>
               ${chip(ctx, hour.rating)}${t("tip.score", { score: hour.score ?? "–" })}
             </div>`
-          : html`<div class="muted">${t("legend.dark")}</div>`
-      }`;
+          : nothing
+      }
+      ${hour.daylight ? nothing : html`<div class="muted">${t("legend.dark")}</div>`}`;
   };
   return html`<section class="card">
     <div class="card-head">

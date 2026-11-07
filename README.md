@@ -61,10 +61,10 @@ New versions show up under **Settings → Updates**, with their release notes. A
 1. Select the button above, or go to **Settings → Devices & services → Add integration** and pick **SailCast**. It asks for nothing, and shows a safety note.
 2. Open **SailCast** in the sidebar, and add your spots, boats and sailors on its **Settings** tab. SailCast's page under Devices & services edits the same settings.
    - **Spot:** a pin on the water, the kind of water, and which directions are offshore and open to waves. SailCast then suggests the nearest tide station, current station, source of official warnings, buoy and airport; see [outside the US](#outside-the-us) for what each country has. You can add your own sensors too, such as a weather station on the dock.
-   - **Boat:** a name, a size and a length.
-   - **Sailor:** their skill, their usual boat and others, and when they can sail. Optionally, what they enjoy (an ideal wind range, the coldest air they like, and how much rain they mind), and the Home Assistant user the panel opens on them for.
+   - **Boat:** a name, a size, a length, and whether it has navigation lights. With lights, hours after dark count too, so its windows can start before sunrise and run past sunset, and the week calendar shows the whole day instead of just daylight.
+   - **Sailor:** their skill, their usual boat and others, and the days they sail, each with its own hours, such as 5 PM on weekdays and sunrise at weekends. Optionally, what they enjoy (an ideal wind range, the coldest air they like, and how much rain they mind), and the Home Assistant user the panel opens on them for.
 
-Only administrators can change settings. Everyone can pick their own spot, sailor and boat at the top of the panel, and SailCast remembers the choice on every device.
+Only administrators can change settings. Everyone can pick their own spot, sailor and boat at the top of the panel, and SailCast remembers the choice on every device. For a day off, or a day you can't sail, change that one date's hours under the day in the week view; administrators can do it for any sailor, and others for the sailor linked to them.
 
 Each sailor rates their own skill, which sets their limit for sustained wind: up to 10 kt for Beginner, 16 kt for Intermediate, and no limit for Advanced. Gusts don't count toward it.
 
@@ -72,7 +72,9 @@ Each sailor rates their own skill, which sets their limit for sustained wind: up
 
 ## The wind map
 
-The **Wind map** tab shows the wind or the gusts around a spot as colors, with particles that follow the wind. Play through the week, jump to a day, or point at the map to read the wind there. A grid of points about 2 km apart is fetched only when you open the map and kept for three hours, and nearby spots share it. Each point counts toward Open-Meteo's free daily allowance, so SailCast stops fetching grids well before the limit and shows the last one instead.
+The **Wind map** tab shows the wind or the gusts as colors, with particles that follow the wind. It opens on the spot's wind map area, and when you pan or zoom, the wind follows. Play through the week, jump to a day, or point at the map to read the wind there.
+
+The wind comes as a grid of at most 15 × 15 points: about 2 km apart up close, and further apart as you zoom out. A grid is fetched only for what the map shows, kept for three hours, and used again whenever it covers the view, and nearby spots share one. Each point counts toward Open-Meteo's free allowance of 600 calls a minute, 5,000 an hour and 10,000 a day. So SailCast waits a moment when grids come too quickly, stops fetching them well before the daily limit, and shows the wind it already has instead.
 
 ## Readings and waves
 
@@ -142,7 +144,7 @@ Each spot and each sailor is a device. Ratings and scores use the sailor's skill
 | Entity | For | Example |
 | --- | --- | --- |
 | Safety rating now: good, caution, not recommended or dangerous, with the reasons | each sailor at each spot | `sensor.alex_harbor_rating` |
-| Sailing score now, 0–100, in daylight | each sailor at each spot | `sensor.alex_harbor_score` |
+| Sailing score now, 0–100, in daylight, or at any hour if the usual boat has navigation lights | each sailor at each spot | `sensor.alex_harbor_score` |
 | Good to sail now, during a sailing window | each sailor at each spot | `binary_sensor.alex_harbor_good_to_sail` |
 | Next sailing window, at any spot | each sailor | `sensor.alex_next_sailing_window` |
 | Sailing windows in each of their boats, read-only | each sailor | `calendar.alex_sailing` |
@@ -173,7 +175,7 @@ Add `boat` to rate one of the sailor's other boats. An unknown spot, sailor or b
 | Buoy readings | Every 20 minutes |
 | Airport reports | Every 30 minutes |
 | Your own sensors | Whenever the ratings are worked out, and live in the panel |
-| The wind map's grid | When you open the map, kept for 3 hours |
+| The wind map's grids | When you open or move the map, kept for 3 hours |
 
 Ratings, scores and windows are worked out again whenever new data comes in, and at the start of every hour.
 

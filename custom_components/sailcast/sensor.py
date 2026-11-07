@@ -110,7 +110,7 @@ class RatingSensor(SailorEntity, SensorEntity):
 class ScoreSensor(SailorEntity, SensorEntity):
     """The sailing score now, for a sailor in their usual boat at a spot.
 
-    It has no value at night.
+    It has no value at night, unless the boat has navigation lights.
     """
 
     _attr_state_class = SensorStateClass.MEASUREMENT

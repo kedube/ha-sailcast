@@ -11,7 +11,7 @@ A spot is a place you sail from. Each one is a device, with its own entities.
 | Setting | What it does |
 | --- | --- |
 | Name | The spot's name in the panel and in entity names, such as Harbor or Lake. |
-| Location | A pin on the water where you sail. The circle around it, 15 km across unless you change it (2 to 50 km), sets the area the wind map shows. |
+| Location | A pin on the water where you sail. The circle around it, reaching 15 km from the pin unless you change it (2 to 50 km), sets the area the wind map opens on. |
 | Water | Open coast, bay, estuary or river, or lake. Rivers and lakes get waves worked out from the wind and the open water upwind. Open coasts and bays get the ocean model's waves. |
 | Offshore wind | The directions wind blows away from the shore from. In a dinghy, an offshore wind of 8 kt or more makes the rating one level worse, and 12 kt or more makes it at least not recommended. |
 | Open to waves from | The directions with open water, where waves can build. The ocean model's waves from other directions are reduced. Left empty, SailCast uses the directions it measures on the shoreline. |
@@ -37,6 +37,7 @@ After the spot, SailCast suggests the nearest sources for its pin. Pick **None**
 | Name | The boat's name in the panel and the calendar. |
 | Size | Dinghy or beach cat, small keelboat, cruiser or large cruiser. Each size has its own limits for wind, gusts and waves, listed in [the safety limits](safety-limits.md). |
 | Length | Shown with the boat. The size sets its limits. |
+| Navigation lights | Turn it on if the boat has working navigation lights. Then hours after dark count too: they're rated and scored, and windows can start before sunrise and run past sunset, within the sailor's times. Off by default, so a boat without lights is only rated in daylight. |
 
 ## Sailors
 
@@ -49,8 +50,12 @@ A sailor is a person who sails. Each one is a device, with ratings, scores and w
 | Usual boat | The boat SailCast rates unless the sailor picks another. |
 | Other boats | Other boats the sailor takes out. The panel can rate any of them. |
 | Sailing days | The days windows are found on. Every day unless you change it. |
-| Earliest start, latest finish | When windows can start and end. Left empty, they follow sunrise and sunset. |
+| Hours each day | When windows can start and end, set for each sailing day, such as 5 PM on weekdays and sunrise at weekends. Left empty, they follow sunrise and sunset, or allow any hour in a boat with navigation lights. Sailors saved before each day had its own hours keep their one start and finish on every sailing day. |
 | Home Assistant user | The panel opens on this sailor for that user. |
+
+### One day's hours
+
+For one date, such as a day off, change the hours under that day in the week view: **Free all day**, **Not sailing**, or hours of its own. Only that date changes, and SailCast forgets the change once the day has passed. **Back to usual hours** undoes it. Administrators can change any sailor's day, and other users the sailor that's linked to them. These changes are kept by SailCast, not in the sailor's settings.
 
 ### Comfort
 

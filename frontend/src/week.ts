@@ -1,11 +1,12 @@
 /**
  * The week view: the week's best sailing window, this hour's forecast and any
- * official warnings, then a seven-day calendar whose columns run from dawn to
- * dusk, with sailing windows drawn as events.
+ * official warnings, then a seven-day calendar with sailing windows drawn as
+ * events. Its columns show dawn to dusk. In a boat with navigation lights they
+ * hold the whole day, opening on dawn to dusk and scrolling to the rest.
  */
 import { html, nothing, svg, type TemplateResult } from "lit";
 
-import { dayAndDate, isToday, plannedFor, type Ctx } from "./context";
+import { canSetHours, dayAndDate, hoursText, isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime, ms, WEEKDAYS } from "./format";
 import { arrow, dial, icon, ring, weather, type IconName } from "./glyphs";
 import {
@@ -475,31 +476,92 @@ function warningsCard(ctx: Ctx): TemplateResult {
   </section>`;
 }
 
+/** Hours from a day's local midnight to a time, such as 24 for the midnight that ends it. */
+function sinceMidnight(iso: string, date: string, zone: string): number {
+  const time = localTime(iso, zone);
+  const hours = time.hour + time.minute / 60;
+  return time.date > date ? hours + 24 : time.date < date ? hours - 24 : hours;
+}
+
+/**
+ * The calendar's hours, counted from midnight. It shows from an hour before
+ * the week's earliest sunrise to an hour after its latest sunset at once
+ * (`start` to `end`). A boat with navigation lights lays out the whole day
+ * around them (`first` to `last`), to scroll through, and opens at `start`,
+ * or at the earliest window if that starts sooner. Without lights, only the
+ * hours shown are laid out.
+ */
+export function calendarHours(
+  days: Day[],
+  zone: string,
+  lights: boolean,
+): { first: number; last: number; start: number; end: number; open: number } {
+  const since = (iso: string, day: Day): number => sinceMidnight(iso, day.date, zone);
+  const start = Math.max(
+    0,
+    Math.floor(Math.min(...days.map((day) => since(day.sunrise, day)))) - 1,
+  );
+  const end = Math.max(
+    start + 1,
+    Math.min(24, Math.ceil(Math.max(...days.map((day) => since(day.sunset, day)))) + 1),
+  );
+  if (!lights) return { first: start, last: end, start, end, open: start };
+  const windows = days.flatMap((day) => day.windows.map((window) => since(window.start, day)));
+  return {
+    first: 0,
+    last: 24,
+    start,
+    end,
+    open: Math.max(0, Math.floor(Math.min(start, ...windows))),
+  };
+}
+
+/**
+ * Scroll the calendar's hours to where they open, once for each week shown.
+ * `data-open` is how far along the laid-out hours that is. Hours the other
+ * layout hides wait until they're shown.
+ */
+export function placeCalendar(root: ParentNode): void {
+  for (const hours of root.querySelectorAll<HTMLElement>("[data-shown]")) {
+    const shown = hours.dataset.shown ?? "";
+    if (hours.dataset.placed === shown || !hours.clientWidth) continue;
+    const at = Number(hours.dataset.open);
+    if (hours.classList.contains("cal-hours")) hours.scrollTop = at * hours.scrollHeight;
+    else hours.scrollLeft = at * hours.scrollWidth;
+    hours.dataset.placed = shown;
+  }
+}
+
 function calendarCard(ctx: Ctx): TemplateResult {
   const { t, fmt } = ctx;
   const forecast = ctx.forecast!;
   const sailor = ctx.sailor!;
   const zone = fmt.zone;
-  const sunrises = forecast.days.map((day) => localHours(day.sunrise, zone));
-  const sunsets = forecast.days.map((day) => localHours(day.sunset, zone));
-  const start = Math.floor(Math.min(...sunrises)) - 1;
-  const end = Math.ceil(Math.max(...sunsets)) + 1;
+  const { first, last, start, end, open } = calendarHours(forecast.days, zone, forecast.lights);
   const span = end - start;
-  const pos = (hour: number): string => Math.min(1, Math.max(0, (hour - start) / span)).toFixed(4);
+  const laid = last - first;
+  // Places along the hours laid out.
+  const pos = (hour: number): string => Math.min(1, Math.max(0, (hour - first) / laid)).toFixed(4);
   const date = forecast.days[0].date;
   const gutter = [];
-  for (let hour = start + 1; hour < end; hour++) {
+  for (let hour = first + 1; hour < last; hour++) {
     if (hour % 2 === 0) {
       gutter.push(html`<span style="--t:${pos(hour)}">${fmt.hourOf(date, hour)}</span>`);
     }
   }
   const ticks: TemplateResult[] = [];
-  for (let hour = start; hour <= end; hour++) {
-    if (hour % 3 === 0 || hour === end) {
+  for (let hour = first; hour <= last; hour++) {
+    if (hour % 3 === 0 || hour === last) {
       ticks.push(html`<span style="--s:${pos(hour)}">${fmt.hourOf(date, hour)}</span>`);
     }
   }
-  const anyOff = forecast.hours.some((hour) => hour.daylight && !hour.available);
+  // The week on show, so its hours open in the right place once.
+  const shown = [forecast.spot, forecast.sailor, forecast.boat, date].join(" ");
+  const opening = ((open - first) / laid).toFixed(4);
+  const tracks = forecast.days.map((day, index) => dayTrack(ctx, day, index, pos, span));
+  const anyOff = forecast.hours.some(
+    (hour) => (hour.daylight || forecast.lights) && !hour.available,
+  );
   const auto = sailor.auto_calendar;
   const planned = [...forecast.planned].sort((a, b) => ms(a.start) - ms(b.start));
   return html`<section class="card cal-card" aria-labelledby="week-cal-h">
@@ -559,9 +621,16 @@ function calendarCard(ctx: Ctx): TemplateResult {
       )}
     </div>
     <div class="cal-wrap">
-      <div class="cal">
-        <div class="cal-gutter" aria-hidden="true">${gutter}</div>
-        ${forecast.days.map((day, index) => dayColumn(ctx, day, index, pos, ticks, span))}
+      <div class="cal" style="--span:${span};--laid:${laid}">
+        ${forecast.days.map((day, index) =>
+          dayColumn(ctx, day, index, tracks[index], ticks, shown, opening),
+        )}
+        <div class="cal-hours" data-shown=${shown} data-open=${opening}>
+          <div class="cal-day">
+            <div class="cal-gutter" aria-hidden="true">${gutter}</div>
+            ${tracks.map((track) => html`<div class="cd-track">${track}</div>`)}
+          </div>
+        </div>
       </div>
     </div>
     <div class="legend">
@@ -628,68 +697,83 @@ export function daysText(ctx: Ctx, days: string[]): string {
     .join(t("advice.list_separator"));
 }
 
-function dayColumn(
+/**
+ * A day's hours on the calendar, midnight to midnight: night, each hour
+ * shaded by its rating or score, the windows and the time now. With
+ * navigation lights every hour counts, so night is a veil over the hours.
+ */
+function dayTrack(
   ctx: Ctx,
   day: Day,
   index: number,
   pos: (hour: number) => string,
-  ticks: TemplateResult[],
   span: number,
-): TemplateResult {
+): TemplateResult[] {
   const { t, fmt } = ctx;
   const zone = fmt.zone;
-  const today = isToday(ctx, day);
-  const sunrise = localHours(day.sunrise, zone);
-  const sunset = localHours(day.sunset, zone);
+  const lights = ctx.forecast!.lights;
+  const sunrise = sinceMidnight(day.sunrise, day.date, zone);
+  const sunset = sinceMidnight(day.sunset, day.date, zone);
   const hours = hoursOf(ctx, day);
-  const lit = hours.filter((hour) => hour.daylight);
-  const segments: TemplateResult[] = [
-    html`<div class="seg night" style="--s:0;--e:${pos(sunrise)}">
+  const veil = lights ? "veil" : "";
+  const night = [
+    html`<div class="seg night dawn ${veil}" style="--s:0;--e:${pos(sunrise)}">
       <span>${icon("sunrise")}${fmt.clock(day.sunrise)}</span>
     </div>`,
-  ];
-  const firstLit = lit.length ? localTime(lit[0].time, zone).hour : sunrise;
-  if (firstLit > sunrise) {
-    segments.push(
-      html`<div class="seg twilight" style="--s:${pos(sunrise)};--e:${pos(firstLit)}"></div>`,
-    );
-  }
-  let litEnd = sunrise;
-  for (const hour of lit) {
-    const at = localTime(hour.time, zone).hour;
-    const a = Math.max(at, sunrise);
-    const b = Math.min(at + 1, sunset);
-    if (b <= a) continue;
-    litEnd = b;
-    const past = isPast(ctx, hour);
-    const cls = past ? "past" : `${shade(hour)}${hour.available ? "" : " off"}`;
-    segments.push(
-      html`<div
-        class="seg ${cls}"
-        style="--s:${pos(a)};--e:${pos(b)}"
-        data-hour=${hour.time}
-        @pointerenter=${(event: PointerEvent) =>
-          ctx.act.showTip(event.currentTarget as Element, hourTip(ctx, day, hour))}
-        @pointerleave=${() => ctx.act.hideTip()}
-      ></div>`,
-    );
-  }
-  if (sunset > litEnd) {
-    segments.push(
-      html`<div class="seg twilight" style="--s:${pos(litEnd)};--e:${pos(sunset)}"></div>`,
-    );
-  }
-  segments.push(
-    html`<div class="seg night" style="--s:${pos(sunset)};--e:1">
+    html`<div class="seg night dusk ${veil}" style="--s:${pos(sunset)};--e:1">
       <span>${icon("sunset")}${fmt.clock(day.sunset)}</span>
     </div>`,
-  );
+  ];
+  const shaded = (hour: Hour, a: number, b: number): TemplateResult => {
+    const past = isPast(ctx, hour);
+    const cls = past ? "past" : `${shade(hour)}${hour.available ? "" : " off"}`;
+    return html`<div
+      class="seg ${cls}"
+      style="--s:${pos(a)};--e:${pos(b)}"
+      data-hour=${hour.time}
+      @pointerenter=${(event: PointerEvent) =>
+        ctx.act.showTip(event.currentTarget as Element, hourTip(ctx, day, hour))}
+      @pointerleave=${() => ctx.act.hideTip()}
+    ></div>`;
+  };
+  const segments: TemplateResult[] = [];
+  if (lights) {
+    for (const hour of hours) {
+      const at = sinceMidnight(hour.time, day.date, zone);
+      segments.push(shaded(hour, at, at + 1));
+    }
+    segments.push(...night);
+  } else {
+    segments.push(night[0]);
+    const lit = hours.filter((hour) => hour.daylight);
+    const firstLit = lit.length ? localTime(lit[0].time, zone).hour : sunrise;
+    if (firstLit > sunrise) {
+      segments.push(
+        html`<div class="seg twilight" style="--s:${pos(sunrise)};--e:${pos(firstLit)}"></div>`,
+      );
+    }
+    let litEnd = sunrise;
+    for (const hour of lit) {
+      const at = localTime(hour.time, zone).hour;
+      const a = Math.max(at, sunrise);
+      const b = Math.min(at + 1, sunset);
+      if (b <= a) continue;
+      litEnd = b;
+      segments.push(shaded(hour, a, b));
+    }
+    if (sunset > litEnd) {
+      segments.push(
+        html`<div class="seg twilight" style="--s:${pos(litEnd)};--e:${pos(sunset)}"></div>`,
+      );
+    }
+    segments.push(night[1]);
+  }
   const multiple = day.windows.length > 1;
   day.windows.forEach((window, number) => {
     const sail = plannedFor(ctx, window);
     const top = multiple && number === day.best;
-    const a = localHours(window.start, zone);
-    const b = localHours(window.end, zone);
+    const a = sinceMidnight(window.start, day.date, zone);
+    const b = sinceMidnight(window.end, day.date, zone);
     const pixels = ((b - a) / span) * TRACK;
     const label = t("week.window_label", {
       day: dayName(ctx, day),
@@ -722,11 +806,30 @@ function dayColumn(
       </button>`,
     );
   });
-  if (today) {
+  if (isToday(ctx, day)) {
     segments.push(
       html`<div class="nowline" style="--s:${pos(localHours(ctx.forecast!.now, zone))}"></div>`,
     );
   }
+  return segments;
+}
+
+/**
+ * A day's column: its head, its hours for the narrow layout, which scroll
+ * on their own, and the day's conditions. The wide layout puts every day's
+ * hours side by side in one scrolling area instead.
+ */
+function dayColumn(
+  ctx: Ctx,
+  day: Day,
+  index: number,
+  track: TemplateResult[],
+  ticks: TemplateResult[],
+  shown: string,
+  open: string,
+): TemplateResult {
+  const { t, fmt } = ctx;
+  const today = isToday(ctx, day);
   const summary = day.summary;
   const best = day.best !== null ? day.windows[day.best] : undefined;
   const status =
@@ -783,13 +886,15 @@ function dayColumn(
   let info: TemplateResult = html`<p class="small">${t("week.sunset_passed")}</p>`;
   if (summary) {
     const now = ctx.forecast!.now;
+    // The tides still to come while the boat can sail: in daylight, or at any hour with lights.
     const tides = day.tides.filter(
       (turn) =>
-        ms(turn.time) >= ms(day.sunrise) &&
-        ms(turn.time) <= ms(day.sunset) &&
+        (ctx.forecast!.lights ||
+          (ms(turn.time) >= ms(day.sunrise) && ms(turn.time) <= ms(day.sunset))) &&
         ms(turn.time) >= ms(now),
     );
     info = html`
+      ${hoursLine(ctx, day, index)}
       <div class="ci cd-wins">
         ${icon("clock")}${
           best
@@ -854,11 +959,51 @@ function dayColumn(
       }
     `;
   }
-  return html`<div class="cd ${today ? "today" : ""}">
+  return html`<div class="cd ${today ? "today" : ""}" style="--col:${index + 2}">
     ${head}
-    <div class="cd-track">${segments}</div>
-    <div class="cd-axis" aria-hidden="true">${ticks}</div>
+    <div class="cd-scroll" data-shown=${shown} data-open=${open}>
+      <div class="cd-hours">
+        <div class="cd-track">${track}</div>
+        <div class="cd-axis" aria-hidden="true">${ticks}</div>
+      </div>
+    </div>
     <div class="cd-info">${info}</div>
+  </div>`;
+}
+
+/**
+ * The sailor's hours on a day. Admins and the sailor themselves can change
+ * them for that date, and undo a change.
+ */
+function hoursLine(ctx: Ctx, day: Day, index: number): TemplateResult {
+  const { t } = ctx;
+  const text = hoursText(ctx, day.date, day.hours, ctx.forecast!.lights);
+  const label = day.changed ? t("hours.changed", { hours: text }) : text;
+  const cls = `ci hrs ${day.changed ? "changed" : ""}`;
+  if (!canSetHours(ctx)) {
+    return html`<div class=${cls}>${icon("account")}<span>${label}</span></div>`;
+  }
+  return html`<div class=${cls}>
+    <button
+      type="button"
+      class="hrs-set"
+      aria-label=${t("hours.change_label", { day: dayAndDate(ctx, day), hours: label })}
+      @click=${() => ctx.act.openHours(index)}
+    >
+      ${icon("account")}<span>${label}</span>
+    </button>
+    ${
+      day.changed
+        ? html`<button
+            type="button"
+            class="icon-btn hrs-undo"
+            aria-label=${t("hours.undo_label", { day: dayAndDate(ctx, day) })}
+            @click=${() => ctx.act.resetHours(index)}
+          >
+            ${icon("close")}
+          </button>`
+        : nothing
+    }
   </div>`;
 }
 

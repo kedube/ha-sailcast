@@ -8,6 +8,10 @@
  * pixels, so they keep their pace at any zoom. When the device asks for
  * reduced motion, arrows replace them. Nothing animates while the map is out
  * of sight.
+ *
+ * The map opens on the spot's wind map area, filling the screen. Once it
+ * stops moving, it says what it shows (a `view` event), and the panel brings
+ * a grid for that when the one it has no longer serves.
  */
 import { css, html, LitElement, nothing, type PropertyValues, type TemplateResult } from "lit";
 
@@ -17,7 +21,7 @@ import { icon } from "./glyphs";
 import { addSeamarks, createMap, loadMapLibre, MAP_CREDITS, type MapInstance } from "./map";
 import { styles } from "./styles";
 import { compass, type Translate } from "./text";
-import type { Spot, WindGrid } from "./types";
+import type { Bounds, Spot, WindGrid } from "./types";
 import { LEGEND_TICKS, legendGradient, WindField, type Layer } from "./wind-field";
 
 type MarkerInstance = InstanceType<typeof import("maplibre-gl").Marker>;
@@ -34,6 +38,11 @@ const PLAY_STEP = 700;
 const MAX_AGE = 90;
 const PACE = 0.075;
 const ARROW_GAP = 44;
+// How far out the map zooms: about 1,000 km across a wide screen.
+const MIN_ZOOM = 7;
+// How long the map rests before asking for the wind where it is, in ms.
+const SETTLE = 400;
+const KM_PER_DEGREE = 111.32;
 const CREDITS = `${MAP_CREDITS} · Wind © <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0)`;
 
 interface Dot {
@@ -48,6 +57,8 @@ export class ScWindMap extends LitElement {
     grid: { attribute: false },
     spots: { attribute: false },
     spotId: { type: String },
+    busy: { type: Boolean },
+    note: { attribute: false },
     t: { attribute: false },
     fmt: { attribute: false },
     hour: { state: true },
@@ -61,6 +72,10 @@ export class ScWindMap extends LitElement {
   declare grid: WindGrid;
   declare spots: Spot[];
   declare spotId: string;
+  /** Whether wind for what the map shows is on its way. */
+  declare busy: boolean;
+  /** Why it can't be, if it can't. */
+  declare note?: string;
   declare t: Translate;
   declare fmt: Formatter;
   declare hour: number;
@@ -81,6 +96,7 @@ export class ScWindMap extends LitElement {
   private size = { width: 1, height: 1, ratio: 1 };
   private frame = 0;
   private timer = 0;
+  private settle = 0;
   private onScreen = true;
   private observer?: IntersectionObserver;
   private readonly reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -93,6 +109,7 @@ export class ScWindMap extends LitElement {
     this.layer = "wind";
     this.playing = false;
     this.failed = false;
+    this.busy = false;
     this.spots = [];
   }
 
@@ -107,6 +124,7 @@ export class ScWindMap extends LitElement {
     this.observer?.disconnect();
     this.setPlaying(false);
     this.halt();
+    window.clearTimeout(this.settle);
     this.stop?.();
     this.map = undefined;
     this.markers.clear();
@@ -114,8 +132,11 @@ export class ScWindMap extends LitElement {
 
   protected override willUpdate(changed: PropertyValues<this>): void {
     if (changed.has("grid") && this.grid) {
+      // A grid fetched later starts at a later hour: stay on the same time.
+      const shown = (changed.get("grid") as WindGrid | undefined)?.times[this.hour];
       this.field = new WindField(this.grid);
-      this.hour = Math.min(this.hour, Math.max(0, this.field.hours - 1));
+      const same = shown ? this.grid.times.indexOf(shown) : -1;
+      this.hour = same >= 0 ? same : Math.min(this.hour, Math.max(0, this.field.hours - 1));
     }
   }
 
@@ -130,6 +151,7 @@ export class ScWindMap extends LitElement {
 
   protected override updated(changed: PropertyValues<this>): void {
     if (!this.map?.loaded()) return;
+    if (changed.has("spotId") && changed.get("spotId") !== undefined) this.fitToSpot();
     if (changed.has("grid")) this.placeGrid();
     if (changed.has("grid") || changed.has("hour") || changed.has("layer")) {
       this.paintField();
@@ -158,6 +180,7 @@ export class ScWindMap extends LitElement {
     });
     this.map = map;
     this.stop = stop;
+    map.setMinZoom(MIN_ZOOM);
     map.on("load", () => {
       map.resize();
       this.fieldCanvas.width = FIELD_SIZE;
@@ -175,13 +198,7 @@ export class ScWindMap extends LitElement {
         paint: { "raster-opacity": 0.6, "raster-resampling": "linear", "raster-fade-duration": 0 },
       });
       addSeamarks(map);
-      map.fitBounds(
-        [
-          [grid.west, grid.south],
-          [grid.east, grid.north],
-        ],
-        { padding: 8, animate: false },
-      );
+      this.fitToSpot();
       this.paintField();
       this.labelSpots();
       this.measure();
@@ -191,7 +208,12 @@ export class ScWindMap extends LitElement {
       this.measure();
       if (this.reduced) this.drawArrows();
     });
-    map.on("resize", () => this.measure());
+    // A bigger map shows more without moving, so it asks for wind then too.
+    map.on("moveend", () => this.settled());
+    map.on("resize", () => {
+      this.measure();
+      this.settled();
+    });
     map.on("mousemove", (event) => this.read(event.lngLat.lat, event.lngLat.lng));
     map.on("click", (event) => this.read(event.lngLat.lat, event.lngLat.lng));
     map.getCanvasContainer().addEventListener("mouseleave", () => (this.readout = undefined));
@@ -212,7 +234,50 @@ export class ScWindMap extends LitElement {
     ];
   }
 
-  /** Move the color field to a new grid's corners. */
+  /**
+   * Show the chosen spot's wind map area, filling the map: on a screen of
+   * another shape, its longer side runs past the edges. Its grid covers it,
+   * so opening the map costs no second grid.
+   */
+  private fitToSpot(): void {
+    const map = this.map;
+    const spot = this.spots.find((item) => item.id === this.spotId);
+    if (!map || !spot) return;
+    const lat = spot.radius / 1000 / KM_PER_DEGREE;
+    const lon = lat / Math.cos((spot.latitude * Math.PI) / 180);
+    const southWest = map.project([spot.longitude - lon, spot.latitude - lat]);
+    const northEast = map.project([spot.longitude + lon, spot.latitude + lat]);
+    const box = map.getContainer();
+    const fill = Math.max(
+      box.clientWidth / (northEast.x - southWest.x),
+      box.clientHeight / (southWest.y - northEast.y),
+    );
+    if (!(fill > 0 && Number.isFinite(fill))) return;
+    // A hair inside the area, so its grid surely covers what shows.
+    const zoom = map.getZoom() + Math.log2(fill * 1.01);
+    map.jumpTo({ center: [spot.longitude, spot.latitude], zoom });
+  }
+
+  /** Once the map rests, say what it shows, so the panel can bring its wind. */
+  private settled(): void {
+    window.clearTimeout(this.settle);
+    this.settle = window.setTimeout(() => {
+      const shown = this.map?.getBounds();
+      if (!shown) return;
+      this.dispatchEvent(
+        new CustomEvent<Bounds>("view", {
+          detail: {
+            south: shown.getSouth(),
+            west: shown.getWest(),
+            north: shown.getNorth(),
+            east: shown.getEast(),
+          },
+        }),
+      );
+    }, SETTLE);
+  }
+
+  /** Move the color field and the particles to a new grid's corners. */
   private placeGrid(): void {
     const source = this.map?.getSource("wind") as
       { setCoordinates?: (corners: [number, number][]) => void } | undefined;
@@ -220,6 +285,7 @@ export class ScWindMap extends LitElement {
     for (const marker of this.markers.values()) marker.remove();
     this.markers.clear();
     this.labelSpots();
+    this.measure();
   }
 
   /** Paint the hour's colors and have MapLibre show them. */
@@ -525,6 +591,7 @@ export class ScWindMap extends LitElement {
         <div class="overlay read">${this.readout ?? t(this.touch ? "map.tap" : "map.point")}</div>
         <div class="overlay time">${this.timeLabel(this.hour)}</div>
         ${this.failed ? html`<p class="overlay failed">${t("map.failed")}</p>` : nothing}
+        ${this.busy ? html`<p class="overlay busy" role="status">${t("map.loading")}</p>` : nothing}
       </div>
       <div class="timebar">
         <button type="button" class="play" @click=${() => this.setPlaying(!this.playing)}>
@@ -569,6 +636,7 @@ export class ScWindMap extends LitElement {
         )}
       </div>
       <p class="attrib">
+        ${this.note ? html`${icon("info")} ${this.note} ` : nothing}
         ${
           this.grid?.stale
             ? html`${icon("info")}
@@ -675,6 +743,10 @@ export class ScWindMap extends LitElement {
       .failed {
         right: 10px;
         top: 50px;
+      }
+      .busy {
+        left: 10px;
+        bottom: 10px;
       }
       .spot {
         display: flex;

@@ -31,7 +31,7 @@ from .const import CONF_WORLDTIDES_KEY, DOMAIN
 from .nowcast import AIRPORT, BUOY, SENSORS, Observation
 from .outlook import Results, SpotConditions, compute
 from .planner import Planner
-from .profiles import Profiles, Spot
+from .profiles import Hours, Profiles, Spot
 from .providers import (
     ProviderError,
     Readings,
@@ -353,22 +353,32 @@ class ObservationCoordinator(SourceCoordinator[Observed]):
             for key, position in placed.items()
             if wanted[key].kind == BUOY
         }
+        airports = {
+            key: position
+            for key, position in placed.items()
+            if wanted[key].kind == AIRPORT
+        }
         forecasts = {k: v for k, v in old.forecasts.items() if k in placed}
         marine = {k: v for k, v in old.marine.items() if k in buoys}
         every = NEARBY_EVERY * 3 if self.budget.today >= SLOW_DOWN_AT else NEARBY_EVERY
-        if placed and (
-            self._due("nearby", every, now) or placed.keys() - forecasts.keys()
-        ):
+        # Buoys are on the water, so their forecast comes from the sea, as the
+        # spots' does; airports' comes from land. That takes a request each.
+        for kind, group in ((BUOY, buoys), (AIRPORT, airports)):
+            if not group or not (
+                self._due(f"nearby:{kind}", every, now)
+                or group.keys() - forecasts.keys()
+            ):
+                continue
             try:
                 found = await open_meteo.async_get_nearby(
-                    self.session, list(placed.values())
+                    self.session, list(group.values()), sea=kind == BUOY
                 )
             except ProviderError as err:
-                LOGGER.debug("Couldn't get the forecast at buoys and airports: %s", err)
+                LOGGER.debug("Couldn't get the forecast at the %ss: %s", kind, err)
             else:
-                self.budget.add(open_meteo.nearby_calls(len(placed)))
-                self._fetched["nearby"] = now
-                forecasts = dict(zip(placed, found, strict=True))
+                self.budget.add(open_meteo.nearby_calls(len(group)))
+                self._fetched[f"nearby:{kind}"] = now
+                forecasts.update(zip(group, found, strict=True))
         if buoys and (
             self._due("buoy_marine", BUOY_MARINE_EVERY, now)
             or buoys.keys() - marine.keys()
@@ -572,7 +582,10 @@ class AlertCoordinator(SourceCoordinator[tuple[Alert, ...]]):
 
 
 class ResultsCoordinator(DataUpdateCoordinator[Results]):
-    """Ratings, scores and windows, worked out again when a source changes."""
+    """Ratings, scores and windows, worked out again when a source changes.
+
+    The hours sailors set for single dates come from the store.
+    """
 
     def __init__(
         self,
@@ -580,6 +593,7 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
         entry: ConfigEntry,
         profiles: Profiles,
         sources: Sources,
+        store: SailCastStore,
     ) -> None:
         """Set up the results."""
         super().__init__(
@@ -594,6 +608,7 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
         self.entry = entry
         self.profiles = profiles
         self.sources = sources
+        self.store = store
         # Calendar text in Home Assistant's language, read again each time.
         self.wording: Wording | None = None
 
@@ -628,12 +643,18 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
             for spot in self.profiles.spots.values()
             if spot.sensors
         }
+        hours = {sailor: self.store.hours(sailor) for sailor in self.profiles.sailors}
         return await self.hass.async_add_executor_job(
-            self._compute, today, zone, now, sensors
+            self._compute, today, zone, now, sensors, hours
         )
 
     def _compute(
-        self, today: date, zone: tzinfo, now: datetime, sensors: dict[str, Readings]
+        self,
+        today: date,
+        zone: tzinfo,
+        now: datetime,
+        sensors: dict[str, Readings],
+        hours: dict[str, dict[date, Hours | None]],
     ) -> Results:
         """Build each spot's timeline and every outlook, in a worker thread."""
         conditions = {
@@ -645,7 +666,7 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
                 )
             )
         }
-        return compute(self.profiles, conditions)
+        return compute(self.profiles, conditions, hours)
 
 
 @dataclass
@@ -803,7 +824,7 @@ class SailCastData:
             observations=ObservationCoordinator(hass, entry, profiles, budget),
             shorelines=hass.data.setdefault(DATA_SHORELINES, Shorelines(hass)),
         )
-        results = ResultsCoordinator(hass, entry, profiles, sources)
+        results = ResultsCoordinator(hass, entry, profiles, sources, store)
         return cls(
             profiles=profiles,
             budget=budget,

@@ -823,16 +823,33 @@ export const styles = css`
     container: cal / inline-size;
   }
   .cal {
+    /* The hours shown at once (--span of them) out of those laid out (--laid:
+       all 24 in a boat with lights), and room for their scrollbar. */
     --track: 300px;
+    --lane: 12px;
+    display: grid;
+    grid-template-columns: 44px repeat(7, minmax(0, 1fr)) var(--lane);
+    grid-template-rows: auto var(--track) auto;
+    gap: 10px 8px;
+  }
+  /* Every day's hours side by side, scrolling together through those laid out. */
+  .cal-hours {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .cal-day {
     display: grid;
     grid-template-columns: 44px repeat(7, minmax(0, 1fr));
-    grid-template-rows: auto var(--track) auto;
     column-gap: 8px;
+    /* As wide as the columns above and below, whatever the scrollbar takes. */
+    width: calc(100cqi - var(--lane) - 8px);
+    height: calc(var(--track) * var(--laid) / var(--span));
   }
   .cal-gutter {
     position: relative;
-    grid-column: 1;
-    grid-row: 2;
   }
   .cal-gutter span {
     position: absolute;
@@ -847,9 +864,13 @@ export const styles = css`
   .cd {
     display: grid;
     grid-row: 1 / span 3;
+    grid-column: var(--col);
     grid-template-rows: subgrid;
-    row-gap: 10px;
     min-width: 0;
+  }
+  /* The narrow layout's own hours for each day. */
+  .cd-scroll {
+    display: none;
   }
   .cd-head {
     display: grid;
@@ -960,9 +981,29 @@ export const styles = css`
     gap: 3px;
     white-space: nowrap;
   }
+  /* Sunrise and sunset sit at the edge of the night they end or start. */
+  .seg.night.dawn {
+    align-items: end;
+    padding-bottom: 4px;
+  }
+  .seg.night.dusk {
+    align-items: start;
+    padding-top: 4px;
+  }
   .seg.night .i {
     width: 14px;
     height: 14px;
+  }
+  /* With navigation lights, night darkens the hours under it instead. */
+  .seg.night.veil {
+    z-index: 1;
+    background: var(--sc-h-veil);
+    pointer-events: none;
+  }
+  .seg.night.veil span {
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--sc-h-night);
   }
   .twilight {
     background: var(--sc-h-twilight);
@@ -1097,6 +1138,7 @@ export const styles = css`
   }
   .cd-info {
     display: grid;
+    grid-row: 3;
     align-content: start;
     gap: 6px;
     min-width: 0;
@@ -1121,6 +1163,41 @@ export const styles = css`
   }
   .cd-wins {
     display: none;
+  }
+  /* The sailor's hours that day, which can be changed for the date. */
+  .hrs-set {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+  .hrs-set span {
+    overflow-wrap: anywhere;
+    text-decoration: underline dotted var(--sc-fg3);
+    text-underline-offset: 3px;
+  }
+  .hrs.changed {
+    color: var(--sc-primary-ink);
+    font-weight: 500;
+  }
+  .hrs.changed .i {
+    fill: var(--sc-primary-ink);
+  }
+  .hrs-undo.icon-btn {
+    width: 24px;
+    height: 24px;
+    margin: -4px 0;
+  }
+  .hrs-undo.icon-btn .i {
+    width: 14px;
+    height: 14px;
   }
   .sizes {
     display: flex;
@@ -1168,16 +1245,27 @@ export const styles = css`
       grid-template-rows: none;
       row-gap: 10px;
     }
-    .cal-gutter {
+    .cal-hours {
       display: none;
     }
     .cd {
       grid-row: auto;
+      grid-column: 1;
       grid-template-rows: none;
       row-gap: 8px;
       padding: 10px 12px 12px;
       border: 1px solid var(--sc-line);
       border-radius: 12px;
+    }
+    /* Each day's hours scroll sideways through those laid out. */
+    .cd-scroll {
+      display: block;
+      overflow: auto hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+    }
+    .cd-hours {
+      width: calc(100% * var(--laid) / var(--span));
     }
     .cd-head {
       grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1242,7 +1330,7 @@ export const styles = css`
       position: relative;
       display: block;
       height: 14px;
-      margin-top: -4px;
+      margin-top: 4px;
     }
     .cd-axis span {
       position: absolute;
@@ -1259,11 +1347,13 @@ export const styles = css`
       transform: translateX(-100%);
     }
     .cd-info {
+      grid-row: auto;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       column-gap: 12px;
       padding: 0;
     }
     .cd-wins,
+    .hrs,
     .sizes,
     .conf {
       grid-column: 1 / -1;
@@ -2070,6 +2160,26 @@ export const styles = css`
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+  /* A sailor's days, a row each: whether they sail, and from and until when. */
+  .dayhours {
+    display: grid;
+    grid-template-columns: auto repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 6px 8px;
+  }
+  .dayhours > .lbl {
+    font-size: 12px;
+  }
+  .dayhours .fld-err {
+    grid-column: 1 / -1;
+  }
+  .dayhours select {
+    min-height: 34px;
+    padding: 4px 8px;
+  }
+  .dayhours select:disabled {
+    opacity: 0.45;
   }
   .dayt {
     position: relative;

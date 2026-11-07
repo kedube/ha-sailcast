@@ -102,11 +102,13 @@
           "data": {
             "name": "Nombre",
             "size_class": "Tamaño",
-            "length": "Eslora"
+            "length": "Eslora",
+            "lights": "Luces de navegación"
           },
           "data_description": {
             "name": "Por ejemplo, el nombre del barco.",
-            "size_class": "Cada tamaño tiene sus propios límites de seguridad de viento, rachas y olas."
+            "size_class": "Cada tamaño tiene sus propios límites de seguridad de viento, rachas y olas.",
+            "lights": "Actívalo si el barco tiene luces de navegación que funcionan. Así también cuentan las horas después del anochecer, dentro del horario del navegante."
           }
         },
         "reconfigure": {
@@ -114,11 +116,13 @@
           "data": {
             "name": "Nombre",
             "size_class": "Tamaño",
-            "length": "Eslora"
+            "length": "Eslora",
+            "lights": "Luces de navegación"
           },
           "data_description": {
             "name": "Por ejemplo, el nombre del barco.",
-            "size_class": "Cada tamaño tiene sus propios límites de seguridad de viento, rachas y olas."
+            "size_class": "Cada tamaño tiene sus propios límites de seguridad de viento, rachas y olas.",
+            "lights": "Actívalo si el barco tiene luces de navegación que funcionan. Así también cuentan las horas después del anochecer, dentro del horario del navegante."
           }
         }
       },
@@ -143,19 +147,35 @@
             "default_boat": "Barco habitual",
             "other_boats": "Otros barcos",
             "days": "Días de navegación",
-            "start": "Inicio más temprano",
-            "end": "Fin más tardío",
             "user": "Usuario de Home Assistant"
           },
           "data_description": {
             "skill": "Cada navegante valora su propio nivel. Fija su límite de viento medio; las rachas no cuentan para ese límite.",
             "default_boat": "SailCast valora este barco salvo que el navegante elija otro.",
             "other_boats": "Otros barcos con los que sale este navegante.",
-            "start": "Déjalo en blanco para empezar al amanecer.",
-            "end": "Déjalo en blanco para terminar a la puesta de sol.",
             "user": "Para ese usuario, el panel se abre con este navegante."
           },
           "sections": {
+            "hours": {
+              "name": "Horario de cada día",
+              "description": "Para los días de navegación de arriba. Deja una hora en blanco para empezar al amanecer o terminar con la puesta de sol, o a cualquier hora en un barco con luces de navegación. Un solo día, como un día libre, se cambia en el panel de SailCast.",
+              "data": {
+                "mon_start": "Lunes: inicio más temprano",
+                "mon_end": "Lunes: fin más tardío",
+                "tue_start": "Martes: inicio más temprano",
+                "tue_end": "Martes: fin más tardío",
+                "wed_start": "Miércoles: inicio más temprano",
+                "wed_end": "Miércoles: fin más tardío",
+                "thu_start": "Jueves: inicio más temprano",
+                "thu_end": "Jueves: fin más tardío",
+                "fri_start": "Viernes: inicio más temprano",
+                "fri_end": "Viernes: fin más tardío",
+                "sat_start": "Sábado: inicio más temprano",
+                "sat_end": "Sábado: fin más tardío",
+                "sun_start": "Domingo: inicio más temprano",
+                "sun_end": "Domingo: fin más tardío"
+              }
+            },
             "comfort": {
               "name": "Comodidad",
               "description": "Lo que le gusta a este navegante. Esto cambia las puntuaciones, nunca una valoración de seguridad.",
@@ -197,19 +217,35 @@
             "default_boat": "Barco habitual",
             "other_boats": "Otros barcos",
             "days": "Días de navegación",
-            "start": "Inicio más temprano",
-            "end": "Fin más tardío",
             "user": "Usuario de Home Assistant"
           },
           "data_description": {
             "skill": "Cada navegante valora su propio nivel. Fija su límite de viento medio; las rachas no cuentan para ese límite.",
             "default_boat": "SailCast valora este barco salvo que el navegante elija otro.",
             "other_boats": "Otros barcos con los que sale este navegante.",
-            "start": "Déjalo en blanco para empezar al amanecer.",
-            "end": "Déjalo en blanco para terminar a la puesta de sol.",
             "user": "Para ese usuario, el panel se abre con este navegante."
           },
           "sections": {
+            "hours": {
+              "name": "Horario de cada día",
+              "description": "Para los días de navegación de arriba. Deja una hora en blanco para empezar al amanecer o terminar con la puesta de sol, o a cualquier hora en un barco con luces de navegación. Un solo día, como un día libre, se cambia en el panel de SailCast.",
+              "data": {
+                "mon_start": "Lunes: inicio más temprano",
+                "mon_end": "Lunes: fin más tardío",
+                "tue_start": "Martes: inicio más temprano",
+                "tue_end": "Martes: fin más tardío",
+                "wed_start": "Miércoles: inicio más temprano",
+                "wed_end": "Miércoles: fin más tardío",
+                "thu_start": "Jueves: inicio más temprano",
+                "thu_end": "Jueves: fin más tardío",
+                "fri_start": "Viernes: inicio más temprano",
+                "fri_end": "Viernes: fin más tardío",
+                "sat_start": "Sábado: inicio más temprano",
+                "sat_end": "Sábado: fin más tardío",
+                "sun_start": "Domingo: inicio más temprano",
+                "sun_end": "Domingo: fin más tardío"
+              }
+            },
             "comfort": {
               "name": "Comodidad",
               "description": "Lo que le gusta a este navegante. Esto cambia las puntuaciones, nunca una valoración de seguridad.",

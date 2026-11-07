@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -13,7 +13,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.setup import async_setup_component
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 from pytest_homeassistant_custom_component.typing import (
     MockHAClientWebSocket,
@@ -230,19 +233,32 @@ async def test_save_boat(
     ]
     await hass.async_block_till_done()
     saved = loaded.subentries[result["profile"]]
-    assert (saved.title, dict(saved.data)) == ("Dinghy", boat)
+    # Without the setting, a boat has no navigation lights.
+    assert (saved.title, dict(saved.data)) == ("Dinghy", boat | {"lights": False})
     assert len(loaded.runtime_data.profiles.boats) == 3
+
+    await send(
+        "settings/save",
+        kind="boat",
+        profile=saved.subentry_id,
+        name="Dinghy",
+        data=boat | {"lights": True},
+    )
+    await hass.async_block_till_done()
+    assert loaded.runtime_data.profiles.boats[saved.subentry_id].lights is True
 
 
 async def test_save_sailor(
     hass: HomeAssistant, family: str, loaded: MockConfigEntry, send: Send
 ) -> None:
-    """A sailor's comfort and automatic adding are checked and kept in order."""
+    """A sailor's hours, comfort and automatic adding are checked and kept in order.
+
+    The days they sail are the ones with hours, each with its own.
+    """
     data = {
         "skill": "beginner",
         "boats": ["boat_cruiser", "boat_keelboat", "boat_cruiser"],
-        "days": ["sun", "sat"],
-        "start": "09:00",
+        "hours": {"sun": {"start": "09:00"}, "fri": {"start": "17:30", "end": None}},
         "comfort": {"ideal_low": 6, "ideal_high": 12, "coldest": 8.5, "rain": "avoid"},
         "auto_calendar": {
             "calendar": "calendar.sam_sailing",
@@ -267,9 +283,11 @@ async def test_save_sailor(
     assert dict(loaded.subentries["sailor_sam"].data) == {
         "skill": "beginner",
         "boats": ["boat_cruiser", "boat_keelboat"],
-        "days": ["sat", "sun"],
-        "start": "09:00:00",
-        "end": None,
+        "days": ["fri", "sun"],
+        "hours": {
+            "fri": {"start": "17:30:00", "end": None},
+            "sun": {"start": "09:00:00", "end": None},
+        },
         "user": None,
         "comfort": {"ideal_low": 6, "ideal_high": 12, "coldest": 8.5, "rain": "avoid"},
         "auto_calendar": {
@@ -498,6 +516,98 @@ async def test_skipped_days(
     assert store.skipped("sailor_alex") == {datetime(2026, 11, 8, tzinfo=UTC).date()}
 
 
+async def test_hours_for_a_date(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A date can be free all day, not for sailing, or have hours of its own.
+
+    Alex sails at weekends from 9 AM. Undoing a change brings those back.
+    """
+
+    async def day(when: str) -> dict[str, Any]:
+        # The results are worked out again once the debouncer's second is up.
+        freezer.tick(timedelta(seconds=2))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        week = (await send("forecast", **ALEX_RIVER))["result"]
+        return next(item for item in week["days"] if item["date"] == when)
+
+    friday = await day("2026-11-06")
+    assert (friday["hours"], friday["changed"], friday["available"]) == (
+        None,
+        False,
+        False,
+    )
+    result = await send("hours", sailor="sailor_alex", date="2026-11-06", hours={})
+    assert result["result"] == {"date": "2026-11-06"}
+    friday = await day("2026-11-06")
+    assert friday["hours"] == {"start": None, "end": None}
+    assert friday["changed"]
+    assert friday["available"]
+
+    await send("hours", sailor="sailor_alex", date="2026-11-07", hours="off")
+    saturday = await day("2026-11-07")
+    assert (saturday["hours"], saturday["changed"], saturday["available"]) == (
+        None,
+        True,
+        False,
+    )
+    assert saturday["windows"] == []
+
+    late = {"start": "12:00", "end": "10:00"}
+    result = await send("hours", sailor="sailor_alex", date="2026-11-08", hours=late)
+    assert result["result"] == {"errors": {"end": "end_before_start"}}
+    morning = {"start": "10:00", "end": "12:00"}
+    await send("hours", sailor="sailor_alex", date="2026-11-08", hours=morning)
+    sunday = await day("2026-11-08")
+    assert sunday["hours"] == {"start": "10:00:00", "end": "12:00:00"}
+    # 10 AM to noon in San Diego, in UTC.
+    assert all(
+        window["start"] >= "2026-11-08T18:00:00+00:00"
+        and window["end"] <= "2026-11-08T20:00:00+00:00"
+        for window in sunday["windows"]
+    )
+
+    await send("hours", sailor="sailor_alex", date="2026-11-07", hours="usual")
+    saturday = await day("2026-11-07")
+    assert saturday["hours"] == {"start": "09:00:00", "end": None}
+    assert not saturday["changed"]
+    assert set(hass.data[DATA_STORE].hours("sailor_alex")) == {
+        date(2026, 11, 6),
+        date(2026, 11, 8),
+    }
+
+    response = await send("hours", sailor="sailor_alex", date="2026-11-01", hours="off")
+    assert response["error"]["code"] == "invalid_format"
+    response = await send("hours", sailor="sailor_gone", date="2026-11-07", hours="off")
+    assert response["error"]["code"] == "not_found"
+
+
+async def test_hours_for_a_date_by_their_sailor(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    hass_ws_client: WebSocketGenerator,
+    hass_read_only_access_token: str,
+    hass_read_only_user: User,
+) -> None:
+    """Other users can change the hours of the sailor linked to them, no one else's."""
+    send = _sender(await hass_ws_client(hass, hass_read_only_access_token))
+    response = await send("hours", sailor="sailor_alex", date="2026-11-07", hours="off")
+    assert response["error"]["code"] == "unauthorized"
+
+    subentry = loaded.subentries["sailor_alex"]
+    hass.config_entries.async_update_subentry(
+        loaded, subentry, data={**subentry.data, "user": hass_read_only_user.id}
+    )
+    await hass.async_block_till_done()
+    response = await send("hours", sailor="sailor_alex", date="2026-11-07", hours="off")
+    assert response["result"] == {"date": "2026-11-07"}
+    assert hass.data[DATA_STORE].hours("sailor_alex") == {date(2026, 11, 7): None}
+
+
 async def test_wind_grid(
     hass: HomeAssistant,
     loaded: MockConfigEntry,
@@ -533,3 +643,39 @@ async def test_wind_grid_budget(
     loaded.runtime_data.budget.add(STOP_AT)
     response = await send("wind_grid", spot="spot_river")
     assert response["error"]["code"] == "budget"
+
+
+async def test_wind_view(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    send: Send,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """A view the map's grid covers needs nothing new; a wider one gets a grid."""
+    mock_wind(aioclient_mock)
+    grid = (await send("wind_grid", spot="spot_river"))["result"]
+    inside = {
+        "south": grid["south"] + 0.05,
+        "west": grid["west"] + 0.05,
+        "north": grid["north"] - 0.05,
+        "east": grid["east"] - 0.05,
+    }
+    reply = await send("wind_view", **inside, have=grid["id"])
+    assert reply["result"] == {"grid": None, "retry": None}
+
+    before = aioclient_mock.call_count
+    wider = {
+        "south": grid["south"] - 1,
+        "west": grid["west"] - 1,
+        "north": grid["north"] + 1,
+        "east": grid["east"] + 1,
+    }
+    reply = (await send("wind_view", **wider, have=grid["id"]))["result"]
+    assert reply["retry"] is None
+    assert reply["grid"]["id"] != grid["id"]
+    assert reply["grid"]["spots"] == ["spot_bay", "spot_harbor", "spot_river"]
+    assert reply["grid"]["south"] <= wider["south"]
+    assert aioclient_mock.call_count == before + 1
+
+    response = await send("wind_view", south=1, west=1, north=0, east=2)
+    assert response["error"]["code"] == "invalid_format"

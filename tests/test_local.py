@@ -129,6 +129,19 @@ async def test_readings_are_fetched_on_their_own_schedules(
     assert calls("https://aviationweather.gov/api/data/metar") == 2
 
 
+async def test_stations_forecast_from_their_own_cells(
+    hass: HomeAssistant, observed: MockConfigEntry, sources: AiohttpClientMocker
+) -> None:
+    """The forecast at the buoys comes from the sea, and at the airports from land."""
+    requests = [
+        (url.query["latitude"], url.query["cell_selection"])
+        for _, url, _, _ in sources.mock_calls
+        if str(url).startswith(open_meteo.FORECAST_URL)
+        and url.query["hourly"] == ",".join(open_meteo.NEARBY_VARIABLES)
+    ]
+    assert requests == [("32.7490,32.7140", "sea"), ("32.7364,32.6922", "land")]
+
+
 async def test_pin_on_land(hass: HomeAssistant, observed: MockConfigEntry) -> None:
     """The bay's pin is on land, which is a repair issue until it moves."""
     registry = ir.async_get(hass)

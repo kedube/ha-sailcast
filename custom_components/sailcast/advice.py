@@ -59,8 +59,13 @@ def advise(
     hours: Sequence[Hour],
     *,
     tides: Sequence[TideEvent] = (),
+    lights: bool = False,
 ) -> list[Advice]:
-    """Return the advice for a day, from the daylight hours still to come."""
+    """Return the advice for a day, from the hours still to come.
+
+    `hours` are the ones the boat can sail in: its daylight hours, or every
+    hour if it has navigation lights.
+    """
     summary = summarize(hours)
     if summary is None:
         return [Advice("day_over", "sunset")]
@@ -69,7 +74,7 @@ def advise(
         *_wind(size, skill, summary, hours),
         *_water(spot, size, summary, hours),
         *_weather(summary),
-        *_tides_and_sunset(day, hours, tides),
+        *_tides_and_sunset(day, hours, tides, lights=lights),
     ]
 
 
@@ -153,17 +158,21 @@ def _weather(summary: Summary) -> list[Advice]:
 
 
 def _tides_and_sunset(
-    day: Daylight, hours: Sequence[Hour], tides: Sequence[TideEvent]
+    day: Daylight, hours: Sequence[Hour], tides: Sequence[TideEvent], *, lights: bool
 ) -> list[Advice]:
-    """Give the highs and lows still to come in daylight, and sunset."""
+    """Give the highs and lows still to come while the boat can sail, and sunset.
+
+    Without navigation lights, that's in daylight.
+    """
     advice = []
-    first = max(hours[0].start, day.sunrise)
-    if daylight_tides := [
-        event for event in tides if first <= event.time <= day.sunset
-    ]:
+    if lights:
+        first, last = hours[0].start, hours[-1].start + HOUR
+    else:
+        first, last = max(hours[0].start, day.sunrise), day.sunset
+    if coming := [event for event in tides if first <= event.time <= last]:
         events = [
             {"time": event.time.isoformat(), "height": event.height, "high": event.high}
-            for event in daylight_tides
+            for event in coming
         ]
         advice.append(Advice("tides", "tide", {"events": events}))
     advice.append(Advice("sunset", "sunset", {"time": day.sunset.isoformat()}))

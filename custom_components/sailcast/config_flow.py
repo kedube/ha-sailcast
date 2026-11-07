@@ -72,9 +72,11 @@ from .const import (
     CONF_END,
     CONF_EXPOSED,
     CONF_FETCH,
+    CONF_HOURS,
     CONF_IDEAL_HIGH,
     CONF_IDEAL_LOW,
     CONF_LENGTH,
+    CONF_LIGHTS,
     CONF_MARINE_ZONE,
     CONF_MIN_SCORE,
     CONF_OFFSHORE,
@@ -614,6 +616,7 @@ class BoatFlow(ProfileFlow):
                         unit_of_measurement=self._length_unit,
                     )
                 ),
+                probatio.Optional(CONF_LIGHTS, default=False): BooleanSelector(),
             }
         )
 
@@ -624,6 +627,7 @@ class BoatFlow(ProfileFlow):
         return {
             CONF_SIZE_CLASS: user_input[CONF_SIZE_CLASS],
             CONF_LENGTH: round(length, 3),
+            CONF_LIGHTS: user_input.get(CONF_LIGHTS, False),
         }
 
     def _to_form(self, subentry: ConfigSubentry) -> dict[str, Any]:
@@ -634,6 +638,7 @@ class BoatFlow(ProfileFlow):
             CONF_NAME: subentry.title,
             CONF_SIZE_CLASS: subentry.data[CONF_SIZE_CLASS],
             CONF_LENGTH: round(length, 1),
+            CONF_LIGHTS: subentry.data.get(CONF_LIGHTS, False),
         }
 
     def _check(self, data: Mapping[str, Any]) -> dict[str, str]:
@@ -707,8 +712,17 @@ class SailorFlow(ProfileFlow):
                 probatio.Required(CONF_DAYS): _select(
                     WEEKDAYS, CONF_DAYS, multiple=True, mode=SelectSelectorMode.LIST
                 ),
-                probatio.Optional(CONF_START): TimeSelector(),
-                probatio.Optional(CONF_END): TimeSelector(),
+                # Each day's earliest start and latest finish, such as mon_start.
+                probatio.Required(CONF_HOURS): section(
+                    probatio.Schema(
+                        {
+                            probatio.Optional(f"{day}_{key}"): TimeSelector()
+                            for day in WEEKDAYS
+                            for key in (CONF_START, CONF_END)
+                        }
+                    ),
+                    {"collapsed": False},
+                ),
                 probatio.Optional(CONF_USER): SelectSelector(
                     SelectSelectorConfig(
                         options=self._users, mode=SelectSelectorMode.DROPDOWN
@@ -774,6 +788,7 @@ class SailorFlow(ProfileFlow):
     def _defaults(self) -> dict[str, Any]:
         defaults: dict[str, Any] = {
             CONF_DAYS: list(WEEKDAYS),
+            CONF_HOURS: {},
             CONF_COMFORT: {CONF_RAIN: profiles.RainTolerance.SOME.value},
             CONF_AUTO_CALENDAR: _auto_defaults(self._spot_options()),
         }
@@ -793,14 +808,22 @@ class SailorFlow(ProfileFlow):
                 1,
             )
         auto = user_input.get(CONF_AUTO_CALENDAR, {})
+        days = profiles.in_order(user_input[CONF_DAYS], WEEKDAYS)
+        # Only the days they sail keep their hours.
+        times = user_input.get(CONF_HOURS, {})
         return {
             CONF_SKILL: user_input[CONF_SKILL],
             CONF_BOATS: list(
                 dict.fromkeys([default, *user_input.get(CONF_OTHER_BOATS, ())])
             ),
-            CONF_DAYS: profiles.in_order(user_input[CONF_DAYS], WEEKDAYS),
-            CONF_START: user_input.get(CONF_START),
-            CONF_END: user_input.get(CONF_END),
+            CONF_DAYS: days,
+            CONF_HOURS: {
+                day: {
+                    CONF_START: times.get(f"{day}_{CONF_START}"),
+                    CONF_END: times.get(f"{day}_{CONF_END}"),
+                }
+                for day in days
+            },
             CONF_USER: user_input.get(CONF_USER) or None,
             CONF_COMFORT: {
                 CONF_IDEAL_LOW: comfort.get(CONF_IDEAL_LOW),
@@ -837,6 +860,12 @@ class SailorFlow(ProfileFlow):
             CONF_NAME: subentry.title,
             CONF_SKILL: data[CONF_SKILL],
             CONF_DAYS: list(data[CONF_DAYS]),
+            CONF_HOURS: {
+                f"{day}_{key}": value
+                for day, hours in profiles.week_hours(data).items()
+                for key, value in ((CONF_START, hours.start), (CONF_END, hours.end))
+                if value
+            },
             CONF_COMFORT: {
                 CONF_RAIN: profiles.RainTolerance.SOME.value,
                 **{key: value for key, value in comfort.items() if value is not None},
@@ -854,13 +883,8 @@ class SailorFlow(ProfileFlow):
         if boats:
             form[CONF_DEFAULT_BOAT] = boats[0]
             form[CONF_OTHER_BOATS] = boats[1:]
-        form.update(
-            {
-                key: data[key]
-                for key in (CONF_START, CONF_END, CONF_USER)
-                if data.get(key)
-            }
-        )
+        if data.get(CONF_USER):
+            form[CONF_USER] = data[CONF_USER]
         return form
 
     def _check(self, data: Mapping[str, Any]) -> dict[str, str]:

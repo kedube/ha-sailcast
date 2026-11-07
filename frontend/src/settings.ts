@@ -6,7 +6,7 @@
 import { html, nothing, type TemplateResult } from "lit";
 
 import type { Ctx } from "./context";
-import { localTime } from "./format";
+import { localTime, WEEKDAYS } from "./format";
 import { icon } from "./glyphs";
 import { positionText, savedSourceText } from "./text";
 import type { Sailor, SizeClass, Skill, SourceKey } from "./types";
@@ -67,15 +67,30 @@ export function limitBars(ctx: Ctx, size: SizeClass): TemplateResult {
   </div>`;
 }
 
-function sailingTimes(ctx: Ctx, sailor: Sailor): string {
+/** A sailor's days and hours, the days with the same hours together. */
+export function sailingTimes(ctx: Ctx, sailor: Sailor): string {
   const { t, fmt } = ctx;
   const time = (value: string | null, fallback: string): string =>
-    value ? fmt.hourOf("2026-11-02", Number(value.slice(0, 2))) : t(fallback);
-  return t("settings.times", {
-    days: daysText(ctx, sailor.days),
-    start: time(sailor.start, "settings.sunrise"),
-    end: time(sailor.end, "settings.sunset"),
-  });
+    value
+      ? fmt.hourOf("2026-11-02", Number(value.slice(0, 2)) + Number(value.slice(3, 5)) / 60)
+      : t(fallback);
+  const groups = new Map<string, string[]>();
+  for (const day of WEEKDAYS) {
+    const hours = sailor.week[day];
+    if (!hours) continue;
+    const key = `${hours.start}-${hours.end}`;
+    groups.set(key, [...(groups.get(key) ?? []), day]);
+  }
+  return [...groups.values()]
+    .map((days) => {
+      const hours = sailor.week[days[0]]!;
+      return t("settings.times", {
+        days: daysText(ctx, days),
+        start: time(hours.start, "settings.sunrise"),
+        end: time(hours.end, "settings.sunset"),
+      });
+    })
+    .join(" · ");
 }
 
 function avatar(name: string, index: number, small = false): TemplateResult {
@@ -151,7 +166,9 @@ export function settingsView(ctx: Ctx): TemplateResult {
         <h3>${boat.name}</h3>
         <span class="small"
           >${t(`size_class.${boat.size_class}`)} ·
-          ${t(fmt.feet ? "unit.feet" : "unit.meters", { value: fmt.number(length, fmt.feet ? 0 : 1) })}</span
+          ${t(fmt.feet ? "unit.feet" : "unit.meters", { value: fmt.number(length, fmt.feet ? 0 : 1) })}${
+            boat.lights ? html` · ${t("settings.lights")}` : nothing
+          }</span
         >
         <span class="small"
           >${

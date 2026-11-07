@@ -12,7 +12,7 @@ Run it with the development environment:
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 import json
 import math
 from pathlib import Path
@@ -31,6 +31,7 @@ from custom_components.sailcast.planner import sail_status  # noqa: E402
 from custom_components.sailcast.profiles import (  # noqa: E402
     AutoCalendar,
     Boat,
+    Hours,
     Profiles,
     Sailor,
     SizeClass,
@@ -134,7 +135,14 @@ BOATS = (
         size_class=SizeClass.SMALL_KEELBOAT,
         length=6.096,
     ),
-    Boat(id="cruiser", name="Cruiser", size_class=SizeClass.CRUISER, length=10.363),
+    # With navigation lights, so the demo shows a boat that sails after dark.
+    Boat(
+        id="cruiser",
+        name="Cruiser",
+        size_class=SizeClass.CRUISER,
+        length=10.363,
+        lights=True,
+    ),
 )
 SAILORS = (
     Sailor(
@@ -142,8 +150,11 @@ SAILORS = (
         name="Alex",
         skill=Skill.INTERMEDIATE,
         boats=("keelboat", "cruiser"),
-        days=("sat", "sun"),
-        start="09:00:00",
+        week={
+            "wed": Hours("13:00:00"),
+            "sat": Hours("09:00:00"),
+            "sun": Hours("09:00:00", "15:00:00"),
+        },
         auto_calendar=AutoCalendar(
             calendar="calendar.family",
             days=("sat", "sun"),
@@ -157,9 +168,11 @@ SAILORS = (
         name="Sam",
         skill=Skill.BEGINNER,
         boats=("keelboat",),
-        days=("mon", "tue", "wed", "thu", "fri", "sat", "sun"),
+        week=dict.fromkeys(("mon", "tue", "wed", "thu", "fri", "sat", "sun"), Hours()),
     ),
 )
+# Alex took Friday off, so is free all day.
+HOURS = {"alex": {date(2026, 11, 6): Hours()}}
 CALENDARS = [
     {
         "entity_id": "calendar.family",
@@ -351,7 +364,7 @@ def main() -> None:
         sailors={sailor.id: sailor for sailor in SAILORS},
     )
     spots = conditions()
-    results = compute(profiles, spots)
+    results = compute(profiles, spots, HOURS)
     # Saturday's river window, in Alex's own calendar.
     sail = PlannedSail(
         id="demo1",

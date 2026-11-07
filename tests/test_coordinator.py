@@ -46,6 +46,27 @@ async def test_budget(hass: HomeAssistant, loaded: MockConfigEntry) -> None:
     )
 
 
+async def test_spots_take_the_sea_cell(
+    hass: HomeAssistant, loaded: MockConfigEntry, sources: AiohttpClientMocker
+) -> None:
+    """Everything for the spots comes from Open-Meteo's sea cells.
+
+    Left to itself, Open-Meteo picks a cell on land, where the wind is lighter.
+    """
+    cells = {
+        url.query["hourly"]: url.query.get("cell_selection")
+        for _, url, _, _ in sources.mock_calls
+        if str(url).startswith(
+            (open_meteo.FORECAST_URL, open_meteo.MARINE_URL, open_meteo.ENSEMBLE_URL)
+        )
+    }
+    assert cells == {
+        ",".join(open_meteo.FORECAST_VARIABLES): "sea",
+        ",".join(open_meteo.MARINE_VARIABLES): "sea",
+        open_meteo.SPREAD_VARIABLE: "sea",
+    }
+
+
 async def test_forecast_slows_near_the_limit(
     hass: HomeAssistant, loaded: MockConfigEntry
 ) -> None:

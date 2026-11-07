@@ -125,7 +125,11 @@ def _preferred(hass: HomeAssistant) -> str | None:
 
 
 def facts(week: Mapping[str, Any], date: str, now: datetime) -> dict[str, list[Any]]:
-    """Return what a day's summary depends on, for its daylight hours to come."""
+    """Return what a day's summary depends on, for the hours to come.
+
+    Those are the hours the boat can sail in: its daylight hours, or every
+    hour with navigation lights.
+    """
     day = next((day for day in week["days"] if day["date"] == date), None)
     if day is None:
         return {}
@@ -138,7 +142,7 @@ def facts(week: Mapping[str, Any], date: str, now: datetime) -> dict[str, list[A
     for hour in week["hours"]:
         start = datetime.fromisoformat(hour["time"])
         if (
-            not hour["daylight"]
+            not (hour["daylight"] or week.get("lights"))
             or start.astimezone(zone).date().isoformat() != date
             or start.timestamp() + 3600 <= now.timestamp()
         ):
@@ -174,7 +178,11 @@ def day_data(
         "date": date,
         "units": units.names,
         "spot": {"name": outlook.spot.name, "water": outlook.spot.water_type.value},
-        "boat": {"name": boat.boat.name, "size": size.replace("_", " ")},
+        "boat": {
+            "name": boat.boat.name,
+            "size": size.replace("_", " "),
+            "navigation_lights": boat.boat.lights,
+        },
         "sailor": {
             "skill": outlook.sailor.skill.value,
             "wind_limit": SKILL_WIND_LIMITS[outlook.sailor.skill],

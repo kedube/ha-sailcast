@@ -2,16 +2,20 @@
 import type {
   AiSummary,
   AutoCalendar,
+  Bounds,
   Connection,
+  DayHours,
   Forecast,
   PlannedList,
   PlannedSail,
   Preferences,
+  Sailor,
   SailCastConfig,
   SaveResult,
   Shoreline,
   SourceSuggestions,
   WindGrid,
+  WindView,
 } from "./types";
 
 export type ProfileKind = "spot" | "boat" | "sailor";
@@ -112,6 +116,11 @@ export class Api {
     return this.send("wind_grid", { spot });
   }
 
+  /** The wind over what the map shows, unless the grid it has (`have`) still serves. */
+  windView(view: Bounds, have?: string): Promise<WindView> {
+    return this.send("wind_view", { ...view, ...(have ? { have } : {}) });
+  }
+
   planned(): Promise<PlannedList> {
     return this.send("planned/list");
   }
@@ -120,12 +129,21 @@ export class Api {
     return this.send("planned/skipped", { sailor, days });
   }
 
+  /**
+   * Set a sailor's hours for one date: "off" for not sailing, hours without
+   * times for the whole day, or "usual" to go back to the weekday's hours.
+   */
+  setHours(
+    sailor: string,
+    date: string,
+    hours: DayHours | "off" | "usual",
+  ): Promise<{ date: string; errors?: Record<string, string> }> {
+    return this.send("hours", { sailor, date, hours });
+  }
+
   /** Save a sailor's automatic adding, keeping the rest of their profile. */
-  saveAutoCalendar(
-    sailor: { id: string; name: string } & Record<string, unknown>,
-    auto: AutoCalendar | null,
-  ): Promise<SaveResult> {
-    const { id, name, ...data } = sailor;
-    return this.save("sailor", name, { ...data, auto_calendar: auto }, id);
+  saveAutoCalendar(sailor: Sailor, auto: AutoCalendar | null): Promise<SaveResult> {
+    const { id, name, week, ...data } = sailor;
+    return this.save("sailor", name, { ...data, hours: week, auto_calendar: auto }, id);
   }
 }

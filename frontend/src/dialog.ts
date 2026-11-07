@@ -174,3 +174,41 @@ export function numberOrNull(form: HTMLFormElement, name: string): number | null
 export function define(name: string, element: CustomElementConstructor): void {
   if (!customElements.get(name)) customElements.define(name, element);
 }
+
+// A sailor's earliest start and latest finish, on the hour. A boat with
+// navigation lights can sail at any of them.
+const STARTS = Array.from({ length: 24 }, (_, index) => index);
+const ENDS = Array.from({ length: 23 }, (_, index) => index + 1);
+
+/**
+ * A choice of the hour a sailor starts or finishes, sunrise or sunset when
+ * it's left empty. `time` is the one chosen, such as "17:00:00".
+ */
+export function hourSelect(
+  ctx: Ctx,
+  name: string,
+  end: boolean,
+  time: string | null | undefined,
+  options: { label?: string; disabled?: boolean } = {},
+): TemplateResult {
+  const { t, fmt } = ctx;
+  const chosen = time ? Number(time.slice(0, 2)) : null;
+  return html`<select
+    name=${name}
+    aria-label=${options.label ?? nothing}
+    ?disabled=${options.disabled ?? false}
+  >
+    <option value="">${t(end ? "sailor.sunset" : "sailor.sunrise")}</option>
+    ${(end ? ENDS : STARTS).map(
+      (hour) =>
+        html`<option value=${hour} ?selected=${chosen === hour}>
+          ${fmt.hourOf("2026-11-02", hour)}
+        </option>`,
+    )}
+  </select>`;
+}
+
+/** An hour chosen in an hourSelect as a time, such as "17:00:00", or null for none. */
+export function hourTime(hour: string): string | null {
+  return hour ? `${hour.padStart(2, "0")}:00:00` : null;
+}

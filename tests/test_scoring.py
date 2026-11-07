@@ -10,7 +10,13 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from custom_components.sailcast.limits import Level
-from custom_components.sailcast.profiles import Comfort, RainTolerance, SizeClass, Skill
+from custom_components.sailcast.profiles import (
+    Comfort,
+    Hours,
+    RainTolerance,
+    SizeClass,
+    Skill,
+)
 from custom_components.sailcast.rating import Rating, rate
 from custom_components.sailcast.scoring import (
     Band,
@@ -227,16 +233,14 @@ def test_ensemble_spread_lowers_confidence() -> None:
 
 
 def test_is_available() -> None:
-    """Sailors sail on their days, between their start and end times."""
+    """Sailors sail between the day's start and end, and not on days off."""
     saturday_9 = DAY + timedelta(hours=9)
-    friday_9 = saturday_9 - timedelta(days=1)
-    assert is_available(["sat"], None, None, saturday_9)
-    assert not is_available(["sun"], None, None, saturday_9)
-    assert not is_available(["sat", "sun"], None, None, friday_9)
-    assert is_available(["sat"], "09:00:00", None, saturday_9)
-    assert not is_available(["sat"], "09:30:00", None, saturday_9)
-    assert is_available(["sat"], None, "10:00:00", saturday_9)
-    assert not is_available(["sat"], None, "09:59:00", saturday_9)
+    assert is_available(Hours(), saturday_9)
+    assert not is_available(None, saturday_9)
+    assert is_available(Hours("09:00:00"), saturday_9)
+    assert not is_available(Hours("09:30:00"), saturday_9)
+    assert is_available(Hours(end="10:00:00"), saturday_9)
+    assert not is_available(Hours(end="09:59:00"), saturday_9)
 
 
 def test_steady_level() -> None:

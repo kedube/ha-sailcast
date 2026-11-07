@@ -44,7 +44,7 @@
     "best_eyebrow": "Nejlepší čas tohoto týdne · {who}",
     "no_window": "Tento týden žádné dobré okno",
     "best_day": "Nejlepší den je {day} se skóre {score} ({band}).",
-    "window_rule": "Dobré okno potřebuje alespoň dvě hodiny v kuse se skóre 60 nebo více, za denního světla a ve vašich časech pro plavbu.",
+    "window_rule": "Dobré okno potřebuje alespoň dvě hodiny v kuse se skóre 60 nebo více, ve vašich časech pro plavbu, a za denního světla, pokud loď nemá navigační světla.",
     "gusts": "Nárazy {gust} kn",
     "high": "Vysoká voda {time}",
     "low": "Nízká voda {time}",
@@ -281,7 +281,8 @@
     "current_ebb": "Odlivový proud {speed} kn",
     "current_slack": "Proud {speed} kn (stojatá voda)",
     "hours": "Hodinu po hodině",
-    "hours_sub": "Hodiny za denního světla"
+    "hours_sub": "Hodiny za denního světla",
+    "hours_sub_lights": "Všechny hodiny, s navigačními světly"
   },
   "ai": {
     "button": "Shrnout pomocí AI",
@@ -311,9 +312,10 @@
     "loading": "Načítání mapy větru…",
     "failed": "Mapu se nepodařilo načíst.",
     "budget": "Mapa větru se do zítřka pozastavila, aby SailCast nepřekročil denní limit bezplatných volání Open-Meteo. Samotná předpověď se dál aktualizuje.",
+    "view_budget": "Aby SailCast nepřekročil denní limit bezplatných volání Open-Meteo, ukazuje vítr do zítřka jen v oblastech, které už má.",
     "unavailable": "Mapu větru se nepodařilo načíst: {message}",
     "stale": "Toto je vítr podle předpovědi načtené {time}; novější SailCast nemohl stáhnout.",
-    "credits": "Vítr © Open-Meteo (CC BY 4.0), z jeho nejlepšího modelu pro danou oblast, zhruba po 2 km a po hodinách. Mapa © přispěvatelé OpenStreetMap, námořní značky © OpenSeaMap. Není určeno k navigaci."
+    "credits": "Vítr © Open-Meteo (CC BY 4.0), z jeho nejlepšího modelu pro danou oblast, po hodinách, s body zhruba po 2 km zblízka a řidšími při oddálení. Mapa © přispěvatelé OpenStreetMap, námořní značky © OpenSeaMap. Není určeno k navigaci."
   },
   "table": {
     "direction": "Směr",
@@ -405,6 +407,7 @@
     "sunrise": "východ slunce",
     "sunset": "západ slunce",
     "sailed_by": "Plachtí na ní: {sailors}",
+    "lights": "navigační světla",
     "no_sailors": "Zatím žádní jachtaři",
     "sources": "Zdroje",
     "map_km": "mapa větru {value} km",
@@ -442,9 +445,11 @@
     "when": "Kdy můžete plout",
     "from": "Od",
     "until": "Do",
+    "from_day": "{day}, od",
+    "until_day": "{day}, do",
     "sunrise": "Východ slunce",
     "sunset": "Západ slunce",
-    "when_hint": "Okna pro plavbu leží jen v těchto časech. SailCast vždy hodnotí jen hodiny za denního světla.",
+    "when_hint": "Zaškrtněte dny, kdy se plavíte, každý s vlastními hodinami; okna pro plavbu leží jen v nich. Necháte-li východ a západ slunce, loď s navigačními světly může plout v kteroukoli hodinu. Jeden den, třeba volno, změníte u hodin pod tím dnem v týdnu.",
     "comfort": "Pohodlí",
     "ideal_low": "Ideální vítr od (kn)",
     "ideal_high": "Ideální vítr do (kn)",
@@ -455,6 +460,28 @@
     "user": "Uživatel Home Assistant",
     "no_user": "Žádný",
     "user_hint": "Tomuto uživateli se SailCast otevře s tímto jachtařem."
+  },
+  "hours": {
+    "title": "Čas na plavbu: {day}",
+    "this_day": "Tento den",
+    "free": "Volno celý den",
+    "free_hint": "{hours}.",
+    "off": "Bez plavby",
+    "off_hint": "Tento den žádná okna pro plavbu.",
+    "set": "Tyto hodiny",
+    "set_hint": "Zvolte začátek a konec.",
+    "usual": "Obvyklý čas ({day}): {hours}.",
+    "hint": "Změní se jen tento den. Obvyklé hodiny zůstanou, jak jsou.",
+    "back": "Zpět na obvyklé hodiny",
+    "changed": "{hours} (změněno)",
+    "change_label": "Změnit čas na plavbu ({day}): {hours}",
+    "undo_label": "Zpět na obvyklé hodiny ({day})",
+    "saved": "Čas na plavbu změněn ({day}).",
+    "reset": "Zpět na obvyklé hodiny ({day}).",
+    "span": "{start} až {end}",
+    "daylight": "Od východu do západu slunce",
+    "any_time": "Kdykoli",
+    "midnight": "půlnoc"
   },
   "rain": {
     "avoid": "Vyhýbat se dešti",
@@ -468,6 +495,8 @@
     "size_hint": "{lengths}. „Opatrně“ od {caution} kn, „nebezpečné“ od {dangerous} kn.",
     "length_feet": "Délka (ft)",
     "length_meters": "Délka (m)",
+    "lights": "Navigační světla",
+    "lights_hint": "Zapněte, pokud má loď funkční navigační světla. Pak se počítají i hodiny po setmění, v rámci časů jachtaře.",
     "limits": "Limity pro tuto velikost, stejné na každé úrovni"
   },
   "spot": {
