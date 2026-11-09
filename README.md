@@ -22,6 +22,11 @@ SailCast is a Home Assistant integration for sailors. It turns wind, gust, wave,
 
 It adds a SailCast page to the sidebar, with a week calendar, a day view, an animated wind map and settings, plus entities and a calendar for automations.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/week-dark.webp">
+  <img alt="SailCast's week view: the best time to sail this week with its score, the wind now and official warnings, and the week as a calendar with the sailing windows marked" src="docs/images/week-light.webp">
+</picture>
+
 > [!IMPORTANT]
 > SailCast is advisory. Official forecasts and warnings come first, and the skipper always decides.
 
@@ -36,6 +41,11 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 - **Automations:** entities, a calendar, an action, and two blueprints for phone notifications.
 - **AI, if you want it:** a briefing of your week from the AI provider you use in Home Assistant, and answers to sailing questions through Assist. The ratings always come from SailCast's own rules.
 - **12 languages.**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/day-dark.webp">
+  <img alt="SailCast's day view for a Saturday: the day's score and best window, advice for the day, the rating for each boat size, and the wind and gusts hour by hour" src="docs/images/day-light.webp">
+</picture>
 
 The [safety limits](docs/safety-limits.md) list every number the ratings use, and the [plan](docs/PLAN.md) explains the choices behind them.
 
@@ -73,6 +83,11 @@ Each sailor rates their own skill, which sets their limit for sustained wind: up
 ## The wind map
 
 The **Wind map** tab shows the wind or the gusts as colors, with particles that follow the wind. It opens on the spot's wind map area, and when you pan or zoom, the wind follows. Play through the week, jump to a day, or point at the map to read the wind there.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/map-dark.webp">
+  <img alt="SailCast's wind map: the wind over the water around the spots as colors and moving particles, with seamarks, a time slider and days to jump to" src="docs/images/map-light.webp">
+</picture>
 
 The wind comes as a grid of at most 15 × 15 points: about 2 km apart up close, and further apart as you zoom out. A grid is fetched only for what the map shows, kept for three hours, and used again whenever it covers the view, and nearby spots share one. Each point counts toward Open-Meteo's free allowance of 600 calls a minute, 5,000 an hour and 10,000 a day. So SailCast waits a moment when grids come too quickly, stops fetching them well before the daily limit, and shows the wind it already has instead.
 
@@ -134,6 +149,11 @@ SailCast can use the AI provider you've set up in Home Assistant, such as OpenAI
 Turn it on under **Settings → Devices & services → SailCast → Configure**, where you can also pick which AI task writes it. Leave that empty to use Home Assistant's default, set under **Settings → System → AI**.
 
 The week view then opens with a briefing for the sailor you picked: a headline, a few sentences that compare the days, spots and boats, up to three picks, and when to check again. It says how the wind and waves change, names official warnings first, and says where the weather models disagree. Each pick is one of SailCast's own windows, shown with SailCast's times and score, and selecting it opens that day. The day view shows the briefing's note for the day.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/briefing-dark.webp">
+  <img alt="An AI briefing: a headline naming the week's best choice, a summary that compares the spots and names an official warning, two picked windows with SailCast's times and scores, and when to check again" src="docs/images/briefing-light.webp">
+</picture>
 
 SailCast writes a briefing when you open the panel or pick another sailor, if the forecast has changed since the last one. It keeps it, through restarts, until the ratings, windows or warnings it describes change. An open panel never asks the AI by itself: it says when the forecast has changed, and **Update the briefing** writes a new one.
 
@@ -234,6 +254,7 @@ You need [uv](https://docs.astral.sh/uv/) and Node 24 or newer.
 | `.venv/bin/python scripts/demo_data.py` | Writes the demo's data: the integration's own replies for the recorded San Diego week. |
 | `npm run demo` in `frontend/` | Serves the panel with that data. Add `?mode=night`, `?units=metric`, `?view=day`, `?admin=0`, `?empty`, `?lang=de` or `?ai`, and `?ai=slow`, `?ai=stale` or `?ai=fail` for the briefing while it's written, out of date or failed. |
 | `npm test` in `frontend/` | Runs the panel's tests. |
+| `.venv/bin/python scripts/screenshots.py` | Takes this README's screenshots of the demo, in light and dark, into [docs/images](docs/images). The demo and a headless Chrome have to be running; the script's notes say how. |
 | `.venv/bin/python scripts/record_fixtures.py` | Records the provider responses the tests run on. |
 | `.venv/bin/python scripts/safety_limits_doc.py` | Writes [docs/safety-limits.md](docs/safety-limits.md) from the limits table. A test fails if it's out of date. |
 

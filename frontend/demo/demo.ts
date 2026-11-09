@@ -120,11 +120,39 @@ function madeUpView(data: DemoData, view: Bounds & { have?: string }): WindView 
 }
 
 /**
- * A stand-in AI briefing, as the AI might write one: the sailor's best two
- * windows across the recorded spots and boats, and a note for their days.
+ * What an AI might write for Alex's recorded week, in US units, following the
+ * instructions SailCast gives it. Other sailors get placeholder text.
+ */
+const EXAMPLE = {
+  sailor: "alex",
+  headline: "Saturday afternoon on the River in the Day sailer is the pick of the week.",
+  summary:
+    "A Small Craft Advisory covers the Harbor from Tuesday 1 PM to Wednesday 4 AM, and a swell of 3 to 5 ft keeps the Harbor and the Bay at caution or worse all week. The River is sheltered from it: a light northwesterly builds to 5–6 kt each afternoon, with gusts in the mid-teens. The models agree closely, apart from a less certain Wednesday.",
+  why: {
+    "2026-11-07": "The best score of the week: northwest 5–6 kt on flat water, gusts to 15 kt.",
+    "2026-11-06": "Almost as good, and it starts at noon.",
+  } as Record<string, string>,
+  days: {
+    "2026-11-03":
+      "You're not sailing today. The Small Craft Advisory starts at the Harbor at 1 PM.",
+    "2026-11-04":
+      "The River in the Day sailer from 1 PM until sunset scores 70. The Harbor is not recommended in the swell.",
+    "2026-11-06":
+      "The River from noon until sunset in the Day sailer (74), or 1 to 3 PM in the Cruiser (65).",
+    "2026-11-07":
+      "The week's best: the River from 1 PM until sunset in the Day sailer (80). The Harbor and the Bay stay at caution in the swell.",
+    "2026-11-08": "A shorter window on the River, 1 to 3 PM in the Day sailer (68).",
+  } as Record<string, string>,
+  recheck: "Check again on Tuesday evening, since Wednesday's forecast is less certain.",
+};
+
+/**
+ * A stand-in AI briefing: the sailor's best two windows across the recorded
+ * spots and boats, with the example's text for Alex.
  */
 function standInBriefing(data: DemoData, config: SailCastConfig, sailorId: string): Briefing {
   const sailor = config.sailors.find((item) => item.id === sailorId);
+  const example = sailorId === EXAMPLE.sailor ? EXAMPLE : undefined;
   const found: BriefingPick[] = [];
   for (const spot of config.spots) {
     for (const boat of sailor?.boats ?? []) {
@@ -138,7 +166,9 @@ function standInBriefing(data: DemoData, config: SailCastConfig, sailorId: strin
             start: window.start,
             end: window.end,
             score: window.score,
-            why: "Steady wind inside your limit, and the best score of the week.",
+            why:
+              example?.why[day.date] ??
+              "Steady wind inside your limit, and the best score of the week.",
           });
         }
       }
@@ -146,14 +176,20 @@ function standInBriefing(data: DemoData, config: SailCastConfig, sailorId: strin
   }
   const picks = found.sort((a, b) => b.score - a.score).slice(0, 2);
   return {
-    headline: "This is where the AI's headline goes: the best choice this week.",
+    headline:
+      example?.headline ?? "This is where the AI's headline goes: the best choice this week.",
     summary:
+      example?.summary ??
       "And here two to four sentences that compare the days, spots and boats, written by the AI provider set up in Home Assistant, in your language.",
     picks,
-    days: Object.fromEntries(
-      picks.map((pick) => [pick.date, "A note about the day: the best spot, boat and time."]),
-    ),
-    recheck: "Check again on Friday evening, as the models disagree about the weekend.",
+    days:
+      example?.days ??
+      Object.fromEntries(
+        picks.map((pick) => [pick.date, "A note about the day: the best spot, boat and time."]),
+      ),
+    recheck:
+      example?.recheck ??
+      "Check again on Friday evening, as the models disagree about the weekend.",
     made: data.now,
     current: true,
   };
