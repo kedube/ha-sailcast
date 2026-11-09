@@ -9,7 +9,7 @@ SailCast is in English and 11 more languages: German, French, Dutch, Spanish, Si
 - `custom_components/sailcast/translations/<code>.json` holds what Home Assistant shows: the setup and options dialogs, entity names and states, repairs and the `get_forecast` action. Its `common` group holds the text SailCast writes itself: calendar events and the notification when a planned sail's forecast gets worse. That text is in the language Home Assistant itself is set to, except an event you add from the panel, which is in yours.
 - `frontend/src/translations/<code>.json` holds the panel's strings. The panel follows each person's own language.
 
-The AI summary isn't in these files. The AI provider writes it in the reader's language.
+The AI briefing isn't in these files. The AI provider writes it in the reader's language, and answers questions asked through Assist in the language they're asked in.
 
 ## Rules
 

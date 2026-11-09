@@ -15,6 +15,8 @@ import { styles } from "./styles";
 import { PALETTES, THEME_VARIABLES, type Mode } from "./theme";
 import type {
   Bounds,
+  Briefing,
+  BriefingPick,
   Forecast,
   HomeAssistant,
   PlannedList,
@@ -71,8 +73,9 @@ export class SailCastPanel extends LitElement {
     gridError: { state: true },
     gridBusy: { state: true },
     gridNote: { state: true },
-    aiBusy: { state: true },
-    aiError: { state: true },
+    briefing: { state: true },
+    briefingBusy: { state: true },
+    briefingError: { state: true },
   };
 
   declare hass?: HomeAssistant;
@@ -104,9 +107,13 @@ export class SailCastPanel extends LitElement {
   /** What the map shows, and when to ask for its wind again. */
   private mapBounds?: Bounds;
   private gridRetry?: number;
-  /** The date whose AI summary is being written, and the last one that failed. */
-  declare aiBusy?: string;
-  declare aiError?: { date: string; text: string };
+  /** The sailor's AI briefing, with AI on: null if none was written yet. */
+  declare briefing?: Briefing | null;
+  /** Whether the AI is writing one, and why the last one couldn't be written. */
+  declare briefingBusy: boolean;
+  declare briefingError?: string;
+  /** The sailor and language the briefing is for. */
+  private briefingFor = "";
 
   private api?: Api;
   private unsubscribe?: Promise<() => Promise<void>>;
@@ -114,7 +121,7 @@ export class SailCastPanel extends LitElement {
   private toastTimer?: number;
   private resizer?: ResizeObserver;
   private started = false;
-  /** The language the panel's strings and AI summaries are in. */
+  /** The language the panel's strings and the AI briefing are in. */
   private language = "";
   private applied = "";
   /** The request whose forecast is wanted, so a late reply for another is ignored. */
@@ -127,6 +134,7 @@ export class SailCastPanel extends LitElement {
     this.theme = "auto";
     this.width = 0;
     this.gridBusy = false;
+    this.briefingBusy = false;
   }
 
   override connectedCallback(): void {
@@ -154,6 +162,7 @@ export class SailCastPanel extends LitElement {
       void loadLanguage(this.language).then(() => {
         this.requestUpdate();
         void this.loadForecast();
+        void this.loadBriefing(true);
       });
     }
     this.applyPalette();
@@ -202,7 +211,7 @@ export class SailCastPanel extends LitElement {
       this.error = errorText(err);
       return;
     }
-    await Promise.all([this.loadForecast(), this.loadPlanned()]);
+    await Promise.all([this.loadForecast(), this.loadPlanned(), this.loadBriefing(true)]);
   }
 
   private scheduleRefresh(): void {
@@ -220,7 +229,7 @@ export class SailCastPanel extends LitElement {
       this.error = errorText(err);
       return;
     }
-    await Promise.all([this.loadForecast(), this.loadPlanned()]);
+    await Promise.all([this.loadForecast(), this.loadPlanned(), this.loadBriefing(false)]);
   }
 
   /** Use new settings, keeping the selection where it still exists. */
@@ -247,7 +256,7 @@ export class SailCastPanel extends LitElement {
     const wanted = `${spotId}|${sailorId}|${boatId}`;
     this.wanted = wanted;
     try {
-      const forecast = await api.forecast(spotId, sailorId, boatId, this.language);
+      const forecast = await api.forecast(spotId, sailorId, boatId);
       if (this.wanted !== wanted) return;
       const first = this.forecast === undefined || this.forecast.spot !== forecast.spot;
       this.forecast = forecast;
@@ -271,6 +280,67 @@ export class SailCastPanel extends LitElement {
       0,
       forecast.days.findIndex((day) => !day.over),
     );
+  }
+
+  /**
+   * Read the sailor's AI briefing. With `write`, the AI writes a new one if
+   * the forecast changed since the last; that happens only when someone opens
+   * the panel, picks a sailor or asks, never on an update in the background.
+   */
+  private async loadBriefing(write: boolean): Promise<void> {
+    const { api, sailorId } = this;
+    if (!api || !sailorId || !this.config?.ai) {
+      this.briefing = undefined;
+      this.briefingError = undefined;
+      this.briefingFor = "";
+      return;
+    }
+    const wanted = `${sailorId}|${this.language}`;
+    if (this.briefingFor !== wanted) {
+      this.briefing = undefined;
+      this.briefingError = undefined;
+      this.briefingFor = wanted;
+    }
+    if (write) {
+      this.briefingBusy = true;
+      this.briefingError = undefined;
+    }
+    try {
+      const briefing = await api.briefing(sailorId, this.language, write);
+      if (this.briefingFor === wanted) this.briefing = briefing;
+    } catch (err) {
+      // A failed read in the background leaves the briefing as it was.
+      if (write && this.briefingFor === wanted) {
+        const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
+        this.briefingError =
+          code === "bad_answer"
+            ? this.t("ai.bad_answer")
+            : this.t("ai.failed", { message: errorText(err) });
+      }
+    } finally {
+      if (write && this.briefingFor === wanted) this.briefingBusy = false;
+    }
+  }
+
+  /** Show a window the AI picked: its spot and boat, on its day. */
+  private async openPick(pick: BriefingPick): Promise<void> {
+    const config = this.config;
+    const sailor = config?.sailors.find((item) => item.id === this.sailorId);
+    if (
+      !config?.spots.some((spot) => spot.id === pick.spot) ||
+      !sailor?.boats.includes(pick.boat)
+    ) {
+      return;
+    }
+    if (this.spotId !== pick.spot || this.boatId !== pick.boat) {
+      this.spotId = pick.spot;
+      this.boatId = pick.boat;
+      this.savePreferences({ spot: pick.spot, boat: pick.boat });
+      await this.loadForecast();
+    }
+    const index = this.forecast?.days.findIndex((day) => day.date === pick.date) ?? -1;
+    if (index >= 0) this.day = index;
+    if (this.currentView() !== "day") this.go("day");
   }
 
   /** Ask for the wind map's grid around a spot; SailCast keeps it three hours. */
@@ -575,46 +645,9 @@ export class SailCastPanel extends LitElement {
     },
     hideTip: () => this.hideTip(),
     toast: (message) => this.toast(message),
-    summarize: (index) => void this.summarize(index),
+    writeBriefing: () => void this.loadBriefing(true),
+    openPick: (pick) => void this.openPick(pick),
   };
-
-  /** Ask for a day's AI summary and show it, or why it couldn't be written. */
-  private async summarize(index: number): Promise<void> {
-    const { api, spotId, sailorId, boatId } = this;
-    const day = this.forecast?.days[index];
-    if (!api || !spotId || !sailorId || !day) return;
-    const wanted = `${spotId}|${sailorId}|${boatId}`;
-    this.aiBusy = day.date;
-    this.aiError = undefined;
-    try {
-      const summary = await api.aiSummary({
-        spot: spotId,
-        sailor: sailorId,
-        boat: boatId,
-        date: day.date,
-        language: this.language,
-      });
-      if (this.wanted === wanted && this.forecast) {
-        this.forecast = {
-          ...this.forecast,
-          days: this.forecast.days.map((item) =>
-            item.date === day.date ? { ...item, ai: summary } : item,
-          ),
-        };
-      }
-    } catch (err) {
-      const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
-      this.aiError = {
-        date: day.date,
-        text:
-          code === "bad_answer"
-            ? this.t("ai.bad_answer")
-            : this.t("ai.failed", { message: errorText(err) }),
-      };
-    } finally {
-      this.aiBusy = undefined;
-    }
-  }
 
   private ctx(): Ctx | undefined {
     const hass = this.hass;
@@ -634,8 +667,9 @@ export class SailCastPanel extends LitElement {
       day: this.day ?? 0,
       admin: Boolean(hass.user?.is_admin),
       calendar: this.preferences?.calendar,
-      aiBusy: this.aiBusy,
-      aiError: this.aiError,
+      briefing: this.briefing,
+      briefingBusy: this.briefingBusy,
+      briefingError: this.briefingError,
       act: this.actions,
     };
   }
@@ -717,6 +751,7 @@ export class SailCastPanel extends LitElement {
               this.boatId = config.sailors.find((item) => item.id === this.sailorId)?.boats[0];
               this.savePreferences({ sailor: this.sailorId, boat: this.boatId ?? null });
               void this.loadForecast();
+              void this.loadBriefing(true);
             }}
           >
             ${config.sailors.map(

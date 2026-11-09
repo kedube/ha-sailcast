@@ -25,7 +25,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 > [!IMPORTANT]
 > SailCast is advisory. Official forecasts and warnings come first, and the skipper always decides.
 
-[What's in it](#whats-in-it) · [Install](#install) · [Set up](#set-up) · [Wind map](#the-wind-map) · [Outside the US](#outside-the-us) · [Calendar](#your-own-calendar) · [Notifications](#notifications) · [AI summary](#ai-summary) · [Entities and actions](#entities-and-actions) · [Troubleshooting](#troubleshooting) · [Limitations](#known-limitations) · [Development](#development)
+[What's in it](#whats-in-it) · [Install](#install) · [Set up](#set-up) · [Wind map](#the-wind-map) · [Outside the US](#outside-the-us) · [Calendar](#your-own-calendar) · [Notifications](#notifications) · [AI briefing and Assist](#ai-briefing-and-assist) · [Entities and actions](#entities-and-actions) · [Troubleshooting](#troubleshooting) · [Limitations](#known-limitations) · [Development](#development)
 
 ## What's in it
 
@@ -34,13 +34,14 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 - **A sidebar panel:** the week as a calendar, each day hour by hour, an animated wind map, and the settings.
 - **Your own calendar:** sailing windows go into it one at a time or automatically, and SailCast warns you when a planned sail's forecast gets worse.
 - **Automations:** entities, a calendar, an action, and two blueprints for phone notifications.
-- **12 languages**, and an optional AI summary of each day.
+- **AI, if you want it:** a briefing of your week from the AI provider you use in Home Assistant, and answers to sailing questions through Assist. The ratings always come from SailCast's own rules.
+- **12 languages.**
 
 The [safety limits](docs/safety-limits.md) list every number the ratings use, and the [plan](docs/PLAN.md) explains the choices behind them.
 
 ## Status
 
-Version 1.0 is in beta, for testing before the stable release. Please [report problems](https://github.com/kedube/ha-sailcast/issues), above all a rating that doesn't match the conditions you saw.
+Please [report problems](https://github.com/kedube/ha-sailcast/issues), above all a rating that doesn't match the conditions you saw.
 
 ## Install
 
@@ -49,8 +50,7 @@ SailCast needs Home Assistant 2026.11 or newer, and installs through the Marketp
 [![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=kedube&repository=ha-sailcast&category=integration)
 
 1. Select the button above to add SailCast to your Marketplace as a custom repository. Or go to **Settings → Marketplace** and add `https://github.com/kedube/ha-sailcast` yourself, as an **Integration**. SailCast isn't in the Marketplace's catalog yet, and adding a repository from outside it needs the Marketplace connected to GitHub.
-2. While SailCast is in beta, turn on its **Pre-release** switch in the Marketplace before you install, so you get the beta.
-3. Install SailCast. You can set it up right away, without a restart.
+2. Install SailCast. You can set it up right away, without a restart.
 
 New versions show up under **Settings → Updates**, with their release notes. After an update, restart Home Assistant when **Settings → Repairs** asks you to.
 
@@ -125,11 +125,29 @@ Two blueprints send SailCast's news to your phone through the Home Assistant app
 
 The messages are SailCast's own, in Home Assistant's language; the titles are yours to change. For automations of your own, the `sailcast_planned_sail_changed` event has `sailor`, `spot`, `boat`, `start`, `end`, `calendar`, `title`, `rating`, `score`, `automatic` and `message`. Each event in a sailor's SailCast calendar starts with a line for its window, such as "1 PM to 4:53 PM, score 80 (great). NW 5 to 6 kt, gusts to 15 kt."
 
-## AI summary
+## AI briefing and Assist
 
-SailCast can sum up a day in two or three sentences, written by the AI provider you've set up in Home Assistant, such as OpenAI, Google Gemini, Anthropic or Ollama. It's off until you turn it on under **Settings → Devices & services → SailCast → Configure**, where you can also pick which AI task writes it. Leave that empty to use Home Assistant's default, set under **Settings → System → AI**.
+SailCast can use the AI provider you've set up in Home Assistant, such as OpenAI, Google Gemini, Anthropic or Ollama, in two ways. Both are optional, and SailCast stores no AI keys. The safety ratings and sailing windows always come from SailCast's own rules: AI explains and compares them, and never sets or softens one.
 
-Then the day view has a **Summarize with AI** button. SailCast sends the day's forecast, ratings, windows, warnings and advice, and asks for a summary in your language that never contradicts or softens a rating. The ratings always come from SailCast's own rules and stay beside the summary; AI never sets one. Summaries are written only when you ask, and kept for the day until the ratings, windows or warnings they describe change. Each one sends that day's forecast to your AI provider, with the names of the spot, boat and sailor, and nothing else.
+### The briefing
+
+Turn it on under **Settings → Devices & services → SailCast → Configure**, where you can also pick which AI task writes it. Leave that empty to use Home Assistant's default, set under **Settings → System → AI**.
+
+The week view then opens with a briefing for the sailor you picked: a headline, a few sentences that compare the days, spots and boats, up to three picks, and when to check again. It says how the wind and waves change, names official warnings first, and says where the weather models disagree. Each pick is one of SailCast's own windows, shown with SailCast's times and score, and selecting it opens that day. The day view shows the briefing's note for the day.
+
+SailCast writes a briefing when you open the panel or pick another sailor, if the forecast has changed since the last one. It keeps it, through restarts, until the ratings, windows or warnings it describes change. An open panel never asks the AI by itself: it says when the forecast has changed, and **Update the briefing** writes a new one.
+
+Each briefing sends your AI provider the coming week at every spot in each of the sailor's boats, in your units, with the names of the sailor, boats and spots and the spots' notes, and nothing else. For three spots and two boats that's about 5,000 tokens, so with a paid provider each briefing costs a little.
+
+### Notes for the AI
+
+Each spot has **Notes for the AI**, in the panel's spot dialog and the spot's settings: up to 500 characters of local knowledge, such as when the sea breeze fills in or where it gets rough. The briefing and Assist use them to explain the conditions. They never change a rating.
+
+### Ask Assist
+
+SailCast also gives Assist tools to read its forecast, so you can ask "When's the best time to sail this weekend?" or "Is Saturday afternoon good for the keelboat at the harbor?". To turn them on, open your AI provider under **Settings → Devices & services**, change the settings of its conversation agent, and under **AI tools** select **SailCast**.
+
+Answers are for the person asking: the sailor linked to their Home Assistant user, or the one they picked in the panel. Ask about another sailor by name. The tools only read the forecast; they can't change settings or calendars. A question sends your AI provider what it needs to answer: the forecast for that sailor, and the names of the sailors, boats and spots.
 
 ## Languages
 
@@ -197,7 +215,7 @@ Ratings, scores and windows are worked out again whenever new data comes in, and
 
 ## Remove SailCast
 
-1. Go to **Settings → Devices & services → SailCast**, open its menu, and select **Delete**. That removes its entities, calendars and panel, and what it saved: panel preferences, planned sails, measured shorelines, tide predictions, warning regions and AI summaries.
+1. Go to **Settings → Devices & services → SailCast**, open its menu, and select **Delete**. That removes its entities, calendars and panel, and what it saved: panel preferences, planned sails, measured shorelines, tide predictions, warning regions and AI briefings.
 2. To remove its program files too, uninstall SailCast in **Settings → Marketplace**, then restart Home Assistant.
 
 Events SailCast added to your own calendars stay there, and automations made from its blueprints stop working. Delete them yourself if you don't want them.
@@ -214,7 +232,7 @@ You need [uv](https://docs.astral.sh/uv/) and Node 24 or newer.
 | `.venv/bin/pytest` | Runs the integration's tests. |
 | `npm run dev` in `frontend/` | Rebuilds the panel on save. |
 | `.venv/bin/python scripts/demo_data.py` | Writes the demo's data: the integration's own replies for the recorded San Diego week. |
-| `npm run demo` in `frontend/` | Serves the panel with that data. Add `?mode=night`, `?units=metric`, `?view=day`, `?admin=0`, `?empty`, `?lang=de` or `?ai`. |
+| `npm run demo` in `frontend/` | Serves the panel with that data. Add `?mode=night`, `?units=metric`, `?view=day`, `?admin=0`, `?empty`, `?lang=de` or `?ai`, and `?ai=slow`, `?ai=stale` or `?ai=fail` for the briefing while it's written, out of date or failed. |
 | `npm test` in `frontend/` | Runs the panel's tests. |
 | `.venv/bin/python scripts/record_fixtures.py` | Records the provider responses the tests run on. |
 | `.venv/bin/python scripts/safety_limits_doc.py` | Writes [docs/safety-limits.md](docs/safety-limits.md) from the limits table. A test fails if it's out of date. |
@@ -223,14 +241,15 @@ On macOS, the python.org build of Python ships without SSL certificates. If you 
 
 ### Releasing
 
-Releases are made by hand: on GitHub, open **Actions → Release → Run workflow**, pick **beta** or **stable**, and run it on `main`. Once CI passes, the workflow works out the version from the last release:
+Releases are made by hand: on GitHub, open **Actions → Release → Run workflow** and run it on `main`. Once CI passes, the workflow works out the version from the last release. Stable versions have two digits after the point:
 
-| Last release | beta | stable |
+| Last release | stable | beta |
 | --- | --- | --- |
-| 1.0.0b1 | 1.0.0b2 | 1.0.0 |
-| 1.0.0 | 1.1.0b1 | 1.0.1 |
+| 1.0.0b4 | 1.00 | 1.0.0b5 |
+| 1.00 | 1.01 | none |
+| 1.99 | 2.00 | none |
 
-It saves the version in `manifest.json` and commits it to `main`, unless `main` already has it. Then it builds the panel and publishes a GitHub release tagged with the bare version, such as `1.0.0b2`, with `sailcast.zip` for the Marketplace to install. Betas are pre-releases. The release notes list the commits since the last release, or for a stable release, since the last stable one. To see the next version first, run `.venv/bin/python scripts/bump_version.py beta`, or `stable`.
+Home Assistant won't load an integration whose version is like 1.01b1, so there are no betas after 1.00. The workflow saves the version in `manifest.json` and commits it to `main`, unless `main` already has it. Then it builds the panel and publishes a GitHub release tagged with the bare version, such as `1.00`, with `sailcast.zip` for the Marketplace to install. Betas are pre-releases. The release notes list the commits since the last stable release, or since the last release for a beta. Notes written in `.github/release-notes/<version>.md`, such as `1.00.md`, are used instead. To see the next version first, run `.venv/bin/python scripts/bump_version.py stable`, or `beta`.
 
 ### Privacy
 

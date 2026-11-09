@@ -285,15 +285,19 @@
     "hours_sub_lights": "所有时段（有航行灯）"
   },
   "ai": {
-    "button": "用 AI 总结",
-    "writing": "正在撰写摘要…",
-    "title": "AI 摘要",
+    "title": "AI 简报",
+    "day_title": "AI 当日提示",
+    "button": "撰写本周简报",
+    "writing": "正在撰写本周简报…",
     "written": "撰写于 {time}",
-    "note": "由 AI 根据此预报撰写，可能有误。评级来自 SailCast 自己的规则。",
-    "changed": "撰写此摘要后，预报已有变化。",
-    "again": "重新总结",
-    "failed": "无法生成 AI 摘要：{message}",
-    "bad_answer": "返回的内容不像摘要。请重试，或在 SailCast 的选项中另选一个 AI 任务。"
+    "written_day": "撰写于{day} {time}",
+    "note": "由 AI 根据 SailCast 的预报撰写，可能有误。评级和航行窗口来自 SailCast 自己的规则。",
+    "changed": "撰写之后，预报已有变化。",
+    "update": "更新简报",
+    "again": "重试",
+    "picks": "AI 选出的航行窗口",
+    "failed": "无法撰写 AI 简报：{message}",
+    "bad_answer": "返回的内容不像简报。请重试，或在 SailCast 的选项中另选一个 AI 任务。"
   },
   "map": {
     "label": "{spot} 周边的动态风场图",
@@ -548,7 +552,9 @@
     "shore_measuring": "正在测量图钉周围的开阔水面…",
     "on_land": "此图钉位于陆地上。请将其放在您航行的水面上，以便 SailCast 推算浪和风区。",
     "shore_open": "开阔水面向{direction}延伸 {distance}，该地点在{open}方向直面大海。",
-    "shore_closed": "开阔水面向{direction}延伸 {distance}。"
+    "shore_closed": "开阔水面向{direction}延伸 {distance}。",
+    "notes": "给 AI 的备注",
+    "notes_hint": "供 AI 参考的当地经验，用于简报以及您向 Assist 询问航行时，例如海风何时吹起、哪里浪大。它绝不会改变评级。"
   },
   "error": {
     "load": "SailCast 无法加载：{message}",
@@ -571,7 +577,8 @@
     "unknown_user": "该 Home Assistant 用户已不存在。",
     "boat_in_use": "{sailor} 只驾驶这条船。请先为其添加另一条船。",
     "fetch_out_of_range": "请将开阔水面设为 0.05 至 100 公里（约 0.03 至 60 英里）。",
-    "invalid_sensor": "请为每项读数选择一个传感器，或选择“无”。"
+    "invalid_sensor": "请为每项读数选择一个传感器，或选择“无”。",
+    "notes_too_long": "请使用不超过 500 个字符。"
   },
   "limits": {
     "wind": "风速",

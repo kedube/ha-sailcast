@@ -52,7 +52,7 @@ This is the plan SailCast is built from. The [milestones](#15-milestones) sectio
 | Units | Wind in knots. Everything else follows Home Assistant's unit system. |
 | Data | Free sources are the baseline and API keys are optional. Nearby buoys and weather stations are used when available. |
 | Confidence | Compare three forecast models and show how closely they agree. |
-| Advice | Written by rules. An optional AI summary uses the AI provider already set up in Home Assistant. |
+| Advice | Written by rules. The optional AI briefing, and SailCast's tools for Assist, use the AI provider already set up in Home Assistant. AI explains and compares; it never sets a rating or a window. |
 | Panel | A sidebar panel only, with no dashboard card for now. Its week view is a calendar, its Settings tab edits sailors, boats and spots, and it has day and night themes. Its layout borrows from Windy and PredictWind. |
 | Look | Follows the Home Assistant theme and its light and dark modes, like the rest of Home Assistant. Deep sea blue marks sailing windows, and safety ratings keep their green, amber, orange and red. |
 | Calendar | Each sailor's windows show in a read-only SailCast calendar in Home Assistant. You can also add or remove single windows in a calendar of your own, such as Google Calendar, or have SailCast add each day's best window automatically on the days you pick. SailCast warns you if a planned sail's forecast gets worse. |
@@ -143,7 +143,9 @@ ha-sailcast/
 │   ├── alerts.py              # where a spot's official warnings come from
 │   ├── regions.py             # MeteoAlarm's warning regions, downloaded when needed
 │   ├── services.py            # the get_forecast action
-│   ├── ai.py                  # optional AI summary through AI Task
+│   ├── ai.py                  # what the AI reads: the week, by day, spot and boat
+│   ├── briefing.py            # optional AI briefing through AI Task
+│   ├── assist.py              # tools for Assist (an LLM API)
 │   ├── wording.py             # SailCast's own sentences: calendar events and notifications
 │   ├── sensor.py, binary_sensor.py, calendar.py
 │   ├── websocket_api.py       # panel commands, settings, planned sails and subscriptions
@@ -172,7 +174,7 @@ Everything is set up in the Home Assistant UI under **Settings → Devices & ser
 | **Boat** | A name, a size class and a length. Whether it has navigation lights, which lets its hours after dark count. Custom limits can come later, stricter only. |
 | **Sailor** | A name. Skill, which the sailor chooses: Beginner, Intermediate or Advanced. The boats they sail, the first being their default. When they can sail (days and hours, daylight only by default, or any hour in a boat with navigation lights). Comfort preferences: ideal wind range, lowest air temperature and rain tolerance. Automatic calendar adding: off, or on with a calendar, days, lowest score, how far ahead and spots. Optionally, a linked Home Assistant user. |
 
-The main entry's options hold the API keys for optional providers, the AI summary setting, and refresh preferences. Setup ends with a short safety note: SailCast is advisory, official forecasts and warnings come first, and the skipper decides.
+The main entry's options hold the API keys for optional providers, the AI briefing setting, and refresh preferences. Setup ends with a short safety note: SailCast is advisory, official forecasts and warnings come first, and the skipper decides.
 
 ### Editing in the panel
 
@@ -514,13 +516,19 @@ The best window of the day has the highest average score. Without navigation lig
 - "Water 55 °F."
 - "High tide 9:33 AM (9.8 ft). Sunset 4:28 PM."
 
-**The AI option** is off by default. It's turned on in SailCast's options, which can also name the AI task to use; otherwise Home Assistant's default for data generation is used. When it's on, the day view shows a "Summarize with AI" button that calls Home Assistant's AI Task, using whichever AI provider the user has set up, so SailCast stores no AI keys. Specifically:
+**The AI option** is off by default. It's turned on in SailCast's options, which can also name the AI task to use; otherwise Home Assistant's default for data generation is used. When it's on, the week view opens with an AI briefing, written through Home Assistant's AI Task by whichever AI provider the user has set up, so SailCast stores no AI keys. Specifically:
 
-- SailCast calls `ai_task.async_generate_data` with the day's structured conditions, the ratings, windows and warnings, and the rule-based advice, in the reader's units and local times. It asks for two or three sentences of plain text in the reader's language, and checks the answer itself, because core doesn't: it must be text, and short enough to be two or three sentences. Markdown is taken out.
-- The instructions say the summary must never contradict or soften a rating, must name official warnings first, and must not recommend clothing, wetsuits, drysuits or other gear, or give navigation advice. The panel always shows the rule-based ratings next to the AI text and says it was written by AI.
+- SailCast calls `ai_task.async_generate_data` with the selected sailor's coming week at every spot in each of their boats: each spot's conditions and official warnings by day, and each boat's score, ratings hour by hour as spans with their reasons, and its windows; tides and the rule-based advice for the first three days; the spots' notes; all in the reader's units and local times. It asks for an answer in a fixed structure (`structure`): a headline, a two-to-four-sentence summary that compares the days, spots and boats, up to three picks, a note for each day, and when to check again.
+- SailCast checks the answer itself, because core doesn't. Each pick must name one of the windows it sent, by an ID, so the AI can't make up a window or change its times: the panel shows a pick's times and score from SailCast's own data, and selecting it opens that day. Notes must be for days it sent. Text must fit, and Markdown is taken out.
+- The instructions say the text must never contradict or soften a rating, never suggest sailing in an hour that isn't rated good, must name official warnings first, and must not recommend clothing, wetsuits, drysuits or other gear, or give navigation advice. The panel always shows the rule-based ratings and says the text was written by AI.
 - AI is never used to set a safety rating. Home Assistant 2026.11 added `ai_task.async_evaluate` for yes/no and score questions, and it's deliberately not used for ratings.
-- Summaries are written only when someone asks, as that user, so Home Assistant 2026.11's permission check for the AI task applies. Each is kept for the day, per spot, sailor, boat and language, while the ratings, windows and warnings of the hours still to come stay the same; after that the panel says the forecast has changed and offers a new one. Automatic background use would have to respect the 2026.11 opt-in (`async_is_automatic_evaluation_enabled`), which is off by default.
-- The manifest declares `after_dependencies: ["ai_task"]`, and SailCast checks that AI Task is loaded before offering the button. The options dialog refuses to turn it on until there's an AI task to use.
+- Briefings are written only when someone opens the panel, picks another sailor or asks, as that user, so Home Assistant 2026.11's permission check for the AI task applies. Each is kept on disk, per sailor and language, while the ratings, windows and warnings of the hours still to come stay the same; an open panel only reads it, says when the forecast has changed, and offers a new one. Automatic background use would have to respect the 2026.11 opt-in (`async_is_automatic_evaluation_enabled`), which is off by default.
+- Each spot has notes for the AI (up to 500 characters of local knowledge, such as when the sea breeze fills in). The briefing and Assist use them to explain conditions; they never change a rating.
+- The manifest declares `after_dependencies: ["ai_task"]`, and SailCast checks that AI Task is loaded before offering the briefing. The options dialog refuses to turn it on until there's an AI task to use.
+
+**Assist.** SailCast registers an LLM API named "SailCast" with two read-only tools: `sailcast_week` (the week, by day, spot and boat) and `sailcast_day` (one day at one spot, hour by hour). Selecting it under a conversation agent's **AI tools** lets the agent answer sailing questions from SailCast's ratings; its prompt carries the same rules as the briefing. Answers are for the sailor linked to the person asking, or the one they picked in the panel, and a question can name another. It's registered when SailCast loads, so a reload doesn't take it away from an agent.
+
+The briefing replaced the day summary of the 1.0 betas, which wrote two or three sentences about one day when someone asked.
 
 ## 10. Entities, calendar and actions
 
@@ -593,7 +601,7 @@ The panel is a single JavaScript module that ships inside the integration and is
 | Look | Home Assistant theme variables (`--primary-background-color`, `--card-background-color`, `--primary-text-color` and so on), so it follows the user's theme and dark mode, and Roboto and Material Design Icons like the rest of Home Assistant. SailCast's own day and night palettes fill in anything a theme doesn't set. Deep sea blue marks sailing windows; green, amber, orange and red only ever mean safety ratings. |
 | Day and night | A switch in the toolbar. Auto, the default, follows Home Assistant's light or dark mode. Day and Night override it for SailCast only, like a chart plotter's day and night palettes. The choice is saved per user, and Home Assistant's own sidebar keeps its theme. |
 | Charts | Small hand-written SVG charts, as in the mockup, rather than a large charting library. |
-| Data | WebSocket commands: `sailcast/config` (settings, limits and the calendars that accept events), `sailcast/forecast` (week and hours for a spot, sailor and boat), `sailcast/subscribe` (says when results, planned sails or settings change), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/save`, `delete` and `sources` (for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list` and `skipped`, `sailcast/hours` (one date's hours, for administrators and the sailor's linked user), and `sailcast/ai_summary`. |
+| Data | WebSocket commands: `sailcast/config` (settings, limits and the calendars that accept events), `sailcast/forecast` (week and hours for a spot, sailor and boat), `sailcast/subscribe` (says when results, planned sails or settings change), `sailcast/wind_grid`, `sailcast/preferences/get` and `set`, `sailcast/settings/save`, `delete` and `sources` (for administrators only), `sailcast/calendar/add` and `remove`, `sailcast/planned/list` and `skipped`, `sailcast/hours` (one date's hours, for administrators and the sailor's linked user), and `sailcast/briefing`. |
 | Per-user settings | The spot, sailor, boat, last view, day or night choice and calendar are stored server-side, keyed by Home Assistant user, in SailCast's own store. They follow you across devices. A user with no choice yet starts on the sailor linked to them. |
 | Phones | The week calendar becomes one row per day, with the day's timeline running across; in a boat with navigation lights it scrolls sideways through the whole day. Wide tables scroll inside their own card. The map fits the screen. |
 | Accessibility | Keyboard navigation and labeled controls. The particle animation turns into static arrows when the device asks for reduced motion. |
@@ -687,7 +695,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - a day you take out isn't added again, including when you delete the event in your calendar app
   - an event moves or goes when its window does, but not from 6 PM the evening before
   - calendars that can't update or delete events get warnings only
-- **AI summary:** a stand-in AI task: it's offered only when turned on and AI Task is set up, the instructions ask for the reader's language and forbid gear advice, a summary is kept and goes stale when its ratings change, and answers that aren't a summary or a failing provider give an error.
+- **AI briefing and Assist:** a stand-in AI task: the briefing is offered only when turned on and AI Task is set up, the AI gets the whole week and the spots' notes, picks are checked against SailCast's windows, a briefing is kept and goes stale when its ratings change, and answers that aren't a briefing or a failing provider give an error. Assist's tools answer for the person asking, match names whatever their case, and say what's wrong with a question they can't answer.
 - **Blueprints:** both run as automations in the tests, with the phone's notification caught.
 - **Languages:** every language has English's keys and placeholders, and SailCast's own sentences come out translated, with every value filled in.
 - **Frontend:** unit tests (Vitest) for formatting, time handling and the advice and reasons as sentences, a contrast check on the day and night palettes, a check that every string the panel uses exists, and a demo page that renders the panel from the integration's own replies for the recorded week.
@@ -743,8 +751,8 @@ Each milestone ends with something you can install and try.
 | 3 | Wind map | Grid fetch with the budget guard, seamarks, color field, particles and time slider, on the base map from milestone 2. | It animates smoothly on a phone, and the budget stays under the limit with three spots. |
 | 4 | Local accuracy | Buoys, airport reports and your own sensors, with nowcast blending. Exposure and fetch, with fetch worked out from shoreline data. Repairs (pin on land, failed sources). | "Now" readings show at all three test spots, and the river spot's waves come from the sheltered-water estimate. |
 | 5 | Worldwide | Tide providers that need a key, free regional sources, and warning services outside the US. Built: WorldTides; CHS, Rijkswaterstaat and Kartverket tides; the ocean model's rough tide; NWS alerts for lakes; ECCC and MeteoAlarm warnings. | A spot in the UK, the Netherlands and a lake each produce a complete week. |
-| 6 | Languages, AI and notifications | The 11 translations, the AI summary option, and the two notification blueprints. Built: the translations with a glossary, calendar events and notifications in Home Assistant's language, MeteoAlarm's warning names in the reader's, the AI summary through AI Task, and both blueprints. | All 12 languages pass the completeness check. The AI summary appears only when it's turned on. |
-| 7 | Release | Docs, beta through a custom repository, then the default catalog pull request. Version 1.0. Built so far: the settings reference, installing from the Marketplace, troubleshooting, known limitations and removal in the docs, issue forms, and version 1.0.0b1, published as a pre-release on November 3. Running it on the 2026.11 beta led to fixes for 1.0.0b2: a change saved while SailCast reloads was lost, AI summaries didn't survive a restart, and deleting SailCast left its saved data behind. | Marketplace validation passes, and the catalog pull request is open. |
+| 6 | Languages, AI and notifications | The 11 translations, the AI option, and the two notification blueprints. Built: the translations with a glossary, calendar events and notifications in Home Assistant's language, MeteoAlarm's warning names in the reader's, a day summary through AI Task (replaced before 1.00 by the AI briefing, the spots' notes and the tools for Assist), and both blueprints. | All 12 languages pass the completeness check. The AI briefing appears only when it's turned on. |
+| 7 | Release | Docs, beta through a custom repository, then the default catalog pull request. Version 1.00: stable versions then run 1.01 … 1.99, 2.00, with no betas after 1.00, since Home Assistant can't load a version like 1.01b1. Built so far: the settings reference, installing from the Marketplace, troubleshooting, known limitations and removal in the docs, issue forms, and version 1.0.0b1, published as a pre-release on November 3. Running it on the 2026.11 beta led to fixes for 1.0.0b2: a change saved while SailCast reloads was lost, AI summaries didn't survive a restart, and deleting SailCast left its saved data behind. | Marketplace validation passes, and the catalog pull request is open. |
 
 ## 16. Risks
 

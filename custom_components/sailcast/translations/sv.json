@@ -21,14 +21,16 @@
             "water_type": "Vattentyp",
             "offshore": "Frånlandsvind",
             "exposed": "Öppen för vågor från",
-            "fetch": "Öppet vatten i lovart"
+            "fetch": "Öppet vatten i lovart",
+            "notes": "Anteckningar för AI:n"
           },
           "data_description": {
             "name": "Till exempel Hamnen eller Sjön.",
             "location": "Placera markeringen på vattnet där du seglar. Cirkeln anger området som vindkartan visar.",
             "offshore": "Vind från de här riktningarna blåser ut från land.",
             "exposed": "Riktningar med öppet vatten, där vågor kan byggas upp.",
-            "fetch": "Bara för älvar och sjöar. SailCast mäter det öppna vattnet åt varje håll utifrån kartan; ange det här bara för att ersätta mätningen med ett enda avstånd."
+            "fetch": "Bara för älvar och sjöar. SailCast mäter det öppna vattnet åt varje håll utifrån kartan; ange det här bara för att ersätta mätningen med ett enda avstånd.",
+            "notes": "Lokalkännedom för AI:n, som används i genomgången och när du frågar Assist om segling, till exempel när sjöbrisen kommer in eller var det blir krabb sjö. Den ändrar aldrig en bedömning."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Vattentyp",
             "offshore": "Frånlandsvind",
             "exposed": "Öppen för vågor från",
-            "fetch": "Öppet vatten i lovart"
+            "fetch": "Öppet vatten i lovart",
+            "notes": "Anteckningar för AI:n"
           },
           "data_description": {
             "name": "Till exempel Hamnen eller Sjön.",
             "location": "Placera markeringen på vattnet där du seglar. Cirkeln anger området som vindkartan visar.",
             "offshore": "Vind från de här riktningarna blåser ut från land.",
             "exposed": "Riktningar med öppet vatten, där vågor kan byggas upp.",
-            "fetch": "Bara för älvar och sjöar. SailCast mäter det öppna vattnet åt varje håll utifrån kartan; ange det här bara för att ersätta mätningen med ett enda avstånd."
+            "fetch": "Bara för älvar och sjöar. SailCast mäter det öppna vattnet åt varje håll utifrån kartan; ange det här bara för att ersätta mätningen med ett enda avstånd.",
+            "notes": "Lokalkännedom för AI:n, som används i genomgången och när du frågar Assist om segling, till exempel när sjöbrisen kommer in eller var det blir krabb sjö. Den ändrar aldrig en bedömning."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Cirkelns radie måste vara mellan 2 och 50 km (cirka 1–30 engelska mil).",
         "suggestions_unavailable": "Det gick inte att hämta källor i närheten. Du kan spara utan dem och lägga till dem senare genom att redigera platsen.",
         "fetch_out_of_range": "Det öppna vattnet måste vara mellan 0,05 och 100 km (cirka 0,03–60 engelska mil).",
-        "invalid_sensor": "Välj en sensor för varje mätvärde, eller lämna fältet tomt."
+        "invalid_sensor": "Välj en sensor för varje mätvärde, eller lämna fältet tomt.",
+        "notes_too_long": "Använd högst 500 tecken."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "AI-sammanfattning",
-            "description": "Lägger till knappen ”Sammanfatta med AI” i panelens dagvy. Den ber den AI-leverantör du har konfigurerat i Home Assistant om två eller tre meningar om dagen. Säkerhetsbedömningarna kommer alltid från SailCasts egna regler, aldrig från AI.",
+            "name": "AI-genomgång",
+            "description": "Lägger till en genomgång i panelen, skriven av den AI-leverantör du har konfigurerat i Home Assistant: veckans bästa tider att segla på alla dina platser och båtar, och en anteckning för varje dag. Säkerhetsbedömningarna kommer alltid från SailCasts egna regler, aldrig från AI.",
             "data": {
-              "ai_summary": "Erbjud AI-sammanfattningar",
+              "ai_summary": "Skriv AI-genomgångar",
               "ai_task": "AI-uppgift"
             },
             "data_description": {

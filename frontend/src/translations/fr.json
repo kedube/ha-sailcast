@@ -285,15 +285,19 @@
     "hours_sub_lights": "Toutes les heures, avec feux de navigation"
   },
   "ai": {
-    "button": "Résumer avec l'IA",
-    "writing": "Rédaction du résumé…",
-    "title": "Résumé par IA",
+    "title": "Briefing par IA",
+    "day_title": "Note de l'IA pour la journée",
+    "button": "Rédiger le briefing de la semaine",
+    "writing": "Rédaction du briefing de la semaine…",
     "written": "Rédigé à {time}",
-    "note": "Rédigé par une IA à partir de cette prévision : il peut donc contenir des erreurs. Les niveaux de sécurité viennent des règles propres à SailCast.",
-    "changed": "La prévision a changé depuis la rédaction de ce résumé.",
-    "again": "Résumer à nouveau",
-    "failed": "Le résumé par IA n'a pas pu être rédigé : {message}",
-    "bad_answer": "La réponse ne ressemblait pas à un résumé. Réessayez, ou choisissez une autre tâche d'IA dans les options de SailCast."
+    "written_day": "Rédigé {day} à {time}",
+    "note": "Rédigé par une IA à partir de la prévision de SailCast : il peut donc contenir des erreurs. Les niveaux de sécurité et les créneaux viennent des règles propres à SailCast.",
+    "changed": "La prévision a changé depuis la rédaction de ce texte.",
+    "update": "Mettre à jour le briefing",
+    "again": "Réessayer",
+    "picks": "Créneaux choisis par l'IA",
+    "failed": "Le briefing par IA n'a pas pu être rédigé : {message}",
+    "bad_answer": "La réponse ne ressemblait pas à un briefing. Réessayez, ou choisissez une autre tâche d'IA dans les options de SailCast."
   },
   "map": {
     "label": "Carte animée du vent autour de {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Mesure de l'eau libre autour du repère…",
     "on_land": "Ce repère est sur la terre ferme. Placez-le sur l'eau, là où vous naviguez, pour que SailCast puisse calculer les vagues et le fetch.",
     "shore_open": "L'eau libre s'étend sur {distance} dans le secteur {direction}, et le plan d'eau est ouvert à la mer côté {open}.",
-    "shore_closed": "L'eau libre s'étend sur {distance} dans le secteur {direction}."
+    "shore_closed": "L'eau libre s'étend sur {distance} dans le secteur {direction}.",
+    "notes": "Notes pour l'IA",
+    "notes_hint": "Connaissances locales pour l'IA, utilisées dans le briefing et quand vous interrogez Assist sur la navigation : par exemple quand la brise de mer s'établit, ou où la mer devient agitée. Elles ne changent jamais un niveau de sécurité."
   },
   "error": {
     "load": "SailCast n'a pas pu se charger : {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Cet utilisateur Home Assistant n'existe plus.",
     "boat_in_use": "{sailor} n'a que ce bateau. Attribuez-lui d'abord un autre bateau.",
     "fetch_out_of_range": "Indiquez un fetch entre 0,05 et 100 km (environ 0,03 à 60 miles).",
-    "invalid_sensor": "Choisissez un capteur pour chaque mesure, ou aucun."
+    "invalid_sensor": "Choisissez un capteur pour chaque mesure, ou aucun.",
+    "notes_too_long": "Utilisez 500 caractères au maximum."
   },
   "limits": {
     "wind": "Vent",

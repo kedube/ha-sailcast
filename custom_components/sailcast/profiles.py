@@ -41,6 +41,7 @@ from .const import (
     CONF_LIGHTS,
     CONF_MARINE_ZONE,
     CONF_MIN_SCORE,
+    CONF_NOTES,
     CONF_OFFSHORE,
     CONF_RAIN,
     CONF_SENSORS,
@@ -67,6 +68,9 @@ MAX_RADIUS = 50_000
 
 # The open water upwind that can be set by hand, in km.
 FETCH_RANGE: Final = (0.05, 100.0)
+
+# A spot's notes: local knowledge for the AI, such as when the sea breeze fills.
+MAX_NOTES_LENGTH: Final = 500
 
 # The readings a spot can take from your own sensors.
 SENSOR_FIELDS: Final = (
@@ -134,7 +138,8 @@ class Spot:
     sources' names are kept when they're chosen, by source, and so are the
     buoy's and airport's positions, for the forecast there. `sensors` maps
     readings such as "wind" to your own sensors. `fetch`, the open water
-    upwind in km, is set by hand only to override the shoreline.
+    upwind in km, is set by hand only to override the shoreline. `notes` are
+    the sailors' local knowledge, which only the AI reads.
     """
 
     id: str
@@ -156,6 +161,7 @@ class Spot:
     source_points: Mapping[str, tuple[float, float]] = field(
         default_factory=dict, hash=False
     )
+    notes: str = ""
 
     @property
     def open_water(self) -> bool:
@@ -187,6 +193,7 @@ class Spot:
                 key: (float(point[0]), float(point[1]))
                 for key, point in (data.get(CONF_SOURCE_POINTS) or {}).items()
             },
+            notes=data.get(CONF_NOTES) or "",
         )
 
 
@@ -429,6 +436,8 @@ def check_spot(data: Mapping[str, Any]) -> dict[str, str]:
     fetch = data.get(CONF_FETCH)
     if fetch is not None and not FETCH_RANGE[0] <= fetch <= FETCH_RANGE[1]:
         errors[CONF_FETCH] = "fetch_out_of_range"
+    if len(data.get(CONF_NOTES) or "") > MAX_NOTES_LENGTH:
+        errors[CONF_NOTES] = "notes_too_long"
     sensors = data.get(CONF_SENSORS) or {}
     if any(
         key not in SENSOR_FIELDS or not str(entity_id).startswith("sensor.")

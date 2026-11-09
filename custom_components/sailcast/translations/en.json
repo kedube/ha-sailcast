@@ -21,14 +21,16 @@
             "water_type": "Water",
             "offshore": "Offshore wind",
             "exposed": "Open to waves from",
-            "fetch": "Open water upwind"
+            "fetch": "Open water upwind",
+            "notes": "Notes for the AI"
           },
           "data_description": {
             "name": "For example, Harbor or Lake.",
             "location": "Drop the pin on the water where you sail. The circle sets the area the wind map shows.",
             "offshore": "Wind from these directions blows away from the shore.",
             "exposed": "Directions with open water, where waves can build.",
-            "fetch": "Only for rivers and lakes. SailCast measures the open water each way from the map; set this only to override it with one distance."
+            "fetch": "Only for rivers and lakes. SailCast measures the open water each way from the map; set this only to override it with one distance.",
+            "notes": "Local knowledge for the AI, used in the briefing and when you ask Assist about sailing, such as when the sea breeze fills in or where it gets rough. It never changes a rating."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Water",
             "offshore": "Offshore wind",
             "exposed": "Open to waves from",
-            "fetch": "Open water upwind"
+            "fetch": "Open water upwind",
+            "notes": "Notes for the AI"
           },
           "data_description": {
             "name": "For example, Harbor or Lake.",
             "location": "Drop the pin on the water where you sail. The circle sets the area the wind map shows.",
             "offshore": "Wind from these directions blows away from the shore.",
             "exposed": "Directions with open water, where waves can build.",
-            "fetch": "Only for rivers and lakes. SailCast measures the open water each way from the map; set this only to override it with one distance."
+            "fetch": "Only for rivers and lakes. SailCast measures the open water each way from the map; set this only to override it with one distance.",
+            "notes": "Local knowledge for the AI, used in the briefing and when you ask Assist about sailing, such as when the sea breeze fills in or where it gets rough. It never changes a rating."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Make the circle's radius between 2 and 50 km (about 1 to 30 miles).",
         "suggestions_unavailable": "Couldn't look up nearby sources. You can save without them and add them later by editing the spot.",
         "fetch_out_of_range": "Make the open water between 0.05 and 100 km (about 0.03 to 60 miles).",
-        "invalid_sensor": "Pick a sensor for each reading, or leave it empty."
+        "invalid_sensor": "Pick a sensor for each reading, or leave it empty.",
+        "notes_too_long": "Use 500 characters or fewer."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "AI summary",
-            "description": "Adds a Summarize with AI button to the panel's day view. It asks the AI provider you've set up in Home Assistant for two or three sentences about the day. Safety ratings always come from SailCast's own rules, never from AI.",
+            "name": "AI briefing",
+            "description": "Adds a briefing to the panel, written by the AI provider you've set up in Home Assistant: the best times to sail this week across your spots and boats, and a note for each day. Safety ratings always come from SailCast's own rules, never from AI.",
             "data": {
-              "ai_summary": "Offer AI summaries",
+              "ai_summary": "Write AI briefings",
               "ai_task": "AI task"
             },
             "data_description": {

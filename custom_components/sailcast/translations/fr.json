@@ -21,14 +21,16 @@
             "water_type": "Type de plan d'eau",
             "offshore": "Vent de terre",
             "exposed": "Exposé aux vagues de secteur",
-            "fetch": "Fetch (plan d'eau libre au vent)"
+            "fetch": "Fetch (plan d'eau libre au vent)",
+            "notes": "Notes pour l'IA"
           },
           "data_description": {
             "name": "Par exemple, Port ou Lac.",
             "location": "Placez le repère sur l'eau, là où vous naviguez. Le cercle définit la zone affichée par la carte du vent.",
             "offshore": "Le vent venant de ces directions souffle de la terre vers le large.",
             "exposed": "Directions où l'eau est libre et où les vagues peuvent se former.",
-            "fetch": "Uniquement pour les rivières et les lacs. SailCast mesure le fetch dans chaque direction à partir de la carte ; renseignez ce champ uniquement pour le remplacer par une seule distance."
+            "fetch": "Uniquement pour les rivières et les lacs. SailCast mesure le fetch dans chaque direction à partir de la carte ; renseignez ce champ uniquement pour le remplacer par une seule distance.",
+            "notes": "Connaissances locales pour l'IA, utilisées dans le briefing et quand vous interrogez Assist sur la navigation : par exemple quand la brise de mer s'établit, ou où la mer devient agitée. Elles ne changent jamais un niveau de sécurité."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Type de plan d'eau",
             "offshore": "Vent de terre",
             "exposed": "Exposé aux vagues de secteur",
-            "fetch": "Fetch (plan d'eau libre au vent)"
+            "fetch": "Fetch (plan d'eau libre au vent)",
+            "notes": "Notes pour l'IA"
           },
           "data_description": {
             "name": "Par exemple, Port ou Lac.",
             "location": "Placez le repère sur l'eau, là où vous naviguez. Le cercle définit la zone affichée par la carte du vent.",
             "offshore": "Le vent venant de ces directions souffle de la terre vers le large.",
             "exposed": "Directions où l'eau est libre et où les vagues peuvent se former.",
-            "fetch": "Uniquement pour les rivières et les lacs. SailCast mesure le fetch dans chaque direction à partir de la carte ; renseignez ce champ uniquement pour le remplacer par une seule distance."
+            "fetch": "Uniquement pour les rivières et les lacs. SailCast mesure le fetch dans chaque direction à partir de la carte ; renseignez ce champ uniquement pour le remplacer par une seule distance.",
+            "notes": "Connaissances locales pour l'IA, utilisées dans le briefing et quand vous interrogez Assist sur la navigation : par exemple quand la brise de mer s'établit, ou où la mer devient agitée. Elles ne changent jamais un niveau de sécurité."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Le rayon du cercle doit être compris entre 2 et 50 km (environ 1 à 30 miles).",
         "suggestions_unavailable": "Impossible de rechercher les sources proches. Vous pouvez enregistrer sans elles et les ajouter plus tard en modifiant le plan d'eau.",
         "fetch_out_of_range": "Le fetch doit être compris entre 0,05 et 100 km (environ 0,03 à 60 miles).",
-        "invalid_sensor": "Choisissez un capteur pour chaque mesure, ou laissez le champ vide."
+        "invalid_sensor": "Choisissez un capteur pour chaque mesure, ou laissez le champ vide.",
+        "notes_too_long": "Utilisez 500 caractères au maximum."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "Résumé par IA",
-            "description": "Ajoute un bouton « Résumer avec l'IA » à la vue Jour du panneau. Il demande au fournisseur d'IA que vous avez configuré dans Home Assistant deux ou trois phrases sur la journée. Les niveaux de sécurité viennent toujours des règles propres à SailCast, jamais de l'IA.",
+            "name": "Briefing par IA",
+            "description": "Ajoute au panneau un briefing rédigé par le fournisseur d'IA que vous avez configuré dans Home Assistant : les meilleurs moments pour naviguer cette semaine sur tous vos plans d'eau et bateaux, et une note pour chaque jour. Les niveaux de sécurité viennent toujours des règles propres à SailCast, jamais de l'IA.",
             "data": {
-              "ai_summary": "Proposer des résumés par IA",
+              "ai_summary": "Rédiger des briefings par IA",
               "ai_task": "Tâche d'IA"
             },
             "data_description": {

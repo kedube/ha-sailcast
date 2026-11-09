@@ -285,15 +285,19 @@
     "hours_sub_lights": "Wszystkie godziny, ze światłami nawigacyjnymi"
   },
   "ai": {
-    "button": "Podsumuj za pomocą AI",
-    "writing": "Tworzenie podsumowania…",
-    "title": "Podsumowanie AI",
+    "title": "Odprawa AI",
+    "day_title": "Notatka AI na ten dzień",
+    "button": "Napisz odprawę na ten tydzień",
+    "writing": "Pisanie odprawy na ten tydzień…",
     "written": "Napisano o {time}",
-    "note": "Napisane przez AI na podstawie tej prognozy, więc może zawierać błędy. Oceny pochodzą z własnych reguł SailCast.",
-    "changed": "Prognoza zmieniła się od czasu napisania tego podsumowania.",
-    "again": "Podsumuj ponownie",
-    "failed": "Nie udało się utworzyć podsumowania AI: {message}",
-    "bad_answer": "Odpowiedź nie wyglądała na podsumowanie. Spróbuj ponownie albo wybierz inne zadanie AI w opcjach SailCast."
+    "written_day": "Napisano: {day}, {time}",
+    "note": "Napisane przez AI na podstawie prognozy SailCast, więc może zawierać błędy. Oceny i okna pochodzą z własnych reguł SailCast.",
+    "changed": "Prognoza zmieniła się od czasu napisania tego tekstu.",
+    "update": "Zaktualizuj odprawę",
+    "again": "Spróbuj ponownie",
+    "picks": "Okna wybrane przez AI",
+    "failed": "Nie udało się napisać odprawy AI: {message}",
+    "bad_answer": "Odpowiedź nie wyglądała na odprawę. Spróbuj ponownie albo wybierz inne zadanie AI w opcjach SailCast."
   },
   "map": {
     "label": "Animowana mapa wiatru wokół akwenu {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Mierzenie otwartej wody wokół pinezki…",
     "on_land": "Ta pinezka jest na lądzie. Umieść ją na wodzie tam, gdzie żeglujesz, żeby SailCast mógł obliczyć fale i rozbieg fali.",
     "shore_open": "Otwarta woda sięga {distance} w kierunku {direction}, a akwen jest otwarty na morze od strony {open}.",
-    "shore_closed": "Otwarta woda sięga {distance} w kierunku {direction}."
+    "shore_closed": "Otwarta woda sięga {distance} w kierunku {direction}.",
+    "notes": "Notatki dla AI",
+    "notes_hint": "Lokalna wiedza dla AI, wykorzystywana w odprawie i gdy pytasz Assist o żeglowanie, na przykład kiedy zaczyna wiać bryza morska albo gdzie robi się krótka, stroma fala. Nigdy nie zmienia oceny."
   },
   "error": {
     "load": "Nie udało się załadować SailCast: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Ten użytkownik Home Assistant już nie istnieje.",
     "boat_in_use": "{sailor} żegluje tylko na tej łodzi. Najpierw przypisz tej osobie inną łódź.",
     "fetch_out_of_range": "Otwarta woda musi wynosić od 0,05 do 100 km (ok. 0,03–60 mil lądowych).",
-    "invalid_sensor": "Wybierz czujnik dla każdego pomiaru albo żaden."
+    "invalid_sensor": "Wybierz czujnik dla każdego pomiaru albo żaden.",
+    "notes_too_long": "Użyj najwyżej 500 znaków."
   },
   "limits": {
     "wind": "Wiatr",

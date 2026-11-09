@@ -1,8 +1,8 @@
 /** The panel's WebSocket commands, typed. */
 import type {
-  AiSummary,
   AutoCalendar,
   Bounds,
+  Briefing,
   Connection,
   DayHours,
   Forecast,
@@ -31,28 +31,17 @@ export class Api {
     return this.send("config");
   }
 
-  /** A sailor's week, with any AI summaries already written in `language`. */
-  forecast(
-    spot: string,
-    sailor: string,
-    boat: string | undefined,
-    language: string,
-  ): Promise<Forecast> {
-    return this.send(
-      "forecast",
-      boat ? { spot, sailor, boat, language } : { spot, sailor, language },
-    );
+  /** A sailor's week at a spot in one of their boats. */
+  forecast(spot: string, sailor: string, boat: string | undefined): Promise<Forecast> {
+    return this.send("forecast", boat ? { spot, sailor, boat } : { spot, sailor });
   }
 
-  /** Ask the AI for a summary of a day, or get the one already written. */
-  aiSummary(request: {
-    spot: string;
-    sailor: string;
-    boat?: string;
-    date: string;
-    language: string;
-  }): Promise<AiSummary> {
-    return this.send("ai_summary", request);
+  /**
+   * A sailor's AI briefing in `language`, or null if none was written. With
+   * `write`, the AI writes one if the kept one isn't current.
+   */
+  briefing(sailor: string, language: string, write: boolean): Promise<Briefing | null> {
+    return this.send("briefing", { sailor, language, write });
   }
 
   /** Call back whenever results, planned sails or settings change. */

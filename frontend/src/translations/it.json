@@ -285,15 +285,19 @@
     "hours_sub_lights": "Tutte le ore, con luci di navigazione"
   },
   "ai": {
-    "button": "Riassumi con l'IA",
-    "writing": "Scrittura del riepilogo…",
-    "title": "Riepilogo IA",
+    "title": "Briefing IA",
+    "day_title": "Nota IA per la giornata",
+    "button": "Scrivi il briefing della settimana",
+    "writing": "Scrittura del briefing della settimana…",
     "written": "Scritto alle {time}",
-    "note": "Scritto dall'IA a partire da questa previsione, quindi può contenere errori. Le valutazioni vengono dalle regole di SailCast.",
-    "changed": "La previsione è cambiata da quando è stato scritto questo riepilogo.",
-    "again": "Riassumi di nuovo",
-    "failed": "Impossibile scrivere il riepilogo IA: {message}",
-    "bad_answer": "La risposta non sembrava un riepilogo. Riprova, o scegli un'altra attività IA nelle opzioni di SailCast."
+    "written_day": "Scritto {day} alle {time}",
+    "note": "Scritto dall'IA a partire dalla previsione di SailCast, quindi può contenere errori. Le valutazioni e le finestre vengono dalle regole di SailCast.",
+    "changed": "La previsione è cambiata da quando è stato scritto.",
+    "update": "Aggiorna il briefing",
+    "again": "Riprova",
+    "picks": "Finestre scelte dall'IA",
+    "failed": "Non è stato possibile scrivere il briefing IA: {message}",
+    "bad_answer": "La risposta non sembrava un briefing. Riprova, o scegli un'altra attività IA nelle opzioni di SailCast."
   },
   "map": {
     "label": "Mappa animata del vento intorno a {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Misurazione dello specchio d'acqua libero intorno al segnaposto…",
     "on_land": "Questo segnaposto è sulla terraferma. Mettilo sull'acqua dove navighi, così SailCast può calcolare onde e fetch.",
     "shore_open": "Lo specchio d'acqua libero arriva a {distance} verso {direction}, e la zona è aperta al mare da {open}.",
-    "shore_closed": "Lo specchio d'acqua libero arriva a {distance} verso {direction}."
+    "shore_closed": "Lo specchio d'acqua libero arriva a {distance} verso {direction}.",
+    "notes": "Note per l'IA",
+    "notes_hint": "Conoscenza locale per l'IA, usata nel briefing e quando fai domande ad Assist sulla navigazione, ad esempio quando entra la brezza di mare o dove il mare si fa mosso. Non cambia mai una valutazione."
   },
   "error": {
     "load": "Impossibile caricare SailCast: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Quell'utente di Home Assistant non esiste più.",
     "boat_in_use": "{sailor} usa solo questa barca. Prima assegna un'altra barca a questo velista.",
     "fetch_out_of_range": "Imposta uno specchio d'acqua libero tra 0,05 e 100 km (circa tra 0,03 e 60 miglia).",
-    "invalid_sensor": "Scegli un sensore per ogni rilevazione, oppure nessuno."
+    "invalid_sensor": "Scegli un sensore per ogni rilevazione, oppure nessuno.",
+    "notes_too_long": "Usa al massimo 500 caratteri."
   },
   "limits": {
     "wind": "Vento",

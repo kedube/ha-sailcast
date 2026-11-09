@@ -1,11 +1,13 @@
 /**
- * The week view: the week's best sailing window, this hour's forecast and any
- * official warnings, then a seven-day calendar with sailing windows drawn as
- * events. Its columns show dawn to dusk. In a boat with navigation lights they
- * hold the whole day, opening on dawn to dusk and scrolling to the rest.
+ * The week view: the AI briefing with AI on, the week's best sailing window,
+ * this hour's forecast and any official warnings, then a seven-day calendar
+ * with sailing windows drawn as events. Its columns show dawn to dusk. In a
+ * boat with navigation lights they hold the whole day, opening on dawn to dusk
+ * and scrolling to the rest.
  */
 import { html, nothing, svg, type TemplateResult } from "lit";
 
+import { briefingCard } from "./briefing";
 import { canSetHours, dayAndDate, hoursText, isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime, ms, WEEKDAYS } from "./format";
 import { arrow, dial, icon, ring, weather, type IconName } from "./glyphs";
@@ -89,6 +91,7 @@ export function weekView(ctx: Ctx): TemplateResult {
     (a, b) => b.window.score - a.window.score || b.window.hours - a.window.hours,
   )[0];
   return html`
+    ${briefingCard(ctx)}
     <div class="top">
       ${hero(ctx, best, windows[0])}
       <div class="side">${nowCard(ctx)} ${warningsCard(ctx)}</div>

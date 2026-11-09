@@ -26,7 +26,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
 from . import alerts as alert_sources, tides as tide_sources
-from .ai import DATA_SUMMARIES, Summaries
+from .briefing import DATA_BRIEFINGS, Briefings
 from .const import CONF_WORLDTIDES_KEY, DOMAIN
 from .nowcast import AIRPORT, BUOY, SENSORS, Observation
 from .outlook import Results, SpotConditions, compute
@@ -803,7 +803,7 @@ class SailCastData:
     sources: Sources
     results: ResultsCoordinator
     planner: Planner
-    summaries: Summaries
+    briefings: Briefings
 
     @classmethod
     def create(
@@ -831,7 +831,7 @@ class SailCastData:
             sources=sources,
             results=results,
             planner=Planner(hass, store, profiles, results),
-            summaries=hass.data.setdefault(DATA_SUMMARIES, Summaries(hass)),
+            briefings=hass.data.setdefault(DATA_BRIEFINGS, Briefings(hass)),
         )
 
 

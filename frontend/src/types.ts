@@ -71,6 +71,8 @@ export interface Spot {
   source_names: Partial<Record<SourceKey, string>>;
   /** Where the buoy and airport are. */
   source_points: Partial<Record<"buoy" | "airport", [number, number]>>;
+  /** Local knowledge for the AI, such as when the sea breeze fills in. */
+  notes: string;
 }
 
 export interface Boat {
@@ -148,7 +150,7 @@ export interface SailCastConfig {
   skills: Record<Skill, number | null>;
   calendars: CalendarInfo[];
   users: { id: string; name: string }[];
-  /** Whether the AI summary is turned on, with AI Task set up. */
+  /** Whether the AI briefing is turned on, with AI Task set up. */
   ai: boolean;
 }
 
@@ -268,12 +270,28 @@ export interface Day {
   summary: Summary | null;
   tides: TideTurn[];
   advice: Advice[];
-  /** The AI summary written for this day in the panel's language, with AI on. */
-  ai?: AiSummary | null;
 }
 
-export interface AiSummary {
-  text: string;
+/** One of SailCast's windows, picked by the AI, with why. */
+export interface BriefingPick {
+  spot: string;
+  boat: string;
+  date: string;
+  start: string;
+  end: string;
+  score: number;
+  why: string;
+}
+
+/** A sailor's week, written up by the AI from SailCast's forecast. */
+export interface Briefing {
+  headline: string;
+  summary: string;
+  picks: BriefingPick[];
+  /** A note for each day, by date. */
+  days: Record<string, string>;
+  /** When to check again and why, or empty. */
+  recheck: string;
   /** When it was written. */
   made: string;
   /** False once the ratings, windows or warnings it describes have changed. */

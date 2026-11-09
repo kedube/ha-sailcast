@@ -285,15 +285,19 @@
     "hours_sub_lights": "Alle Stunden, mit Positionslichtern"
   },
   "ai": {
-    "button": "Mit KI zusammenfassen",
-    "writing": "Zusammenfassung wird geschrieben …",
-    "title": "KI-Zusammenfassung",
+    "title": "KI-Briefing",
+    "day_title": "KI-Notiz zum Tag",
+    "button": "Briefing für diese Woche schreiben",
+    "writing": "Briefing für diese Woche wird geschrieben …",
     "written": "Geschrieben um {time}",
-    "note": "Von KI aus dieser Vorhersage geschrieben, daher kann der Text Fehler enthalten. Die Einstufungen stammen aus den eigenen Regeln von SailCast.",
-    "changed": "Die Vorhersage hat sich geändert, seit diese Zusammenfassung geschrieben wurde.",
-    "again": "Erneut zusammenfassen",
-    "failed": "Die KI-Zusammenfassung konnte nicht geschrieben werden: {message}",
-    "bad_answer": "Die Antwort sah nicht wie eine Zusammenfassung aus. Versuch es noch einmal oder wähle in den Optionen von SailCast einen anderen KI-Task."
+    "written_day": "Geschrieben am {day} um {time}",
+    "note": "Von KI aus der Vorhersage von SailCast geschrieben, daher kann der Text Fehler enthalten. Die Einstufungen und Segelfenster stammen aus den eigenen Regeln von SailCast.",
+    "changed": "Die Vorhersage hat sich geändert, seit dieser Text geschrieben wurde.",
+    "update": "Briefing aktualisieren",
+    "again": "Erneut versuchen",
+    "picks": "Von der KI ausgewählte Segelfenster",
+    "failed": "Das KI-Briefing konnte nicht geschrieben werden: {message}",
+    "bad_answer": "Die Antwort sah nicht wie ein Briefing aus. Versuch es noch einmal oder wähle in den Optionen von SailCast einen anderen KI-Task."
   },
   "map": {
     "label": "Animierte Windkarte um {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Freie Wasserfläche um die Markierung wird gemessen …",
     "on_land": "Diese Markierung liegt an Land. Setze sie dort aufs Wasser, wo du segelst, damit SailCast Wellen und freie Wasserfläche berechnen kann.",
     "shore_open": "Die freie Wasserfläche reicht {distance} weit nach {direction}, und aus {open} ist das Revier zur See hin offen.",
-    "shore_closed": "Die freie Wasserfläche reicht {distance} weit nach {direction}."
+    "shore_closed": "Die freie Wasserfläche reicht {distance} weit nach {direction}.",
+    "notes": "Notizen für die KI",
+    "notes_hint": "Ortskenntnis für die KI, genutzt im Briefing und wenn du Assist zum Segeln fragst, zum Beispiel wann die Seebrise einsetzt oder wo es ruppig wird. Sie ändert nie eine Einstufung."
   },
   "error": {
     "load": "SailCast konnte nicht geladen werden: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Diesen Home-Assistant-Benutzer gibt es nicht mehr.",
     "boat_in_use": "{sailor} segelt nur dieses Boot. Ordne diesem Segler zuerst ein anderes Boot zu.",
     "fetch_out_of_range": "Gib für die freie Wasserfläche 0,05 bis 100 km an (etwa 0,03 bis 60 mi).",
-    "invalid_sensor": "Wähle für jeden Messwert einen Sensor oder keinen."
+    "invalid_sensor": "Wähle für jeden Messwert einen Sensor oder keinen.",
+    "notes_too_long": "Verwende höchstens 500 Zeichen."
   },
   "limits": {
     "wind": "Wind",

@@ -1592,6 +1592,91 @@ export const styles = css`
   .ai-failed {
     color: var(--sc-danger);
   }
+  .brief {
+    display: grid;
+    gap: 8px;
+  }
+  .brief p {
+    margin: 0;
+  }
+  .brief .i {
+    width: 18px;
+    height: 18px;
+    fill: var(--sc-primary-ink);
+  }
+  .brief-ask {
+    justify-items: start;
+  }
+  .ai-changed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--sc-primary-tint);
+  }
+  .ai-changed p {
+    margin: 0;
+    color: var(--sc-fg);
+  }
+  .ai-changed .btn-tonal {
+    background: var(--sc-card);
+  }
+  .brief-head {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+  .brief .ai-text {
+    max-width: 80ch;
+  }
+  .brief-picks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+  }
+  .brief-pick {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--sc-line);
+    border-left: 4px solid var(--sc-primary-ink);
+    border-radius: 10px;
+    background: var(--sc-sunk);
+    text-align: start;
+    cursor: pointer;
+  }
+  .brief-pick:hover {
+    border-color: var(--sc-primary-ink);
+  }
+  .brief-when {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+  }
+  .brief-score,
+  .brief-where {
+    font-size: 12px;
+    color: var(--sc-fg2);
+  }
+  .brief-why {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .brief-recheck {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .brief-recheck .i {
+    flex: none;
+    fill: var(--sc-fg3);
+  }
   .sizes-list {
     display: grid;
     gap: 10px;
@@ -2086,6 +2171,7 @@ export const styles = css`
   }
   dialog input[type="text"],
   dialog input[type="number"],
+  dialog textarea,
   dialog select,
   .sec select {
     width: 100%;
@@ -2098,6 +2184,11 @@ export const styles = css`
   }
   .sec select {
     max-width: 420px;
+  }
+  dialog textarea {
+    min-height: 72px;
+    resize: vertical;
+    line-height: 1.4;
   }
   input[type="range"] {
     width: 100%;

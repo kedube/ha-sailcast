@@ -21,14 +21,16 @@
             "water_type": "Soort water",
             "offshore": "Aflandige wind",
             "exposed": "Open voor golven uit",
-            "fetch": "Open water aan loefzijde"
+            "fetch": "Open water aan loefzijde",
+            "notes": "Notities voor de AI"
           },
           "data_description": {
             "name": "Bijvoorbeeld Haven of Meer.",
             "location": "Zet de speld op het water waar je zeilt. De cirkel bepaalt het gebied dat de windkaart toont.",
             "offshore": "Wind uit deze richtingen waait van het land af.",
             "exposed": "Richtingen met open water, waar golven zich kunnen opbouwen.",
-            "fetch": "Alleen voor rivieren en meren. SailCast meet het open water in elke richting op de kaart; vul dit alleen in om dat te vervangen door één afstand."
+            "fetch": "Alleen voor rivieren en meren. SailCast meet het open water in elke richting op de kaart; vul dit alleen in om dat te vervangen door één afstand.",
+            "notes": "Lokale kennis voor de AI, gebruikt in de briefing en als je Assist iets over zeilen vraagt, zoals wanneer de zeewind doorkomt of waar het ruig wordt. Het verandert nooit een beoordeling."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Soort water",
             "offshore": "Aflandige wind",
             "exposed": "Open voor golven uit",
-            "fetch": "Open water aan loefzijde"
+            "fetch": "Open water aan loefzijde",
+            "notes": "Notities voor de AI"
           },
           "data_description": {
             "name": "Bijvoorbeeld Haven of Meer.",
             "location": "Zet de speld op het water waar je zeilt. De cirkel bepaalt het gebied dat de windkaart toont.",
             "offshore": "Wind uit deze richtingen waait van het land af.",
             "exposed": "Richtingen met open water, waar golven zich kunnen opbouwen.",
-            "fetch": "Alleen voor rivieren en meren. SailCast meet het open water in elke richting op de kaart; vul dit alleen in om dat te vervangen door één afstand."
+            "fetch": "Alleen voor rivieren en meren. SailCast meet het open water in elke richting op de kaart; vul dit alleen in om dat te vervangen door één afstand.",
+            "notes": "Lokale kennis voor de AI, gebruikt in de briefing en als je Assist iets over zeilen vraagt, zoals wanneer de zeewind doorkomt of waar het ruig wordt. Het verandert nooit een beoordeling."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Kies voor de cirkel een straal tussen 2 en 50 km (ongeveer 1 tot 30 mijl).",
         "suggestions_unavailable": "Kon geen bronnen in de buurt opzoeken. Je kunt zonder bronnen opslaan en ze later toevoegen door het vaargebied te bewerken.",
         "fetch_out_of_range": "Kies voor het open water een afstand tussen 0,05 en 100 km (ongeveer 0,03 tot 60 mijl).",
-        "invalid_sensor": "Kies voor elke meting een sensor, of laat het veld leeg."
+        "invalid_sensor": "Kies voor elke meting een sensor, of laat het veld leeg.",
+        "notes_too_long": "Gebruik maximaal 500 tekens."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "AI-samenvatting",
-            "description": "Voegt een knop ‘Samenvatten met AI’ toe aan de dagweergave van het paneel. Die vraagt de AI-aanbieder die je in Home Assistant hebt ingesteld om twee of drie zinnen over de dag. Veiligheidsbeoordelingen komen altijd uit de eigen regels van SailCast, nooit van AI.",
+            "name": "AI-briefing",
+            "description": "Voegt een briefing toe aan het paneel, geschreven door de AI-aanbieder die je in Home Assistant hebt ingesteld: de beste momenten om deze week te zeilen, over al je vaargebieden en boten, en een notitie voor elke dag. Veiligheidsbeoordelingen komen altijd uit de eigen regels van SailCast, nooit van AI.",
             "data": {
-              "ai_summary": "AI-samenvattingen aanbieden",
+              "ai_summary": "AI-briefings schrijven",
               "ai_task": "AI-taak"
             },
             "data_description": {

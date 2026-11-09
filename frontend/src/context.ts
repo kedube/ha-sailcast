@@ -6,6 +6,8 @@ import { ms, type Formatter } from "./format";
 import type { Translate } from "./text";
 import type {
   Boat,
+  Briefing,
+  BriefingPick,
   Day,
   DayHours,
   Forecast,
@@ -39,8 +41,10 @@ export interface Actions {
   hideTip(): void;
   /** Say briefly that something happened. */
   toast(message: string): void;
-  /** Ask the AI for a summary of a day of the week. */
-  summarize(index: number): void;
+  /** Ask the AI for a new briefing, if the forecast changed since the last. */
+  writeBriefing(): void;
+  /** Show a window the AI picked: its spot and boat, on its day. */
+  openPick(pick: BriefingPick): void;
 }
 
 export interface Ctx {
@@ -60,9 +64,11 @@ export interface Ctx {
   admin: boolean;
   /** The calendar windows go into unless someone picks another. */
   calendar?: string;
-  /** The date whose AI summary is being written, and the last one that failed. */
-  aiBusy?: string;
-  aiError?: { date: string; text: string };
+  /** The sailor's AI briefing, with AI on: null if there's none yet. */
+  briefing?: Briefing | null;
+  /** Whether the AI is writing a briefing, and why the last one failed. */
+  briefingBusy: boolean;
+  briefingError?: string;
   act: Actions;
 }
 

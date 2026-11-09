@@ -285,15 +285,19 @@
     "hours_sub_lights": "Todas las horas, con luces de navegación"
   },
   "ai": {
-    "button": "Resumir con IA",
-    "writing": "Escribiendo un resumen…",
-    "title": "Resumen con IA",
+    "title": "Informe con IA",
+    "day_title": "Nota de la IA para el día",
+    "button": "Escribir el informe de la semana",
+    "writing": "Escribiendo el informe de la semana…",
     "written": "Escrito a las {time}",
-    "note": "Escrito por IA a partir de este pronóstico, así que puede contener errores. Las valoraciones vienen de las reglas propias de SailCast.",
-    "changed": "El pronóstico ha cambiado desde que se escribió este resumen.",
-    "again": "Volver a resumir",
-    "failed": "No se pudo escribir el resumen con IA: {message}",
-    "bad_answer": "La respuesta no parecía un resumen. Inténtalo de nuevo o elige otra tarea de IA en las opciones de SailCast."
+    "written_day": "Escrito el {day} a las {time}",
+    "note": "Escrito por IA a partir del pronóstico de SailCast, así que puede contener errores. Las valoraciones y las ventanas vienen de las reglas propias de SailCast.",
+    "changed": "El pronóstico ha cambiado desde que se escribió esto.",
+    "update": "Actualizar el informe",
+    "again": "Reintentar",
+    "picks": "Ventanas elegidas por la IA",
+    "failed": "No se pudo escribir el informe con IA: {message}",
+    "bad_answer": "La respuesta no parecía un informe. Inténtalo de nuevo o elige otra tarea de IA en las opciones de SailCast."
   },
   "map": {
     "label": "Mapa de viento animado alrededor de {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Midiendo el agua abierta alrededor del marcador…",
     "on_land": "Este marcador está en tierra. Colócalo en el agua donde navegas para que SailCast pueda calcular las olas y el fetch.",
     "shore_open": "El agua abierta llega a {distance} hacia el {direction}, y la zona está abierta al mar por el {open}.",
-    "shore_closed": "El agua abierta llega a {distance} hacia el {direction}."
+    "shore_closed": "El agua abierta llega a {distance} hacia el {direction}.",
+    "notes": "Notas para la IA",
+    "notes_hint": "Conocimiento local para la IA, que lo usa en el informe y cuando preguntas a Assist sobre navegar, como cuándo entra la brisa marina o dónde se pica el mar. Nunca cambia una valoración."
   },
   "error": {
     "load": "SailCast no se pudo cargar: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Ese usuario de Home Assistant ya no existe.",
     "boat_in_use": "{sailor} solo navega con este barco. Asígnale otro barco primero.",
     "fetch_out_of_range": "La distancia de agua abierta debe estar entre 0,05 y 100 km (aprox. de 0,03 a 60 millas).",
-    "invalid_sensor": "Elige un sensor para cada medición, o ninguno."
+    "invalid_sensor": "Elige un sensor para cada medición, o ninguno.",
+    "notes_too_long": "Usa 500 caracteres o menos."
   },
   "limits": {
     "wind": "Viento",

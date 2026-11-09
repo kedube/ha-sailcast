@@ -21,14 +21,16 @@
             "water_type": "Rodzaj akwenu",
             "offshore": "Wiatr od lądu",
             "exposed": "Otwarty na fale z kierunków",
-            "fetch": "Otwarta woda na nawietrznej"
+            "fetch": "Otwarta woda na nawietrznej",
+            "notes": "Notatki dla AI"
           },
           "data_description": {
             "name": "Na przykład Port albo Jezioro.",
             "location": "Umieść pinezkę na wodzie tam, gdzie żeglujesz. Okrąg wyznacza obszar pokazywany na mapie wiatru.",
             "offshore": "Wiatr z tych kierunków wieje od brzegu.",
             "exposed": "Kierunki z otwartą wodą, gdzie mogą narastać fale.",
-            "fetch": "Tylko dla rzek i jezior. SailCast mierzy na mapie otwartą wodę w każdym kierunku; ustaw to pole tylko wtedy, gdy chcesz zastąpić ten pomiar jedną odległością."
+            "fetch": "Tylko dla rzek i jezior. SailCast mierzy na mapie otwartą wodę w każdym kierunku; ustaw to pole tylko wtedy, gdy chcesz zastąpić ten pomiar jedną odległością.",
+            "notes": "Lokalna wiedza dla AI, wykorzystywana w odprawie i gdy pytasz Assist o żeglowanie, na przykład kiedy zaczyna wiać bryza morska albo gdzie robi się krótka, stroma fala. Nigdy nie zmienia oceny."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Rodzaj akwenu",
             "offshore": "Wiatr od lądu",
             "exposed": "Otwarty na fale z kierunków",
-            "fetch": "Otwarta woda na nawietrznej"
+            "fetch": "Otwarta woda na nawietrznej",
+            "notes": "Notatki dla AI"
           },
           "data_description": {
             "name": "Na przykład Port albo Jezioro.",
             "location": "Umieść pinezkę na wodzie tam, gdzie żeglujesz. Okrąg wyznacza obszar pokazywany na mapie wiatru.",
             "offshore": "Wiatr z tych kierunków wieje od brzegu.",
             "exposed": "Kierunki z otwartą wodą, gdzie mogą narastać fale.",
-            "fetch": "Tylko dla rzek i jezior. SailCast mierzy na mapie otwartą wodę w każdym kierunku; ustaw to pole tylko wtedy, gdy chcesz zastąpić ten pomiar jedną odległością."
+            "fetch": "Tylko dla rzek i jezior. SailCast mierzy na mapie otwartą wodę w każdym kierunku; ustaw to pole tylko wtedy, gdy chcesz zastąpić ten pomiar jedną odległością.",
+            "notes": "Lokalna wiedza dla AI, wykorzystywana w odprawie i gdy pytasz Assist o żeglowanie, na przykład kiedy zaczyna wiać bryza morska albo gdzie robi się krótka, stroma fala. Nigdy nie zmienia oceny."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Promień okręgu musi wynosić od 2 do 50 km (ok. 1–30 mil lądowych).",
         "suggestions_unavailable": "Nie udało się wyszukać pobliskich źródeł. Możesz zapisać akwen bez nich i dodać je później, edytując go.",
         "fetch_out_of_range": "Otwarta woda musi wynosić od 0,05 do 100 km (ok. 0,03–60 mil lądowych).",
-        "invalid_sensor": "Wybierz czujnik dla każdego pomiaru albo zostaw pole puste."
+        "invalid_sensor": "Wybierz czujnik dla każdego pomiaru albo zostaw pole puste.",
+        "notes_too_long": "Użyj najwyżej 500 znaków."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "Podsumowanie AI",
-            "description": "Dodaje w widoku dnia w panelu przycisk „Podsumuj za pomocą AI”. Po jego naciśnięciu SailCast prosi dostawcę AI skonfigurowanego w Home Assistant o dwa–trzy zdania o danym dniu. Oceny bezpieczeństwa zawsze pochodzą z własnych reguł SailCast, nigdy z AI.",
+            "name": "Odprawa AI",
+            "description": "Dodaje do panelu odprawę napisaną przez dostawcę AI skonfigurowanego w Home Assistant: najlepsze terminy na żeglowanie w tym tygodniu na wszystkich twoich akwenach i łodziach oraz notatkę na każdy dzień. Oceny bezpieczeństwa zawsze pochodzą z własnych reguł SailCast, nigdy z AI.",
             "data": {
-              "ai_summary": "Udostępniaj podsumowania AI",
+              "ai_summary": "Pisz odprawy AI",
               "ai_task": "Zadanie AI"
             },
             "data_description": {

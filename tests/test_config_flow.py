@@ -168,6 +168,7 @@ async def test_add_spot(
         "offshore": ["e", "w"],
         "exposed": ["s"],
         "fetch": None,
+        "notes": "",
         **SOURCES,
         # Each source's name is kept, so the panel can show it.
         "source_names": {
@@ -284,6 +285,7 @@ async def test_sources_unavailable(
             "location",
             "radius_out_of_range",
         ),
+        ({"notes": "x" * 501}, "notes", "notes_too_long"),
     ],
 )
 async def test_spot_errors(
@@ -314,7 +316,12 @@ async def test_edit_spot(
     harbor = {"latitude": HARBOR_POINT[0], "longitude": HARBOR_POINT[1]}
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
-        SPOT_INPUT | {"name": "Harbor", "location": harbor | {"radius": 8000.0}},
+        SPOT_INPUT
+        | {
+            "name": "Harbor",
+            "location": harbor | {"radius": 8000.0},
+            "notes": " The sea breeze fills from the SW most afternoons. \n",
+        },
     )
     assert result["step_id"] == "sources"
     # The saved sources are kept, including "none". A spot saved before
@@ -343,6 +350,12 @@ async def test_edit_spot(
     assert spot.data["marine_zone"] == "PZZ740"
     assert spot.data["buoy"] is None
     assert spot.data["source_points"] == {"airport": [32.73645, -117.19727]}
+    # Notes are kept without the spaces around them, and shown when editing.
+    assert spot.data["notes"] == "The sea breeze fills from the SW most afternoons."
+    result = await _edit(hass, full_entry, "spot_harbor")
+    assert _suggested(result, "notes") == (
+        "The sea breeze fills from the SW most afternoons."
+    )
 
 
 async def test_add_boat_in_feet(hass: HomeAssistant, entry: MockConfigEntry) -> None:

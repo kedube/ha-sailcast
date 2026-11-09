@@ -7,7 +7,7 @@ from typing import Final
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, llm
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_time_interval,
@@ -17,7 +17,8 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
-from .ai import DATA_SUMMARIES, Summaries
+from .assist import NAME as ASSIST_NAME, SailCastAPI
+from .briefing import DATA_BRIEFINGS, Briefings, async_remove_old
 from .const import DOMAIN, SIGNAL_UPDATED
 from .coordinator import SailCastConfigEntry, SailCastData, async_remove_predictions
 from .panel import async_register_panel, async_remove_panel
@@ -36,12 +37,19 @@ SHORELINE_CHECK: Final = timedelta(hours=1)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Load saved preferences and planned sails, and register the commands."""
+    """Load saved preferences and planned sails, and register the commands.
+
+    Ask SailCast's tools are offered to conversation agents from here, so a
+    reload doesn't take them away from an agent that uses them.
+    """
     store = SailCastStore(hass)
     await store.async_load()
     hass.data[DATA_STORE] = store
     async_register_commands(hass)
     async_register_services(hass)
+    llm.async_register_api(hass, SailCastAPI(hass=hass, id=DOMAIN, name=ASSIST_NAME))
+    # The day summaries before 1.00 were replaced by the briefing.
+    hass.async_create_background_task(async_remove_old(hass), "sailcast old summaries")
     return True
 
 
@@ -63,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
     # Shorelines measured before are read first, so the first results have
     # them; only new pins are measured in the background.
     await data.sources.shorelines.async_load()
-    await data.summaries.async_load()
+    await data.briefings.async_load()
     await data.results.async_refresh()
     for unsubscribe in data.results.async_follow_sources():
         entry.async_on_unload(unsubscribe)
@@ -132,7 +140,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: SailCastConfigEntry) ->
     await hass.data[DATA_STORE].async_remove()
     # A new one deletes a file saved before Home Assistant started.
     await (hass.data.pop(DATA_SHORELINES, None) or Shorelines(hass)).async_remove()
-    await (hass.data.pop(DATA_SUMMARIES, None) or Summaries(hass)).async_remove()
+    await (hass.data.pop(DATA_BRIEFINGS, None) or Briefings(hass)).async_remove()
     await (hass.data.pop(DATA_REGIONS, None) or Regions(hass)).async_remove()
     await async_remove_predictions(hass)
 

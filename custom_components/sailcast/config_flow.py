@@ -79,6 +79,7 @@ from .const import (
     CONF_LIGHTS,
     CONF_MARINE_ZONE,
     CONF_MIN_SCORE,
+    CONF_NOTES,
     CONF_OFFSHORE,
     CONF_OTHER_BOATS,
     CONF_RAIN,
@@ -159,13 +160,13 @@ class SailCastConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 def _options_schema() -> probatio.Schema:
-    """Return the options form: API keys, then the AI summary."""
+    """Return the options form: API keys, then the AI briefing."""
     keys = {
         probatio.Optional(CONF_WORLDTIDES_KEY): TextSelector(
             TextSelectorConfig(type=TextSelectorType.PASSWORD)
         )
     }
-    ai_summary = {
+    ai_briefing = {
         probatio.Optional(CONF_AI_SUMMARY, default=False): BooleanSelector(),
         probatio.Optional(CONF_AI_TASK): EntitySelector(
             EntitySelectorConfig(
@@ -179,18 +180,18 @@ def _options_schema() -> probatio.Schema:
     return probatio.Schema(
         {
             probatio.Required(SECTION_KEYS): section(probatio.Schema(keys)),
-            probatio.Required(SECTION_AI): section(probatio.Schema(ai_summary)),
+            probatio.Required(SECTION_AI): section(probatio.Schema(ai_briefing)),
         }
     )
 
 
 class SailCastOptionsFlow(OptionsFlow):
-    """Set API keys for optional providers and the AI summary. Saving reloads."""
+    """Set API keys for optional providers and the AI briefing. Saving reloads."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the keys and the AI summary. An empty key field removes a key."""
+        """Ask for the keys and the AI briefing. An empty key field removes a key."""
         errors: dict[str, str] = {}
         if user_input is not None:
             options: dict[str, Any] = {
@@ -523,6 +524,9 @@ class SpotFlow(ProfileFlow):
                         unit_of_measurement=self._distance_unit,
                     )
                 ),
+                probatio.Optional(CONF_NOTES): TextSelector(
+                    TextSelectorConfig(multiline=True)
+                ),
             }
         )
 
@@ -558,11 +562,12 @@ class SpotFlow(ProfileFlow):
                 if (fetch := user_input.get(CONF_FETCH))
                 else None
             ),
+            CONF_NOTES: (user_input.get(CONF_NOTES) or "").strip(),
         }
 
     def _to_form(self, subentry: ConfigSubentry) -> dict[str, Any]:
         data = subentry.data
-        return {
+        form: dict[str, Any] = {
             CONF_NAME: subentry.title,
             CONF_LOCATION: {
                 key: data[key] for key in (CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS)
@@ -570,18 +575,17 @@ class SpotFlow(ProfileFlow):
             CONF_WATER_TYPE: data[CONF_WATER_TYPE],
             CONF_OFFSHORE: list(data[CONF_OFFSHORE]),
             CONF_EXPOSED: list(data[CONF_EXPOSED]),
-        } | (
-            {
-                CONF_FETCH: round(
-                    DistanceConverter.convert(
-                        fetch, UnitOfLength.KILOMETERS, self._distance_unit
-                    ),
-                    1,
-                )
-            }
-            if (fetch := data.get(CONF_FETCH))
-            else {}
-        )
+        }
+        if fetch := data.get(CONF_FETCH):
+            form[CONF_FETCH] = round(
+                DistanceConverter.convert(
+                    fetch, UnitOfLength.KILOMETERS, self._distance_unit
+                ),
+                1,
+            )
+        if notes := data.get(CONF_NOTES):
+            form[CONF_NOTES] = notes
+        return form
 
     def _check(self, data: Mapping[str, Any]) -> dict[str, str]:
         errors = profiles.check_spot(data)

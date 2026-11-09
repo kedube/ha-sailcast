@@ -21,14 +21,16 @@
             "water_type": "Tipo de agua",
             "offshore": "Viento terral",
             "exposed": "Abierta a las olas desde",
-            "fetch": "Agua abierta a barlovento"
+            "fetch": "Agua abierta a barlovento",
+            "notes": "Notas para la IA"
           },
           "data_description": {
             "name": "Por ejemplo, Puerto o Lago.",
             "location": "Coloca el marcador en el agua donde navegas. El círculo marca el área que muestra el mapa de viento.",
             "offshore": "El viento de estas direcciones sopla desde tierra hacia el agua.",
             "exposed": "Direcciones con agua abierta, donde se pueden formar olas.",
-            "fetch": "Solo para ríos y lagos. SailCast mide el agua abierta en cada dirección a partir del mapa; rellena este campo solo para sustituir esa medida por una única distancia."
+            "fetch": "Solo para ríos y lagos. SailCast mide el agua abierta en cada dirección a partir del mapa; rellena este campo solo para sustituir esa medida por una única distancia.",
+            "notes": "Conocimiento local para la IA, que lo usa en el informe y cuando preguntas a Assist sobre navegar, como cuándo entra la brisa marina o dónde se pica el mar. Nunca cambia una valoración."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Tipo de agua",
             "offshore": "Viento terral",
             "exposed": "Abierta a las olas desde",
-            "fetch": "Agua abierta a barlovento"
+            "fetch": "Agua abierta a barlovento",
+            "notes": "Notas para la IA"
           },
           "data_description": {
             "name": "Por ejemplo, Puerto o Lago.",
             "location": "Coloca el marcador en el agua donde navegas. El círculo marca el área que muestra el mapa de viento.",
             "offshore": "El viento de estas direcciones sopla desde tierra hacia el agua.",
             "exposed": "Direcciones con agua abierta, donde se pueden formar olas.",
-            "fetch": "Solo para ríos y lagos. SailCast mide el agua abierta en cada dirección a partir del mapa; rellena este campo solo para sustituir esa medida por una única distancia."
+            "fetch": "Solo para ríos y lagos. SailCast mide el agua abierta en cada dirección a partir del mapa; rellena este campo solo para sustituir esa medida por una única distancia.",
+            "notes": "Conocimiento local para la IA, que lo usa en el informe y cuando preguntas a Assist sobre navegar, como cuándo entra la brisa marina o dónde se pica el mar. Nunca cambia una valoración."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Pon el radio del círculo entre 2 y 50 km (aprox. de 1 a 30 millas).",
         "suggestions_unavailable": "No se pudieron buscar fuentes cercanas. Puedes guardar sin ellas y añadirlas más tarde editando la zona.",
         "fetch_out_of_range": "La distancia de agua abierta debe estar entre 0,05 y 100 km (aprox. de 0,03 a 60 millas).",
-        "invalid_sensor": "Elige un sensor para cada medición o déjalo en blanco."
+        "invalid_sensor": "Elige un sensor para cada medición o déjalo en blanco.",
+        "notes_too_long": "Usa 500 caracteres o menos."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "Resumen con IA",
-            "description": "Añade un botón «Resumir con IA» a la vista de día del panel. Pide dos o tres frases sobre el día al proveedor de IA que hayas configurado en Home Assistant. Las valoraciones de seguridad siempre vienen de las reglas propias de SailCast, nunca de la IA.",
+            "name": "Informe con IA",
+            "description": "Añade al panel un informe escrito por el proveedor de IA que hayas configurado en Home Assistant: los mejores momentos para navegar esta semana en todas tus zonas y barcos, y una nota para cada día. Las valoraciones de seguridad siempre vienen de las reglas propias de SailCast, nunca de la IA.",
             "data": {
-              "ai_summary": "Ofrecer resúmenes con IA",
+              "ai_summary": "Escribir informes con IA",
               "ai_task": "Tarea de IA"
             },
             "data_description": {

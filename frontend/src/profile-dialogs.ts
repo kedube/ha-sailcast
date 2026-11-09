@@ -750,6 +750,12 @@ export class ScSpotDialog extends ProfileDialog {
       ${SOURCES.map((key) => this.sourceSelect(key))}
       <p class="hint">${this.found?.failed ? t("spot.sources_failed") : t("spot.sources_hint")}</p>
       ${this.sensorFields()}
+      <label class="fld">
+        <span class="lbl">${t("spot.notes")}</span>
+        <textarea name="notes" rows="3" maxlength="500" .value=${this.spot?.notes ?? ""}></textarea>
+        <span class="hint">${t("spot.notes_hint")}</span>
+        ${this.err("notes")}
+      </label>
     `;
   }
 
@@ -891,6 +897,7 @@ export class ScSpotDialog extends ProfileDialog {
           : null,
       source_names: names,
       source_points: points,
+      notes: value(form, "notes").trim(),
     });
   }
 }

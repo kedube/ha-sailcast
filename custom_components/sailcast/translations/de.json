@@ -21,14 +21,16 @@
             "water_type": "Gewässer",
             "offshore": "Ablandiger Wind",
             "exposed": "Offen für Wellen aus",
-            "fetch": "Freie Wasserfläche in Luv"
+            "fetch": "Freie Wasserfläche in Luv",
+            "notes": "Notizen für die KI"
           },
           "data_description": {
             "name": "Zum Beispiel Hafen oder See.",
             "location": "Setze die Markierung dort aufs Wasser, wo du segelst. Der Kreis legt den Bereich fest, den die Windkarte zeigt.",
             "offshore": "Wind aus diesen Richtungen weht vom Ufer weg.",
             "exposed": "Richtungen mit freier Wasserfläche, auf der sich Wellen aufbauen können.",
-            "fetch": "Nur für Flüsse und Seen. SailCast misst die freie Wasserfläche in jede Richtung auf der Karte; gib hier nur dann eine Entfernung ein, wenn du die Messung mit einem einzigen Wert überschreiben willst."
+            "fetch": "Nur für Flüsse und Seen. SailCast misst die freie Wasserfläche in jede Richtung auf der Karte; gib hier nur dann eine Entfernung ein, wenn du die Messung mit einem einzigen Wert überschreiben willst.",
+            "notes": "Ortskenntnis für die KI, genutzt im Briefing und wenn du Assist zum Segeln fragst, zum Beispiel wann die Seebrise einsetzt oder wo es ruppig wird. Sie ändert nie eine Einstufung."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Gewässer",
             "offshore": "Ablandiger Wind",
             "exposed": "Offen für Wellen aus",
-            "fetch": "Freie Wasserfläche in Luv"
+            "fetch": "Freie Wasserfläche in Luv",
+            "notes": "Notizen für die KI"
           },
           "data_description": {
             "name": "Zum Beispiel Hafen oder See.",
             "location": "Setze die Markierung dort aufs Wasser, wo du segelst. Der Kreis legt den Bereich fest, den die Windkarte zeigt.",
             "offshore": "Wind aus diesen Richtungen weht vom Ufer weg.",
             "exposed": "Richtungen mit freier Wasserfläche, auf der sich Wellen aufbauen können.",
-            "fetch": "Nur für Flüsse und Seen. SailCast misst die freie Wasserfläche in jede Richtung auf der Karte; gib hier nur dann eine Entfernung ein, wenn du die Messung mit einem einzigen Wert überschreiben willst."
+            "fetch": "Nur für Flüsse und Seen. SailCast misst die freie Wasserfläche in jede Richtung auf der Karte; gib hier nur dann eine Entfernung ein, wenn du die Messung mit einem einzigen Wert überschreiben willst.",
+            "notes": "Ortskenntnis für die KI, genutzt im Briefing und wenn du Assist zum Segeln fragst, zum Beispiel wann die Seebrise einsetzt oder wo es ruppig wird. Sie ändert nie eine Einstufung."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Wähle für den Kreis einen Radius zwischen 2 und 50 km (etwa 1 bis 30 mi).",
         "suggestions_unavailable": "Quellen in der Nähe konnten nicht gesucht werden. Du kannst ohne sie speichern und sie später hinzufügen, indem du das Revier bearbeitest.",
         "fetch_out_of_range": "Gib für die freie Wasserfläche 0,05 bis 100 km an (etwa 0,03 bis 60 mi).",
-        "invalid_sensor": "Wähle für jeden Messwert einen Sensor oder lass das Feld leer."
+        "invalid_sensor": "Wähle für jeden Messwert einen Sensor oder lass das Feld leer.",
+        "notes_too_long": "Verwende höchstens 500 Zeichen."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "KI-Zusammenfassung",
-            "description": "Fügt der Tagesansicht im Panel die Schaltfläche „Mit KI zusammenfassen“ hinzu. Damit fragt SailCast den KI-Anbieter, den du in Home Assistant eingerichtet hast, nach zwei oder drei Sätzen zum Tag. Sicherheitseinstufungen kommen immer aus den eigenen Regeln von SailCast, nie von der KI.",
+            "name": "KI-Briefing",
+            "description": "Fügt dem Panel ein Briefing hinzu, das der KI-Anbieter schreibt, den du in Home Assistant eingerichtet hast: die besten Zeiten zum Segeln in dieser Woche über alle deine Reviere und Boote hinweg und eine Notiz zu jedem Tag. Sicherheitseinstufungen kommen immer aus den eigenen Regeln von SailCast, nie von der KI.",
             "data": {
-              "ai_summary": "KI-Zusammenfassungen anbieten",
+              "ai_summary": "KI-Briefings schreiben",
               "ai_task": "KI-Task"
             },
             "data_description": {

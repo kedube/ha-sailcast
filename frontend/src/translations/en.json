@@ -285,15 +285,19 @@
     "hours_sub_lights": "Every hour, with navigation lights"
   },
   "ai": {
-    "button": "Summarize with AI",
-    "writing": "Writing a summary…",
-    "title": "AI summary",
+    "title": "AI briefing",
+    "day_title": "AI note for the day",
+    "button": "Write this week's briefing",
+    "writing": "Writing this week's briefing…",
     "written": "Written at {time}",
-    "note": "Written by AI from this forecast, so it can get things wrong. The ratings come from SailCast's own rules.",
-    "changed": "The forecast has changed since this summary was written.",
-    "again": "Summarize again",
-    "failed": "The AI summary couldn't be written: {message}",
-    "bad_answer": "The answer didn't look like a summary. Try again, or pick another AI task in SailCast's options."
+    "written_day": "Written {day} at {time}",
+    "note": "Written by AI from SailCast's forecast, so it can get things wrong. The ratings and windows come from SailCast's own rules.",
+    "changed": "The forecast has changed since this was written.",
+    "update": "Update the briefing",
+    "again": "Try again",
+    "picks": "Windows the AI picked",
+    "failed": "The AI briefing couldn't be written: {message}",
+    "bad_answer": "The answer didn't look like a briefing. Try again, or pick another AI task in SailCast's options."
   },
   "map": {
     "label": "Animated wind map around {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Measuring the open water around the pin…",
     "on_land": "This pin is on land. Drop it on the water where you sail, so SailCast can work out waves and fetch.",
     "shore_open": "Open water reaches {distance} toward the {direction}, and the spot is open to the sea from {open}.",
-    "shore_closed": "Open water reaches {distance} toward the {direction}."
+    "shore_closed": "Open water reaches {distance} toward the {direction}.",
+    "notes": "Notes for the AI",
+    "notes_hint": "Local knowledge for the AI, used in the briefing and when you ask Assist about sailing, such as when the sea breeze fills in or where it gets rough. It never changes a rating."
   },
   "error": {
     "load": "SailCast couldn't load: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "That Home Assistant user no longer exists.",
     "boat_in_use": "{sailor} sails only this boat. Give them another boat first.",
     "fetch_out_of_range": "Make the open water between 0.05 and 100 km (about 0.03 to 60 miles).",
-    "invalid_sensor": "Pick a sensor for each reading, or none."
+    "invalid_sensor": "Pick a sensor for each reading, or none.",
+    "notes_too_long": "Use 500 characters or fewer."
   },
   "limits": {
     "wind": "Wind",

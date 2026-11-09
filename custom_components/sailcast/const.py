@@ -10,7 +10,8 @@ SUBENTRY_BOAT: Final = "boat"
 SUBENTRY_SAILOR: Final = "sailor"
 
 CONF_AHEAD: Final = "ahead"
-# The AI summary option, and the AI task it uses (or Home Assistant's default).
+# The AI briefing option (named for the day summary it replaced), and the AI task
+# it uses, or Home Assistant's default.
 CONF_AI_SUMMARY: Final = "ai_summary"
 CONF_AI_TASK: Final = "ai_task"
 CONF_AIRPORT: Final = "airport"
@@ -29,6 +30,7 @@ CONF_DEFAULT_BOAT: Final = "default_boat"
 CONF_END: Final = "end"
 CONF_EXPOSED: Final = "exposed"
 CONF_FETCH: Final = "fetch"
+CONF_NOTES: Final = "notes"
 CONF_HOURS: Final = "hours"
 CONF_IDEAL_HIGH: Final = "ideal_high"
 CONF_IDEAL_LOW: Final = "ideal_low"

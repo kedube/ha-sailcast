@@ -285,15 +285,19 @@
     "hours_sub_lights": "Todas as horas, com luzes de navegação"
   },
   "ai": {
-    "button": "Resumir com IA",
-    "writing": "Escrevendo um resumo…",
-    "title": "Resumo por IA",
+    "title": "Briefing por IA",
+    "day_title": "Nota da IA para o dia",
+    "button": "Escrever o briefing da semana",
+    "writing": "Escrevendo o briefing da semana…",
     "written": "Escrito às {time}",
-    "note": "Escrito por IA a partir desta previsão, então pode conter erros. As classificações vêm das regras do próprio SailCast.",
-    "changed": "A previsão mudou desde que este resumo foi escrito.",
-    "again": "Resumir de novo",
-    "failed": "Não foi possível escrever o resumo por IA: {message}",
-    "bad_answer": "A resposta não parecia um resumo. Tente de novo ou escolha outra tarefa de IA nas opções do SailCast."
+    "written_day": "Escrito {day} às {time}",
+    "note": "Escrito por IA a partir da previsão do SailCast, então pode conter erros. As classificações e as janelas vêm das regras do próprio SailCast.",
+    "changed": "A previsão mudou desde que isto foi escrito.",
+    "update": "Atualizar o briefing",
+    "again": "Tentar de novo",
+    "picks": "Janelas escolhidas pela IA",
+    "failed": "Não foi possível escrever o briefing por IA: {message}",
+    "bad_answer": "A resposta não parecia um briefing. Tente de novo ou escolha outra tarefa de IA nas opções do SailCast."
   },
   "map": {
     "label": "Mapa de vento animado ao redor de {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Medindo a água aberta ao redor do marcador…",
     "on_land": "Este marcador está em terra. Coloque-o na água onde você veleja, para que o SailCast possa calcular as ondas e a pista de vento.",
     "shore_open": "A água aberta chega a {distance} na direção {direction}, e o local fica exposto ao mar de {open}.",
-    "shore_closed": "A água aberta chega a {distance} na direção {direction}."
+    "shore_closed": "A água aberta chega a {distance} na direção {direction}.",
+    "notes": "Notas para a IA",
+    "notes_hint": "Conhecimento local para a IA, usado no briefing e quando você pergunta ao Assist sobre velejar, como quando a brisa marítima entra ou onde o mar fica agitado. Nunca muda uma classificação."
   },
   "error": {
     "load": "Não foi possível carregar o SailCast: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Esse usuário do Home Assistant não existe mais.",
     "boat_in_use": "{sailor} só usa este barco. Dê outro barco a esse velejador primeiro.",
     "fetch_out_of_range": "Informe uma distância de água aberta entre 0,05 e 100 km (cerca de 0,03 a 60 milhas).",
-    "invalid_sensor": "Escolha um sensor para cada leitura, ou nenhum."
+    "invalid_sensor": "Escolha um sensor para cada leitura, ou nenhum.",
+    "notes_too_long": "Use no máximo 500 caracteres."
   },
   "limits": {
     "wind": "Vento",

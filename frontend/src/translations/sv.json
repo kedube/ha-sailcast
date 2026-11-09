@@ -285,15 +285,19 @@
     "hours_sub_lights": "Alla timmar, med lanternor"
   },
   "ai": {
-    "button": "Sammanfatta med AI",
-    "writing": "Skriver en sammanfattning…",
-    "title": "AI-sammanfattning",
+    "title": "AI-genomgång",
+    "day_title": "AI-anteckning för dagen",
+    "button": "Skriv veckans genomgång",
+    "writing": "Skriver veckans genomgång…",
     "written": "Skriven kl. {time}",
-    "note": "Skriven av AI utifrån den här prognosen, så den kan innehålla fel. Bedömningarna kommer från SailCasts egna regler.",
-    "changed": "Prognosen har ändrats sedan sammanfattningen skrevs.",
-    "again": "Sammanfatta igen",
-    "failed": "AI-sammanfattningen kunde inte skrivas: {message}",
-    "bad_answer": "Svaret såg inte ut som en sammanfattning. Försök igen, eller välj en annan AI-uppgift i SailCasts alternativ."
+    "written_day": "Skriven {day} kl. {time}",
+    "note": "Skriven av AI utifrån SailCasts prognos, så den kan innehålla fel. Bedömningarna och fönstren kommer från SailCasts egna regler.",
+    "changed": "Prognosen har ändrats sedan detta skrevs.",
+    "update": "Uppdatera genomgången",
+    "again": "Försök igen",
+    "picks": "Fönster som AI:n har valt",
+    "failed": "AI-genomgången kunde inte skrivas: {message}",
+    "bad_answer": "Svaret såg inte ut som en genomgång. Försök igen, eller välj en annan AI-uppgift i SailCasts alternativ."
   },
   "map": {
     "label": "Animerad vindkarta runt {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Mäter det öppna vattnet runt markeringen…",
     "on_land": "Markeringen ligger på land. Placera den på vattnet där du seglar, så att SailCast kan beräkna vågor och stryklängd.",
     "shore_open": "Öppet vatten sträcker sig {distance} åt {direction}, och platsen ligger öppen mot havet åt {open}.",
-    "shore_closed": "Öppet vatten sträcker sig {distance} åt {direction}."
+    "shore_closed": "Öppet vatten sträcker sig {distance} åt {direction}.",
+    "notes": "Anteckningar för AI:n",
+    "notes_hint": "Lokalkännedom för AI:n, som används i genomgången och när du frågar Assist om segling, till exempel när sjöbrisen kommer in eller var det blir krabb sjö. Den ändrar aldrig en bedömning."
   },
   "error": {
     "load": "SailCast kunde inte laddas: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Den Home Assistant-användaren finns inte längre.",
     "boat_in_use": "{sailor} seglar bara den här båten. Ge seglaren en annan båt först.",
     "fetch_out_of_range": "Det öppna vattnet måste vara mellan 0,05 och 100 km (cirka 0,03–60 engelska mil).",
-    "invalid_sensor": "Välj en sensor för varje mätvärde, eller ingen."
+    "invalid_sensor": "Välj en sensor för varje mätvärde, eller ingen.",
+    "notes_too_long": "Använd högst 500 tecken."
   },
   "limits": {
     "wind": "Vind",

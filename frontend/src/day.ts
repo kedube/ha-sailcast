@@ -5,6 +5,7 @@
  */
 import { html, nothing, svg, type SVGTemplateResult, type TemplateResult } from "lit";
 
+import { aiChanged, writtenText } from "./briefing";
 import { dayAndDate, isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime } from "./format";
 import { arrow, icon, ring, type IconName } from "./glyphs";
@@ -50,38 +51,39 @@ const LEVEL_INDEX: Record<Level, number> = {
 };
 
 /**
- * The AI summary, with AI on: the summary written for the day, or a button
- * to ask for one. The ratings above always come from SailCast's own rules.
+ * The AI briefing's note for the day, with AI on. The ratings above always
+ * come from SailCast's own rules.
  */
-function aiSummary(ctx: Ctx, day: Day, index: number): TemplateResult | typeof nothing {
-  const { t, fmt } = ctx;
+function aiNote(ctx: Ctx, day: Day): TemplateResult | typeof nothing {
+  const { t } = ctx;
   if (!ctx.config.ai || day.over) return nothing;
-  const summary = day.ai;
-  if (summary?.current) {
+  const briefing = ctx.briefing;
+  const note = briefing?.days[day.date];
+  if (briefing && note) {
     return html`<div class="ai">
       <div class="ai-head">
-        ${icon("ai")}<b>${t("ai.title")}</b>
-        <span class="small">${t("ai.written", { time: fmt.clock(summary.made) })}</span>
+        ${icon("ai")}<b>${t("ai.day_title")}</b>
+        <span class="small">${writtenText(ctx, briefing.made)}</span>
       </div>
-      <p class="ai-text">${summary.text}</p>
+      ${briefing.current ? nothing : aiChanged(ctx)}
+      <p class="ai-text">${note}</p>
       <p class="small">${t("ai.note")}</p>
     </div>`;
   }
-  const busy = ctx.aiBusy === day.date;
-  const failed = ctx.aiError?.date === day.date ? ctx.aiError.text : undefined;
-  return html`<div class="ai ai-ask">
-    ${summary ? html`<p class="small">${t("ai.changed")}</p>` : nothing}
-    ${failed ? html`<p class="small ai-failed" role="alert">${failed}</p>` : nothing}
-    <button
-      type="button"
-      class="btn btn-tonal"
-      ?disabled=${busy}
-      aria-busy=${busy ? "true" : "false"}
-      @click=${() => ctx.act.summarize(index)}
-    >
-      ${icon("ai")}${busy ? t("ai.writing") : summary ? t("ai.again") : t("ai.button")}
-    </button>
-  </div>`;
+  if (ctx.briefingBusy) {
+    return html`<div class="ai ai-ask">
+      <p class="small" aria-live="polite">${t("ai.writing")}</p>
+    </div>`;
+  }
+  if (ctx.briefingError) {
+    return html`<div class="ai ai-ask">
+      <p class="small ai-failed" role="alert">${ctx.briefingError}</p>
+      <button type="button" class="btn btn-tonal" @click=${() => ctx.act.writeBriefing()}>
+        ${icon("ai")}${t("ai.again")}
+      </button>
+    </div>`;
+  }
+  return nothing;
 }
 
 export function dayView(ctx: Ctx, width: number): TemplateResult {
@@ -179,7 +181,7 @@ export function dayView(ctx: Ctx, width: number): TemplateResult {
               </li>`,
           )}
         </ul>
-        ${aiSummary(ctx, day, index)}
+        ${aiNote(ctx, day)}
       </section>
       <section class="card">
         <div class="card-head">

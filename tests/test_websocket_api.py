@@ -324,6 +324,24 @@ async def test_save_spot(
     assert saved["radius"] == 12_000.0
     assert saved["source_names"] == {"tide_station": "La Jolla"}
     assert (saved["current_station"], saved["marine_zone"]) == (None, None)
+    assert saved["notes"] == ""
+
+    # Notes are kept without the spaces around them, up to 500 characters.
+    result = (
+        await send(
+            "settings/save",
+            kind="spot",
+            profile=result["profile"],
+            name="Cove",
+            data=data | {"notes": "  Kelp off the point.\n"},
+        )
+    )["result"]
+    await hass.async_block_till_done()
+    assert loaded.subentries[result["profile"]].data["notes"] == "Kelp off the point."
+    response = await send(
+        "settings/save", kind="spot", name="Wordy", data=data | {"notes": "x" * 501}
+    )
+    assert response["result"] == {"errors": {"notes": "notes_too_long"}}
 
     response = await send(
         "settings/save", kind="spot", name="Far", data=data | {"radius": 100}

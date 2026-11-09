@@ -21,14 +21,16 @@
             "water_type": "Vodní plocha",
             "offshore": "Vítr od břehu",
             "exposed": "Otevřeno vlnám ze směrů",
-            "fetch": "Volná voda na návětrné straně"
+            "fetch": "Volná voda na návětrné straně",
+            "notes": "Poznámky pro AI"
           },
           "data_description": {
             "name": "Například Přístav nebo Jezero.",
             "location": "Umístěte špendlík na vodu, kde plujete. Kruh určuje oblast, kterou ukazuje mapa větru.",
             "offshore": "Vítr z těchto směrů fouká od břehu.",
             "exposed": "Směry s volnou vodou, kde se mohou vytvořit vlny.",
-            "fetch": "Jen pro řeky a jezera. SailCast měří volnou vodu v každém směru z mapy; vyplňte jen tehdy, chcete-li měření nahradit jednou vzdáleností."
+            "fetch": "Jen pro řeky a jezera. SailCast měří volnou vodu v každém směru z mapy; vyplňte jen tehdy, chcete-li měření nahradit jednou vzdáleností.",
+            "notes": "Místní znalosti pro AI, které využívá v přehledu a když se Assistu ptáte na plachtění, například kdy se zvedá mořský vánek nebo kde se dělají krátké strmé vlny. Nikdy nemění hodnocení."
           }
         },
         "reconfigure": {
@@ -39,14 +41,16 @@
             "water_type": "Vodní plocha",
             "offshore": "Vítr od břehu",
             "exposed": "Otevřeno vlnám ze směrů",
-            "fetch": "Volná voda na návětrné straně"
+            "fetch": "Volná voda na návětrné straně",
+            "notes": "Poznámky pro AI"
           },
           "data_description": {
             "name": "Například Přístav nebo Jezero.",
             "location": "Umístěte špendlík na vodu, kde plujete. Kruh určuje oblast, kterou ukazuje mapa větru.",
             "offshore": "Vítr z těchto směrů fouká od břehu.",
             "exposed": "Směry s volnou vodou, kde se mohou vytvořit vlny.",
-            "fetch": "Jen pro řeky a jezera. SailCast měří volnou vodu v každém směru z mapy; vyplňte jen tehdy, chcete-li měření nahradit jednou vzdáleností."
+            "fetch": "Jen pro řeky a jezera. SailCast měří volnou vodu v každém směru z mapy; vyplňte jen tehdy, chcete-li měření nahradit jednou vzdáleností.",
+            "notes": "Místní znalosti pro AI, které využívá v přehledu a když se Assistu ptáte na plachtění, například kdy se zvedá mořský vánek nebo kde se dělají krátké strmé vlny. Nikdy nemění hodnocení."
           }
         },
         "sources": {
@@ -88,7 +92,8 @@
         "radius_out_of_range": "Poloměr kruhu musí být 2 až 50 km (asi 1 až 30 mil).",
         "suggestions_unavailable": "Nepodařilo se vyhledat zdroje v okolí. Můžete uložit bez nich a přidat je později úpravou místa.",
         "fetch_out_of_range": "Volná voda musí být 0,05 až 100 km (asi 0,03 až 60 mil).",
-        "invalid_sensor": "Pro každé měření vyberte senzor, nebo pole nechte prázdné."
+        "invalid_sensor": "Pro každé měření vyberte senzor, nebo pole nechte prázdné.",
+        "notes_too_long": "Použijte nejvýše 500 znaků."
       }
     },
     "boat": {
@@ -521,10 +526,10 @@
             }
           },
           "ai": {
-            "name": "Shrnutí od AI",
-            "description": "Přidá do zobrazení dne v panelu tlačítko „Shrnout pomocí AI“. To požádá poskytovatele AI, kterého máte nastaveného v Home Assistant, o dvě nebo tři věty o daném dni. Hodnocení bezpečnosti vždy vychází z vlastních pravidel SailCast, nikdy z AI.",
+            "name": "Přehled od AI",
+            "description": "Přidá do panelu přehled, který napíše poskytovatel AI nastavený v Home Assistant: nejlepší časy k plachtění v tomto týdnu napříč všemi vašimi místy a loděmi a poznámku ke každému dni. Hodnocení bezpečnosti vždy pochází z vlastních pravidel SailCast, nikdy z AI.",
             "data": {
-              "ai_summary": "Nabízet shrnutí od AI",
+              "ai_summary": "Psát přehledy od AI",
               "ai_task": "Úloha AI"
             },
             "data_description": {

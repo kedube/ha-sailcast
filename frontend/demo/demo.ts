@@ -3,11 +3,15 @@
  * stand-in for Home Assistant. Write its data first with
  * `.venv/bin/python scripts/demo_data.py` from the repository.
  *
- * Options: ?mode=night, ?units=metric, ?admin=0, ?empty, ?view=day or map.
+ * Options: ?mode=night, ?units=metric, ?admin=0, ?empty, ?view=day or map,
+ * and ?ai for the AI briefing: ?ai=slow while it's written, ?ai=stale after
+ * the forecast changed, ?ai=fail when the provider fails.
  */
 import "../src/sailcast-panel";
 import type {
   Bounds,
+  Briefing,
+  BriefingPick,
   EntityState,
   Forecast,
   HomeAssistant,
@@ -115,6 +119,46 @@ function madeUpView(data: DemoData, view: Bounds & { have?: string }): WindView 
   };
 }
 
+/**
+ * A stand-in AI briefing, as the AI might write one: the sailor's best two
+ * windows across the recorded spots and boats, and a note for their days.
+ */
+function standInBriefing(data: DemoData, config: SailCastConfig, sailorId: string): Briefing {
+  const sailor = config.sailors.find((item) => item.id === sailorId);
+  const found: BriefingPick[] = [];
+  for (const spot of config.spots) {
+    for (const boat of sailor?.boats ?? []) {
+      const forecast = data.forecasts[`${spot.id}|${sailorId}|${boat}`];
+      for (const day of forecast?.days ?? []) {
+        for (const window of day.windows) {
+          found.push({
+            spot: spot.id,
+            boat,
+            date: day.date,
+            start: window.start,
+            end: window.end,
+            score: window.score,
+            why: "Steady wind inside your limit, and the best score of the week.",
+          });
+        }
+      }
+    }
+  }
+  const picks = found.sort((a, b) => b.score - a.score).slice(0, 2);
+  return {
+    headline: "This is where the AI's headline goes: the best choice this week.",
+    summary:
+      "And here two to four sentences that compare the days, spots and boats, written by the AI provider set up in Home Assistant, in your language.",
+    picks,
+    days: Object.fromEntries(
+      picks.map((pick) => [pick.date, "A note about the day: the best spot, boat and time."]),
+    ),
+    recheck: "Check again on Friday evening, as the models disagree about the weekend.",
+    made: data.now,
+    current: true,
+  };
+}
+
 async function start(): Promise<void> {
   const response = await fetch("/demo/data.json");
   if (!response.ok) {
@@ -125,7 +169,7 @@ async function start(): Promise<void> {
   const data = (await response.json()) as DemoData;
   const config: SailCastConfig = {
     ...(params.has("empty") ? { ...data.config, spots: [], boats: [], sailors: [] } : data.config),
-    // `?ai` shows the AI summary's button, with a stand-in summary.
+    // `?ai` shows the AI briefing, with a stand-in one.
     ai: params.has("ai"),
   };
   let planned = data.planned.planned;
@@ -272,12 +316,18 @@ async function start(): Promise<void> {
         return message.days;
       case "hours":
         return { date: message.date };
-      case "ai_summary":
-        return {
-          text: "This is where the AI summary goes: two or three sentences about the day, written by the AI provider set up in Home Assistant, in your language.",
-          made: data.now,
-          current: true,
-        };
+      case "briefing": {
+        const mode = params.get("ai");
+        const briefing = standInBriefing(data, config, String(message.sailor));
+        if (mode === "fail" && message.write) {
+          throw { code: "ai_failed", message: "The AI provider didn't answer" };
+        }
+        if (mode === "stale") return { ...briefing, current: false };
+        if (mode === "slow" && message.write) {
+          return new Promise((resolve) => window.setTimeout(() => resolve(briefing), 4000));
+        }
+        return briefing;
+      }
       case "wind_grid":
         if (!data.wind_grid.spots.includes(String(message.spot))) {
           throw { code: "not_found", message: "Unknown spot" };

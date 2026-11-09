@@ -285,15 +285,19 @@
     "hours_sub_lights": "Alle uren, met navigatieverlichting"
   },
   "ai": {
-    "button": "Samenvatten met AI",
-    "writing": "Samenvatting wordt geschreven…",
-    "title": "AI-samenvatting",
+    "title": "AI-briefing",
+    "day_title": "AI-notitie voor de dag",
+    "button": "Briefing voor deze week schrijven",
+    "writing": "Briefing voor deze week wordt geschreven…",
     "written": "Geschreven om {time}",
-    "note": "Door AI geschreven op basis van deze verwachting, dus er kunnen fouten in zitten. De beoordelingen komen uit de eigen regels van SailCast.",
-    "changed": "De verwachting is veranderd sinds deze samenvatting is geschreven.",
-    "again": "Opnieuw samenvatten",
-    "failed": "De AI-samenvatting kon niet worden geschreven: {message}",
-    "bad_answer": "Het antwoord leek niet op een samenvatting. Probeer het opnieuw, of kies een andere AI-taak in de opties van SailCast."
+    "written_day": "Geschreven op {day} om {time}",
+    "note": "Door AI geschreven op basis van de verwachting van SailCast, dus er kunnen fouten in zitten. De beoordelingen en zeilvensters komen uit de eigen regels van SailCast.",
+    "changed": "De verwachting is veranderd sinds dit is geschreven.",
+    "update": "Briefing bijwerken",
+    "again": "Opnieuw proberen",
+    "picks": "Zeilvensters gekozen door de AI",
+    "failed": "De AI-briefing kon niet worden geschreven: {message}",
+    "bad_answer": "Het antwoord leek niet op een briefing. Probeer het opnieuw, of kies een andere AI-taak in de opties van SailCast."
   },
   "map": {
     "label": "Geanimeerde windkaart rond {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Het open water rond de speld wordt gemeten…",
     "on_land": "Deze speld staat op het land. Zet de speld op het water waar je zeilt, zodat SailCast golven en strijklengte kan berekenen.",
     "shore_open": "Het open water reikt {distance} richting {direction}, en het vaargebied ligt open naar zee vanuit {open}.",
-    "shore_closed": "Het open water reikt {distance} richting {direction}."
+    "shore_closed": "Het open water reikt {distance} richting {direction}.",
+    "notes": "Notities voor de AI",
+    "notes_hint": "Lokale kennis voor de AI, gebruikt in de briefing en als je Assist iets over zeilen vraagt, zoals wanneer de zeewind doorkomt of waar het ruig wordt. Het verandert nooit een beoordeling."
   },
   "error": {
     "load": "SailCast kon niet worden geladen: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Die Home Assistant-gebruiker bestaat niet meer.",
     "boat_in_use": "{sailor} zeilt alleen met deze boot. Geef {sailor} eerst een andere boot.",
     "fetch_out_of_range": "Kies voor het open water een afstand tussen 0,05 en 100 km (ongeveer 0,03 tot 60 mijl).",
-    "invalid_sensor": "Kies voor elke meting een sensor, of geen."
+    "invalid_sensor": "Kies voor elke meting een sensor, of geen.",
+    "notes_too_long": "Gebruik maximaal 500 tekens."
   },
   "limits": {
     "wind": "Wind",

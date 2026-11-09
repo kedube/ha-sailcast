@@ -31,7 +31,7 @@ from homeassistant.loader import IntegrationNotLoaded, async_get_loaded_integrat
 from homeassistant.util import dt as dt_util
 import probatio
 
-from . import ai, alerts as alert_sources, profiles, tides as tide_sources
+from . import ai, alerts as alert_sources, briefing, profiles, tides as tide_sources
 from .const import (
     CONF_AHEAD,
     CONF_AI_TASK,
@@ -54,6 +54,7 @@ from .const import (
     CONF_LIGHTS,
     CONF_MARINE_ZONE,
     CONF_MIN_SCORE,
+    CONF_NOTES,
     CONF_OFFSHORE,
     CONF_RAIN,
     CONF_SENSORS,
@@ -131,6 +132,7 @@ SPOT_DATA: Final = probatio.Schema(
         probatio.Optional(CONF_SOURCE_POINTS, default=dict): {
             cv.string: probatio.ExactSequence([cv.latitude, cv.longitude])
         },
+        probatio.Optional(CONF_NOTES, default=""): str,
     }
 )
 BOAT_DATA: Final = probatio.Schema(
@@ -212,7 +214,7 @@ def async_register_commands(hass: HomeAssistant) -> None:
         ws_hours,
         ws_wind_grid,
         ws_wind_view,
-        ws_ai_summary,
+        ws_briefing,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -308,8 +310,6 @@ def _calendars(hass: HomeAssistant, user: User) -> list[dict[str, Any]]:
         probatio.Required("spot"): cv.string,
         probatio.Required("sailor"): cv.string,
         probatio.Optional("boat"): cv.string,
-        # The panel's language, for the AI summaries already written in it.
-        probatio.Optional("language"): cv.string,
     }
 )
 @callback
@@ -318,11 +318,7 @@ def ws_forecast(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Send a sailor's week at a spot in one of their boats, with planned sails.
-
-    With AI on, each day carries the AI summary already written for it in the
-    panel's language, if there is one, and whether it's still current.
-    """
+    """Send a sailor's week at a spot in one of their boats, with planned sails."""
     if (data := _data(hass, connection, msg)) is None:
         return
     results = data.results.data
@@ -373,96 +369,75 @@ def ws_forecast(
             if sail.sailor == outlook.sailor.id and sail.end > now
         ],
     }
-    entry = _entry(hass)
-    if entry and ai.enabled(hass, entry) and (language := msg.get("language")):
-        for day in result["days"]:
-            key = (spot.id, outlook.sailor.id, boat.boat.id, day["date"], language)
-            kept = data.summaries.get(key)
-            day["ai"] = (
-                kept.as_dict(ai.facts(result, day["date"], now)) if kept else None
-            )
     connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command(
     {
-        probatio.Required("type"): "sailcast/ai_summary",
-        probatio.Required("spot"): cv.string,
+        probatio.Required("type"): "sailcast/briefing",
         probatio.Required("sailor"): cv.string,
-        probatio.Optional("boat"): cv.string,
-        probatio.Required("date"): cv.date,
         probatio.Required("language"): cv.string,
+        # Write a new one if the kept one isn't current. Without it, the kept
+        # one is sent as it is, which is how open panels follow updates.
+        probatio.Optional("write", default=False): cv.boolean,
     }
 )
 @websocket_api.async_response
-async def ws_ai_summary(
+async def ws_briefing(
     hass: HomeAssistant,
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Write an AI summary of a day, as the user, or send the one kept for it."""
+    """Send a sailor's AI briefing, writing one as the user if asked to.
+
+    The answer is None when there's no briefing and none was asked for.
+    """
     if (data := _data(hass, connection, msg)) is None:
         return
     entry = _entry(hass)
     if entry is None or not ai.enabled(hass, entry):
-        connection.send_error(msg["id"], "ai_off", "The AI summary is turned off")
+        connection.send_error(msg["id"], "ai_off", "The AI briefing is turned off")
         return
-    results = data.results.data
-    outlook = results.outlook(msg["sailor"], msg["spot"])
-    conditions = results.conditions.get(msg["spot"])
-    boat = next(
-        (
-            item
-            for item in (outlook.boats if outlook else ())
-            if item.boat.id == msg.get("boat")
-        ),
-        outlook.boats[0] if outlook and outlook.boats else None,
-    )
-    now = dt_util.utcnow()
-    day: date = msg["date"]
-    week_data = (
-        week(outlook, boat, conditions, now) if outlook and boat and conditions else {}
-    )
-    found = ai.facts(week_data, day.isoformat(), now) if week_data else {}
-    if outlook is None or boat is None or not found:
+    if (sailor := data.profiles.sailors.get(msg["sailor"])) is None:
         connection.send_error(
-            msg["id"], websocket_api.ERR_NOT_FOUND, "There's nothing left to summarize"
+            msg["id"], websocket_api.ERR_NOT_FOUND, "There's no such sailor"
         )
         return
-    asked = ai.instructions(
-        ai.day_data(hass, outlook, boat, week_data, date=day.isoformat(), now=now)
-        or {},
-        outlook,
-        boat,
-        msg["language"],
-        f"{day:%A}",
-    )
-    key = (
-        outlook.spot.id,
-        outlook.sailor.id,
-        boat.boat.id,
-        day.isoformat(),
-        msg["language"],
-    )
+    now = dt_util.utcnow()
+    weeks = ai.boat_weeks(data.results.data, sailor, now)
+    found = briefing.facts(weeks, now)
+    key = (sailor.id, msg["language"])
+    kept = data.briefings.get(key)
+    if not msg["write"] or (kept and kept.current(found)):
+        connection.send_result(msg["id"], kept.as_dict(found) if kept else None)
+        return
+    week_data, windows = ai.week_data(hass, weeks, sailor, now)
+    if not week_data["days"]:
+        connection.send_error(
+            msg["id"], websocket_api.ERR_NOT_FOUND, "There's nothing to brief yet"
+        )
+        return
     try:
-        summary = await data.summaries.async_write(
+        written = await data.briefings.async_write(
             hass,
             key,
             found,
-            asked,
+            briefing.instructions(week_data, sailor, msg["language"]),
+            windows=windows,
+            dates={day["date"] for day in week_data["days"]},
             entity_id=entry.options.get(CONF_AI_TASK),
             context=connection.context(msg),
         )
     except ai.BadAnswerError as err:
-        connection.send_error(msg["id"], "bad_answer", str(err))
-        return
+        code, message = "bad_answer", str(err)
     except TimeoutError:
-        connection.send_error(msg["id"], "ai_failed", "The AI didn't answer in time")
-        return
+        code, message = "ai_failed", "The AI didn't answer in time"
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "ai_failed", str(err))
+        code, message = "ai_failed", str(err)
+    else:
+        connection.send_result(msg["id"], written.as_dict(found))
         return
-    connection.send_result(msg["id"], summary.as_dict(found))
+    connection.send_error(msg["id"], code, message)
 
 
 def _warning_source(data: SailCastData, spot: Spot) -> dict[str, Any] | None:
@@ -645,6 +620,7 @@ async def _async_check(
     if error := profiles.check_name(name, others):
         errors["name"] = error
     if kind == SUBENTRY_SPOT:
+        data[CONF_NOTES] = data[CONF_NOTES].strip()
         errors.update(profiles.check_spot(data))
         for key in (CONF_OFFSHORE, CONF_EXPOSED):
             data[key] = profiles.in_order(data[key], DIRECTIONS)

@@ -16,6 +16,7 @@ A spot is a place you sail from. Each one is a device, with its own entities.
 | Offshore wind | The directions wind blows away from the shore from. In a dinghy, an offshore wind of 8 kt or more makes the rating one level worse, and 12 kt or more makes it at least not recommended. |
 | Open to waves from | The directions with open water, where waves can build. The ocean model's waves from other directions are reduced. Left empty, SailCast uses the directions it measures on the shoreline. |
 | Open water upwind | Rivers and lakes only. SailCast measures how far open water reaches each way from the pin; set this to use one distance instead. |
+| Notes for the AI | Up to 500 characters of local knowledge, such as when the sea breeze fills in or where it gets rough. The AI briefing and Assist use them to explain the conditions; they never change a rating. |
 
 ### Data sources
 
@@ -86,5 +87,5 @@ Under **Settings → Devices & services → SailCast → Configure**. Saving rel
 | Option | What it does |
 | --- | --- |
 | WorldTides API key | Tide predictions anywhere, from [worldtides.info](https://www.worldtides.info), with your own account. A spot that uses it costs about 3 credits every five days. The key stays in Home Assistant and never reaches the panel. Leave empty to remove it. |
-| Offer AI summaries | Adds a **Summarize with AI** button to the panel's day view. Off unless you turn it on. See [AI summary](../README.md#ai-summary). |
-| AI task | The AI task that writes summaries. Leave empty to use Home Assistant's default, set under **Settings → System → AI**. |
+| Write AI briefings | Adds the AI briefing to the panel: the best times to sail this week across the sailor's spots and boats, and a note for each day. Off unless you turn it on. See [AI briefing and Assist](../README.md#ai-briefing-and-assist). |
+| AI task | The AI task that writes briefings. Leave empty to use Home Assistant's default, set under **Settings → System → AI**. |

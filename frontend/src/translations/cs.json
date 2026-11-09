@@ -285,15 +285,19 @@
     "hours_sub_lights": "Všechny hodiny, s navigačními světly"
   },
   "ai": {
-    "button": "Shrnout pomocí AI",
-    "writing": "Vytváří se shrnutí…",
-    "title": "Shrnutí od AI",
+    "title": "Přehled od AI",
+    "day_title": "Poznámka AI k tomuto dni",
+    "button": "Napsat přehled tohoto týdne",
+    "writing": "Vytváří se přehled tohoto týdne…",
     "written": "Napsáno {time}",
-    "note": "Shrnutí napsala AI z této předpovědi, takže se může mýlit. Hodnocení pochází z vlastních pravidel SailCast.",
-    "changed": "Od napsání tohoto shrnutí se předpověď změnila.",
-    "again": "Shrnout znovu",
-    "failed": "Shrnutí od AI se nepodařilo vytvořit: {message}",
-    "bad_answer": "Odpověď nevypadala jako shrnutí. Zkuste to znovu, nebo v možnostech SailCast vyberte jinou úlohu AI."
+    "written_day": "Napsáno: {day}, {time}",
+    "note": "Přehled napsala AI z předpovědi SailCast, takže se může mýlit. Hodnocení a okna pocházejí z vlastních pravidel SailCast.",
+    "changed": "Od napsání tohoto textu se předpověď změnila.",
+    "update": "Aktualizovat přehled",
+    "again": "Zkusit znovu",
+    "picks": "Okna vybraná AI",
+    "failed": "Přehled od AI se nepodařilo napsat: {message}",
+    "bad_answer": "Odpověď nevypadala jako přehled. Zkuste to znovu, nebo v možnostech SailCast vyberte jinou úlohu AI."
   },
   "map": {
     "label": "Animovaná mapa větru – {spot}",
@@ -548,7 +552,9 @@
     "shore_measuring": "Měření volné vody kolem špendlíku…",
     "on_land": "Špendlík je na souši. Umístěte ho na vodu, kde plujete, aby SailCast mohl spočítat vlny a délku rozběhu.",
     "shore_open": "Volná voda sahá {distance} směrem na {direction} a místo je otevřené k moři ze směrů {open}.",
-    "shore_closed": "Volná voda sahá {distance} směrem na {direction}."
+    "shore_closed": "Volná voda sahá {distance} směrem na {direction}.",
+    "notes": "Poznámky pro AI",
+    "notes_hint": "Místní znalosti pro AI, které využívá v přehledu a když se Assistu ptáte na plachtění, například kdy se zvedá mořský vánek nebo kde se dělají krátké strmé vlny. Nikdy nemění hodnocení."
   },
   "error": {
     "load": "SailCast se nepodařilo načíst: {message}",
@@ -571,7 +577,8 @@
     "unknown_user": "Tento uživatel Home Assistant už neexistuje.",
     "boat_in_use": "{sailor} pluje jen na této lodi. Nejdřív jachtaři přiřaďte jinou loď.",
     "fetch_out_of_range": "Zadejte volnou vodu 0,05 až 100 km (asi 0,03 až 60 mil).",
-    "invalid_sensor": "Pro každé měření vyberte senzor, nebo žádný."
+    "invalid_sensor": "Pro každé měření vyberte senzor, nebo žádný.",
+    "notes_too_long": "Použijte nejvýše 500 znaků."
   },
   "limits": {
     "wind": "Vítr",
