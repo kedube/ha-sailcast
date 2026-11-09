@@ -7,7 +7,7 @@ from types import MappingProxyType
 
 from homeassistant.config_entries import ConfigSubentry
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.sailcast import profiles
 from custom_components.sailcast.profiles import Profiles, SizeClass, Skill, WaterType

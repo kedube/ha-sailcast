@@ -335,6 +335,18 @@ function nowCard(ctx: Ctx): TemplateResult {
           })}
         </div>
         ${read.wind ? html`<div class="now-sub">${from("wind")}</div>` : nothing}
+        ${
+          read.wind?.from_height
+            ? html`<div class="now-sub small">
+                ${t("now.wind_height", {
+                  height: heightText(fmt, t, read.wind.from_height),
+                  standard: t(fmt.feet ? "unit.feet" : "unit.meters", {
+                    value: fmt.number(fmt.height(10)),
+                  }),
+                })}
+              </div>`
+            : nothing
+        }
       </div>
     </div>
     <dl class="kv">

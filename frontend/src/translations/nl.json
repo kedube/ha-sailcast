@@ -92,7 +92,8 @@
     "note_no_sources": "Geen boei, vliegveld of sensor meet in dit vaargebied, dus dit is de verwachting voor het uur dat nu loopt.",
     "note_no_sources_admin": "Geen boei, vliegveld of sensor meet in dit vaargebied, dus dit is de verwachting voor het uur dat nu loopt. Bewerk het vaargebied in Instellingen om de dichtstbijzijnde te kiezen.",
     "visibility_good": "Meer dan 8 zeemijl",
-    "tide_rough": "ruwe schatting, boven gemiddeld zeeniveau"
+    "tide_rough": "ruwe schatting, boven gemiddeld zeeniveau",
+    "wind_height": "Gemeten op {height} boven het water; weergegeven op {standard}, de hoogte van de verwachtingen."
   },
   "warnings": {
     "title": "Officiële waarschuwingen",

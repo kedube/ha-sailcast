@@ -3,9 +3,11 @@
 When a reading is fresh, SailCast compares it with the forecast for the same
 place and time, and moves the spot's forecast by the difference, fading to
 nothing over six hours. Buoys and airports have a forecast of their own;
-your sensors are taken to be at the spot. Each field expires on its own and
-comes from the best source that has it: your sensors, then the buoy, then the
-airport. Without a gust reading, gusts move with the wind.
+your sensors are taken to be at the spot. A buoy's wind and gusts arrive
+already scaled to the 10 m that forecasts give (see providers/ndbc.py). Each
+field expires on its own and comes from the best source that has it: your
+sensors, then the buoy, then the airport. Without a gust reading, gusts move
+with the wind.
 
 A measured visibility replaces the forecast's for the hour under way. Only a
 measured visibility can make an hour dangerous.

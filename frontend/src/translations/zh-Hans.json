@@ -92,7 +92,8 @@
     "note_no_sources": "此地点没有浮标、机场或传感器的读数，因此这里显示的是当前这一小时的预报。",
     "note_no_sources_admin": "此地点没有浮标、机场或传感器的读数，因此这里显示的是当前这一小时的预报。请在“设置”中编辑该地点，选择最近的数据来源。",
     "visibility_good": "超过 8 海里",
-    "tide_rough": "粗略值，从平均海平面起算"
+    "tide_rough": "粗略值，从平均海平面起算",
+    "wind_height": "在水面以上 {height} 处测得；按预报所用的 {standard} 高度显示。"
   },
   "warnings": {
     "title": "官方预警",

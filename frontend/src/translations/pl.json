@@ -92,7 +92,8 @@
     "note_no_sources": "Żadna boja, lotnisko ani czujnik nie mierzy warunków na tym akwenie, więc to prognoza na bieżącą godzinę.",
     "note_no_sources_admin": "Żadna boja, lotnisko ani czujnik nie mierzy warunków na tym akwenie, więc to prognoza na bieżącą godzinę. Edytuj akwen w Ustawieniach, aby wybrać najbliższe źródła.",
     "visibility_good": "Ponad 8 Mm",
-    "tide_rough": "przybliżony, nad średnim poziomem morza"
+    "tide_rough": "przybliżony, nad średnim poziomem morza",
+    "wind_height": "Zmierzono {height} nad wodą; pokazano dla {standard}, wysokości, dla której są prognozy."
   },
   "warnings": {
     "title": "Oficjalne ostrzeżenia",

@@ -193,6 +193,8 @@ def readings_now(observations: Sequence[Observation], now: datetime) -> dict[str
                 "kind": observation.kind,
                 "station": observation.station,
             }
+            # Wind and gusts scaled to 10 m say the height they were read at.
+            | ({"from_height": reading.from_height} if reading.from_height else {})
             for key, (observation, reading) in latest(observations, now).items()
         },
         "sources": [

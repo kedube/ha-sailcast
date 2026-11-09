@@ -92,7 +92,8 @@
     "note_no_sources": "Toto místo neměří žádná bóje, letiště ani senzor, proto se zobrazuje předpověď pro právě probíhající hodinu.",
     "note_no_sources_admin": "Toto místo neměří žádná bóje, letiště ani senzor, proto se zobrazuje předpověď pro právě probíhající hodinu. Upravte místo v Nastavení a vyberte nejbližší.",
     "visibility_good": "Přes 8 NM",
-    "tide_rough": "přibližně, nad střední hladinou moře"
+    "tide_rough": "přibližně, nad střední hladinou moře",
+    "wind_height": "Měřeno {height} nad vodou; zobrazeno pro {standard}, výšku, pro kterou platí předpovědi."
   },
   "warnings": {
     "title": "Oficiální výstrahy",

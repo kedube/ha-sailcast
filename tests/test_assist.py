@@ -8,8 +8,8 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import llm
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry, MockUser
-from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant.common import MockConfigEntry, MockUser
+from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.assist import NOT_SET_UP
 from custom_components.sailcast.const import DOMAIN

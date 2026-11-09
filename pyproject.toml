@@ -55,6 +55,10 @@ split-on-trailing-comma = false
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Let Home Assistant install its httpx alias before respx is imported, as
+# pytest-homeassistant asks; its HTTP mocks still use respx.
+addopts = "-p no:respx"
+pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.mypy]

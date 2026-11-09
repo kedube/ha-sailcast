@@ -4,13 +4,20 @@ Each station's realtime file holds 45 days, newest first. NDBC answers range
 requests, so SailCast reads only the first 8 KB, which is the last several
 hours. "MM" means missing. Fields arrive on their own schedules, so each
 field's newest value is kept with its own time.
+
+Forecasts give the wind 10 m above the water, but a buoy's anemometer is
+about 3 to 5 m up, where the wind is some 8 to 12% lighter, and a pier's can
+be 20 m up. Each station's page says how high its anemometer is, and its
+wind and gusts are scaled to 10 m along the log wind profile over open water.
+A station whose page doesn't say is left as it reads.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 import html
+import math
 import re
 from typing import Final
 
@@ -20,7 +27,14 @@ from . import ProviderError, Reading, Readings, fetch_bytes
 
 STATIONS_URL: Final = "https://www.ndbc.noaa.gov/activestations.xml"
 REALTIME_URL: Final = "https://www.ndbc.noaa.gov/data/realtime2/{station}.txt"
+STATION_PAGE_URL: Final = "https://www.ndbc.noaa.gov/station_page.php?station={station}"
 READ_BYTES: Final = 8192
+PAGE_BYTES: Final = 262_144
+# The height forecasts give the wind at, and the roughness of open water (m).
+STANDARD_HEIGHT: Final = 10.0
+ROUGHNESS: Final = 0.0002
+# Higher than this, the profile over open water no longer fits (m).
+HIGHEST: Final = 30.0
 KNOTS_PER_METER_PER_SECOND: Final = 1.943844
 METERS_PER_NAUTICAL_MILE: Final = 1852.0
 MISSING: Final = "MM"
@@ -66,6 +80,52 @@ async def async_get_readings(session: aiohttp.ClientSession, station: str) -> Re
         limit=READ_BYTES,
     )
     return parse_readings(body.decode("ascii", "replace"))
+
+
+async def async_anemometer_height(
+    session: aiohttp.ClientSession, station: str
+) -> float | None:
+    """Return how high above the water a station reads the wind, if NDBC says."""
+    body = await fetch_bytes(
+        session, STATION_PAGE_URL.format(station=station.upper()), limit=PAGE_BYTES
+    )
+    return parse_anemometer_height(body.decode("utf-8", "replace"))
+
+
+def parse_anemometer_height(text: str) -> float | None:
+    """Read a station page's anemometer height, above the water, in meters.
+
+    The page gives the site's elevation above mean sea level ("sea level" on
+    a buoy) and the anemometer's height above the site.
+    """
+    plain = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", text)))
+    anemometer = re.search(
+        r"Anemometer height:\s*([\d.]+)\s*m above site elevation", plain
+    )
+    site = re.search(
+        r"Site elevation:\s*(?:sea level|([\d.]+)\s*m above mean sea level)", plain
+    )
+    if anemometer is None or site is None:
+        return None
+    try:
+        height = float(anemometer[1]) + (float(site[1]) if site[1] else 0.0)
+    except ValueError:
+        return None
+    return height if 0 < height <= HIGHEST else None
+
+
+def at_standard_height(readings: Readings, height: float | None) -> Readings:
+    """Return readings with wind and gusts scaled from the anemometer to 10 m."""
+    if height is None:
+        return readings
+    factor = math.log(STANDARD_HEIGHT / ROUGHNESS) / math.log(height / ROUGHNESS)
+    fields = dict(readings.fields)
+    for key in ("wind", "gust"):
+        if (reading := fields.get(key)) is not None:
+            fields[key] = replace(
+                reading, value=reading.value * factor, from_height=height
+            )
+    return Readings(fields)
 
 
 def parse_stations(text: str) -> list[Buoy]:

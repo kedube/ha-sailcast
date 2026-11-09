@@ -92,7 +92,8 @@
     "note_no_sources": "Keine Boje, kein Flughafen und kein Sensor liefert Messwerte für dieses Revier, daher siehst du die Vorhersage für die laufende Stunde.",
     "note_no_sources_admin": "Keine Boje, kein Flughafen und kein Sensor liefert Messwerte für dieses Revier, daher siehst du die Vorhersage für die laufende Stunde. Bearbeite das Revier unter Einstellungen, um die nächstgelegenen auszuwählen.",
     "visibility_good": "Über 8 sm",
-    "tide_rough": "grob, über dem mittleren Meeresspiegel"
+    "tide_rough": "grob, über dem mittleren Meeresspiegel",
+    "wind_height": "In {height} Höhe über dem Wasser gemessen; angezeigt für {standard}, die Höhe der Vorhersagen."
   },
   "warnings": {
     "title": "Amtliche Warnungen",

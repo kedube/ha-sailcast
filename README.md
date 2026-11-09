@@ -30,7 +30,7 @@ It adds a SailCast page to the sidebar, with a week calendar, a day view, an ani
 ## What's in it
 
 - **Forecasts for the water:** wind, gusts and waves anywhere, with the wind from three weather models. Official warnings in the US, Canada and Europe. Tides in the US, Canada, the Netherlands and Norway, and anywhere with a WorldTides key. Currents in the US.
-- **Local corrections:** readings from buoys, airports and your own sensors nudge the next few hours, and waves on rivers and lakes are worked out from the open water measured on the map.
+- **Local corrections:** readings from buoys, airports and your own sensors nudge the next few hours, with a buoy's wind scaled from its anemometer to the 10 m forecasts use, and waves on rivers and lakes are worked out from the open water measured on the map.
 - **A sidebar panel:** the week as a calendar, each day hour by hour, an animated wind map, and the settings.
 - **Your own calendar:** sailing windows go into it one at a time or automatically, and SailCast warns you when a planned sail's forecast gets worse.
 - **Automations:** entities, a calendar, an action, and two blueprints for phone notifications.

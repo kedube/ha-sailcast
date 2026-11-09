@@ -8,7 +8,7 @@ from typing import Any
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from pytest_homeassistant.common import async_fire_time_changed
 
 from custom_components.sailcast.profiles import Hours
 from custom_components.sailcast.storage import STORAGE_KEY, PlannedSail, SailCastStore

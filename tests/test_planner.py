@@ -23,11 +23,8 @@ from homeassistant.components.persistent_notification import (
 )
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_capture_events,
-)
-from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant.common import MockConfigEntry, async_capture_events
+from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import DOMAIN, NAME
 from custom_components.sailcast.planner import EVENT_PLANNED_SAIL_CHANGED, Planner

@@ -14,11 +14,8 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 import pytest
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
-from pytest_homeassistant_custom_component.test_util.aiohttp import (
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
+from pytest_homeassistant.test_util.aiohttp import (
     AiohttpClientMocker,
     AiohttpClientMockResponse,
 )
@@ -341,12 +338,24 @@ def mock_sources(
     )
 
 
+# The test buoys' pages, cut down: neither says how high an anemometer is,
+# as the San Diego Bay station's doesn't and the wave buoy has none.
+STATION_PAGES = {
+    "46258": "<p><b>Site elevation:</b> sea level<br>\n"
+    "<b>Sea temp depth:</b> 0.46 m below water line<br></p>",
+    "SDBC1": "<p><b>9410170 - San Diego, CA</b></p>",
+}
+
+
 def mock_readings(aioclient_mock: AiohttpClientMocker) -> None:
     """Answer the buoys, airports and the forecast where they are."""
     for buoy in ("46258", "SDBC1"):
         aioclient_mock.get(
             ndbc.REALTIME_URL.format(station=buoy),
             text=(FIXTURES / f"ndbc_{buoy}.txt").read_text(),
+        )
+        aioclient_mock.get(
+            ndbc.STATION_PAGE_URL.format(station=buoy), text=STATION_PAGES[buoy]
         )
     aioclient_mock.get(metar.METAR_URL, json=fixture("aviationweather_metar"))
     aioclient_mock.get(

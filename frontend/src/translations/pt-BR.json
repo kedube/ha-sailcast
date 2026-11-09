@@ -92,7 +92,8 @@
     "note_no_sources": "Não há boia, aeroporto nem sensor com leituras deste local, então esta é a previsão para a hora em curso.",
     "note_no_sources_admin": "Não há boia, aeroporto nem sensor com leituras deste local, então esta é a previsão para a hora em curso. Edite o local em Configurações para escolher as fontes mais próximas.",
     "visibility_good": "Mais de 8 MN",
-    "tide_rough": "aproximada, acima do nível médio do mar"
+    "tide_rough": "aproximada, acima do nível médio do mar",
+    "wind_height": "Medido a {height} acima da água; mostrado a {standard}, a altura das previsões."
   },
   "warnings": {
     "title": "Alertas oficiais",

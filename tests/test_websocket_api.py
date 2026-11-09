@@ -13,15 +13,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.setup import async_setup_component
 import pytest
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
-from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
-from pytest_homeassistant_custom_component.typing import (
-    MockHAClientWebSocket,
-    WebSocketGenerator,
-)
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
+from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant.typing import MockHAClientWebSocket, WebSocketGenerator
 
 from custom_components.sailcast.const import DOMAIN, SIGNAL_UPDATED, SUBENTRY_SAILOR
 from custom_components.sailcast.storage import DATA_STORE

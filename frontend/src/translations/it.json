@@ -92,7 +92,8 @@
     "note_no_sources": "Nessuna boa, aeroporto o sensore rileva questa zona, quindi questa è la previsione per l'ora in corso.",
     "note_no_sources_admin": "Nessuna boa, aeroporto o sensore rileva questa zona, quindi questa è la previsione per l'ora in corso. Modifica la zona in Impostazioni per scegliere le fonti più vicine.",
     "visibility_good": "Oltre 8 NM",
-    "tide_rough": "stima approssimativa, sopra il livello medio del mare"
+    "tide_rough": "stima approssimativa, sopra il livello medio del mare",
+    "wind_height": "Misurato a {height} sopra l'acqua; mostrato a {standard}, l'altezza delle previsioni."
   },
   "warnings": {
     "title": "Avvisi ufficiali",

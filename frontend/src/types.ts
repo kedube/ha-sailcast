@@ -372,6 +372,8 @@ export interface Reading {
   /** Knots for wind, degrees for directions, and SI units for the rest. */
   value: number;
   time: string;
+  /** For wind and gusts scaled to 10 m: the height they were measured at (m). */
+  from_height?: number | null;
   kind: ReadingKind;
   station: string | null;
 }

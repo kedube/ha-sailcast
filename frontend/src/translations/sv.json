@@ -92,7 +92,8 @@
     "note_no_sources": "Ingen boj, flygplats eller sensor mäter vid den här platsen, så det här är prognosen för den pågående timmen.",
     "note_no_sources_admin": "Ingen boj, flygplats eller sensor mäter vid den här platsen, så det här är prognosen för den pågående timmen. Redigera platsen under Inställningar för att välja de närmaste.",
     "visibility_good": "Över 8 NM",
-    "tide_rough": "ungefärligt, över medelvattenståndet"
+    "tide_rough": "ungefärligt, över medelvattenståndet",
+    "wind_height": "Uppmätt {height} över vattnet; visas för {standard}, höjden som prognoserna gäller."
   },
   "warnings": {
     "title": "Officiella varningar",

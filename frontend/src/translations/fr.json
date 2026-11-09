@@ -92,7 +92,8 @@
     "note_no_sources": "Aucune bouée, aucun aéroport ni aucun capteur ne mesure ce plan d'eau : voici donc la prévision pour l'heure en cours.",
     "note_no_sources_admin": "Aucune bouée, aucun aéroport ni aucun capteur ne mesure ce plan d'eau : voici donc la prévision pour l'heure en cours. Modifiez le plan d'eau dans Paramètres pour choisir les plus proches.",
     "visibility_good": "Plus de 8 M",
-    "tide_rough": "approximative, au-dessus du niveau moyen de la mer"
+    "tide_rough": "approximative, au-dessus du niveau moyen de la mer",
+    "wind_height": "Mesuré à {height} au-dessus de l'eau ; affiché à {standard}, la hauteur des prévisions."
   },
   "warnings": {
     "title": "Alertes officielles",

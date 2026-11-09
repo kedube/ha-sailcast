@@ -271,7 +271,8 @@ class ObservationCoordinator(SourceCoordinator[Observed]):
 
     Each kind is fetched on its own schedule. `failing` says since when a
     station's readings couldn't be fetched, for repair issues, and `started`
-    is when this began trying.
+    is when this began trying. A buoy's wind and gusts are scaled to 10 m from
+    its anemometer's height, which is looked up once.
     """
 
     def __init__(
@@ -287,6 +288,8 @@ class ObservationCoordinator(SourceCoordinator[Observed]):
         self.started = dt_util.utcnow()
         self.failing: dict[str, datetime] = {}
         self._fetched: dict[str, datetime] = {}
+        # Each buoy's anemometer height above the water, None if NDBC doesn't say.
+        self._heights: dict[str, float | None] = {}
 
     def _due(self, key: str, every: timedelta, now: datetime) -> bool:
         fetched = self._fetched.get(key)
@@ -305,14 +308,15 @@ class ObservationCoordinator(SourceCoordinator[Observed]):
                 continue
             attempts += 1
             try:
-                readings[station.key] = await ndbc.async_get_readings(
-                    self.session, station.id
-                )
+                found = await ndbc.async_get_readings(self.session, station.id)
             except ProviderError as err:
                 failures += 1
                 LOGGER.debug("Couldn't read buoy %s: %s", station.id, err)
                 self.failing.setdefault(station.key, now)
                 continue
+            readings[station.key] = ndbc.at_standard_height(
+                found, await self._async_height(station.id)
+            )
             self._fetched[station.key] = now
             self.failing.pop(station.key, None)
         airports = [station for station in wanted.values() if station.kind == AIRPORT]
@@ -338,6 +342,21 @@ class ObservationCoordinator(SourceCoordinator[Observed]):
             raise UpdateFailed("Couldn't get readings from any buoy or airport")
         forecasts, marine = await self._async_forecasts(wanted, old, now)
         return Observed(readings, forecasts, marine)
+
+    async def _async_height(self, buoy: str) -> float | None:
+        """Return a buoy's anemometer height, looking it up the first time.
+
+        A page that couldn't be fetched is asked for again next time.
+        """
+        if buoy not in self._heights:
+            try:
+                self._heights[buoy] = await ndbc.async_anemometer_height(
+                    self.session, buoy
+                )
+            except ProviderError as err:
+                LOGGER.debug("Couldn't look up buoy %s's anemometer: %s", buoy, err)
+                return None
+        return self._heights[buoy]
 
     async def _async_forecasts(
         self, wanted: dict[str, Station], old: Observed, now: datetime

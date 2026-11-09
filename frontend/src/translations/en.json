@@ -92,7 +92,8 @@
     "note_no_sources": "No buoy, airport or sensor reads this spot, so this is the forecast for the hour now under way.",
     "note_no_sources_admin": "No buoy, airport or sensor reads this spot, so this is the forecast for the hour now under way. Edit the spot in Settings to pick the nearest.",
     "visibility_good": "Over 8 nm",
-    "tide_rough": "rough, above mean sea level"
+    "tide_rough": "rough, above mean sea level",
+    "wind_height": "Measured {height} above the water; shown at {standard}, the height forecasts use."
   },
   "warnings": {
     "title": "Official warnings",

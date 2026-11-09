@@ -27,10 +27,15 @@ class ProviderError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class Reading:
-    """One measured value and when it was measured."""
+    """One measured value and when it was measured.
+
+    `from_height` is set on wind and gusts scaled to the 10 m that forecasts
+    are for: the height above the water they were measured at, in meters.
+    """
 
     value: float
     time: datetime
+    from_height: float | None = None
 
 
 @dataclass(frozen=True, slots=True)

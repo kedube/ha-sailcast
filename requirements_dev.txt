@@ -1,17 +1,17 @@
 # Home Assistant and the tools for tests, lint and type checks.
-# pytest-homeassistant-custom-component pins Home Assistant 2026.10.4. Move to
-# the release that pins 2026.11 once it's published.
-pytest-homeassistant-custom-component==0.13.375
+# pytest-homeassistant is Home Assistant's own test package, published from
+# home-assistant/core with each release; it pins Home Assistant 2026.11.0.
+pytest-homeassistant==2026.11.0
 # Home Assistant's Local Calendar needs it; the planned-sail tests add events
 # to a real Local Calendar.
-ical==14.3.0
+ical==14.3.1
 # Home Assistant installs its integrations' requirements itself; the tests
-# don't. The versions below are the ones Home Assistant 2026.10.4 pins; move
+# don't. The versions below are the ones Home Assistant 2026.11.0 pins; move
 # them with it.
 # AI Task, which SailCast imports, needs these for Conversation and Camera.
 gazetteer-matcher==1.1.0
 hassil==3.12.1
-home-assistant-intents==2026.10.6
+home-assistant-intents==2026.10.27
 PyTurboJPEG==1.8.3
 # Mobile App, which the blueprints notify through, needs these for Home
 # Assistant Cloud and Assist.

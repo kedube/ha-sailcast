@@ -8,7 +8,8 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
-from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.providers import (
     ProviderError,
@@ -17,8 +18,18 @@ from custom_components.sailcast.providers import (
     ndbc,
     open_meteo,
 )
+from custom_components.sailcast.week import readings_now
 
-from .conftest import FIXTURES, POINTS, STATION_POINTS, fixture, mock_readings
+from .conftest import (
+    FIXTURES,
+    POINTS,
+    RECORDED,
+    STATION_POINTS,
+    fixture,
+    mock_readings,
+    mock_sources,
+    set_up,
+)
 
 BUOY = (FIXTURES / "ndbc_46258.txt").read_text()
 
@@ -75,6 +86,125 @@ async def test_buoy_reads_only_the_start(
     assert readings.get("wave_height").value == 1.4  # type: ignore[union-attr]
     _, _, _, headers = aioclient_mock.mock_calls[0]
     assert headers["Range"] == "bytes=0-8191"
+
+
+# A station page's details, as NDBC writes them.
+PAGE = (
+    "<p><b>32.867 N 117.257 W</b><br>\n\t\t<br>\n"
+    "\t\t<b>Site elevation:</b> {site}<br>\n"
+    "\t\t<b>Air temp height:</b> 3 m above site elevation<br>\n"
+    "\t\t{anemometer}"
+    "\t\t<b>Water depth:</b> 65 m<br>\n</p>"
+)
+ANEMOMETER = "<b>Anemometer height:</b> {height} m above site elevation<br>\n"
+
+
+@pytest.mark.parametrize(
+    ("site", "anemometer", "height"),
+    [
+        # A buoy.
+        ("sea level", "3.8", 3.8),
+        # A pier, and a station on the shore.
+        ("0 m above mean sea level", "20.2", 20.2),
+        ("3.7 m above mean sea level", "10", 13.7),
+        # Too high for the wind profile over open water.
+        ("25 m above mean sea level", "10", None),
+        # No anemometer.
+        ("sea level", None, None),
+    ],
+)
+def test_anemometer_height(
+    site: str, anemometer: str | None, height: float | None
+) -> None:
+    """A station page says how high above the water its anemometer is."""
+    page = PAGE.format(
+        site=site,
+        anemometer=ANEMOMETER.format(height=anemometer) if anemometer else "",
+    )
+    assert ndbc.parse_anemometer_height(page) == height
+    assert ndbc.parse_anemometer_height("<p>Station SDBC1</p>") is None
+
+
+def test_wind_at_standard_height() -> None:
+    """A buoy's wind and gusts are scaled to the 10 m forecasts are for."""
+    time = datetime(2026, 11, 2, 22, tzinfo=UTC)
+    readings = ndbc.Readings(
+        {
+            "wind": ndbc.Reading(10.0, time),
+            "gust": ndbc.Reading(14.0, time),
+            "wave_height": ndbc.Reading(1.2, time),
+        }
+    )
+    scaled = ndbc.at_standard_height(readings, 3.8)
+    # The wind is about 10% stronger at 10 m than 3.8 m up, over open water.
+    assert scaled.get("wind") == ndbc.Reading(
+        pytest.approx(10.98, abs=0.01), time, from_height=3.8
+    )
+    assert scaled.get("gust").value == pytest.approx(15.37, abs=0.01)  # type: ignore[union-attr]
+    assert scaled.get("wave_height") == readings.get("wave_height")
+    # From a 20 m pier it's lighter at 10 m.
+    pier = ndbc.at_standard_height(readings, 20.2)
+    assert pier.get("wind").value == pytest.approx(9.39, abs=0.01)  # type: ignore[union-attr]
+    # Without a height, the readings stay as they are.
+    assert ndbc.at_standard_height(readings, None) is readings
+
+
+async def test_buoy_wind_scaled_to_standard_height(
+    hass: HomeAssistant,
+    observed_entry: MockConfigEntry,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A buoy's wind reaches the forecast scaled from its anemometer to 10 m.
+
+    The station page is looked up once; a page without a height leaves the
+    readings as they are.
+    """
+    realtime = (
+        "#YY  MM DD hh mm WDIR WSPD GST  WVHT   DPD   APD MWD   PRES  ATMP  WTMP  DEWP  VIS PTDY  TIDE\n"  # noqa: E501
+        "#yr  mo dy hr mn degT m/s  m/s     m   sec   sec degT   hPa  degC  degC  degC  nmi  hPa    ft\n"  # noqa: E501
+        "2026 11 02 22 30 290  6.0  8.0    MM    MM    MM  MM 1019.6  21.0  22.9    MM   MM   MM    MM\n"  # noqa: E501
+    )
+    aioclient_mock.get(ndbc.REALTIME_URL.format(station="SDBC1"), text=realtime)
+    aioclient_mock.get(
+        ndbc.STATION_PAGE_URL.format(station="SDBC1"),
+        text=PAGE.format(
+            site="0 m above mean sea level", anemometer=ANEMOMETER.format(height="3.8")
+        ),
+    )
+    mock_sources(aioclient_mock)
+    await set_up(hass, observed_entry, freezer)
+
+    observed = observed_entry.runtime_data.sources.observations
+    wind = next(
+        readings.get("wind")
+        for key, readings in observed.data.readings.items()
+        if "SDBC1" in key
+    )
+    assert wind is not None
+    assert wind.from_height == 3.8
+    # 6 m/s is 11.7 kt at 3.8 m, and 12.8 kt at 10 m.
+    assert wind.value == pytest.approx(12.81, abs=0.01)
+    # It's the bay's freshest wind, and the panel says where it was read.
+    data = observed_entry.runtime_data
+    bay = readings_now(data.sources.readings(data.profiles.spots["spot_bay"]), RECORDED)
+    assert bay["fields"]["wind"] == {
+        "value": pytest.approx(12.81, abs=0.01),
+        "time": "2026-11-02T22:30:00+00:00",
+        "kind": "buoy",
+        "station": "SDBC1",
+        "from_height": 3.8,
+    }
+    assert "from_height" not in bay["fields"]["wind_direction"]
+    pages = [
+        str(url)
+        for _, url, _, _ in aioclient_mock.mock_calls
+        if "station_page" in str(url)
+    ]
+    assert sorted(pages) == [
+        ndbc.STATION_PAGE_URL.format(station="46258"),
+        ndbc.STATION_PAGE_URL.format(station="SDBC1"),
+    ]
 
 
 def test_buoy_list() -> None:

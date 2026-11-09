@@ -92,7 +92,8 @@
     "note_no_sources": "Ninguna boya, aeropuerto ni sensor mide esta zona, así que esto es el pronóstico de la hora en curso.",
     "note_no_sources_admin": "Ninguna boya, aeropuerto ni sensor mide esta zona, así que esto es el pronóstico de la hora en curso. Edita la zona en Configuración para elegir los más cercanos.",
     "visibility_good": "Más de 8 MN",
-    "tide_rough": "aproximada, sobre el nivel medio del mar"
+    "tide_rough": "aproximada, sobre el nivel medio del mar",
+    "wind_height": "Medido a {height} sobre el agua; se muestra a {standard}, la altura de los pronósticos."
   },
   "warnings": {
     "title": "Avisos oficiales",
