@@ -510,6 +510,63 @@ async def test_calendar_permissions(
     assert response["error"]["code"] == "unauthorized"
 
 
+async def test_planned_sails_for_their_own_sailor(
+    hass: HomeAssistant,
+    family: str,
+    loaded: MockConfigEntry,
+    send: Send,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Other users plan sails, and take them out, only for the sailor linked to them.
+
+    They need to be able to change the calendar as well.
+    """
+    user = await hass.auth.async_create_user("Pat", group_ids=["system-users"])
+    refresh = await hass.auth.async_create_refresh_token(
+        user, "https://example.com/app"
+    )
+    other = _sender(
+        await hass_ws_client(hass, hass.auth.async_create_access_token(refresh))
+    )
+    window = {
+        **ALEX_RIVER,
+        "boat": "boat_keelboat",
+        "calendar": family,
+        "start": "2026-11-07T21:00:00Z",
+        "end": "2026-11-08T00:00:00Z",
+        "title": "Sailing: River",
+    }
+    response = await other("calendar/add", **window)
+    assert response["error"]["code"] == "unauthorized"
+
+    subentry = loaded.subentries["sailor_alex"]
+    hass.config_entries.async_update_subentry(
+        loaded, subentry, data={**subentry.data, "user": user.id}
+    )
+    await hass.async_block_till_done()
+    planned = (await other("calendar/add", **window))["result"]
+    assert planned["sailor"] == "sailor_alex"
+    # Sam's sail, planned by an administrator, isn't theirs to take out.
+    sams = (
+        await send(
+            "calendar/add",
+            **window
+            | {
+                "sailor": "sailor_sam",
+                "start": "2026-11-08T21:00:00Z",
+                "end": "2026-11-08T23:00:00Z",
+            },
+        )
+    )["result"]
+    response = await other("calendar/remove", planned=sams["id"])
+    assert response["error"]["code"] == "unauthorized"
+    response = await other("calendar/add", **window | {"sailor": "sailor_sam"})
+    assert response["error"]["code"] == "unauthorized"
+    assert (await other("calendar/remove", planned=planned["id"]))["result"] == {
+        "deleted": True
+    }
+
+
 async def test_skipped_days(
     hass: HomeAssistant,
     loaded: MockConfigEntry,

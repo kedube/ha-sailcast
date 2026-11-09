@@ -165,7 +165,8 @@
     "take_out": "Rimuovi dal calendario",
     "stop_tracking": "Smetti di monitorare",
     "removed": "Rimosso da {calendar}",
-    "stopped": "SailCast ha smesso di monitorarlo"
+    "stopped": "SailCast ha smesso di monitorarlo",
+    "not_yours": "Solo un amministratore, o {sailor} con il proprio account, può rimuoverla dal calendario."
   },
   "add": {
     "title": "Aggiungi a un calendario",
@@ -188,7 +189,8 @@
     "hint": "SailCast aggiunge l'evento a tuo nome, quindi valgono i permessi del calendario stesso.",
     "submit": "Aggiungi al calendario",
     "need_title": "Dai un titolo all'evento.",
-    "added": "Aggiunto a {calendar}"
+    "added": "Aggiunto a {calendar}",
+    "not_yours": "Solo un amministratore, o {sailor} con il proprio account, può aggiungere le finestre di {sailor} a un calendario."
   },
   "auto": {
     "title": "Calendario automatico · {sailor}",

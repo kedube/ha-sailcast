@@ -8,7 +8,7 @@
 import { html, nothing, svg, type TemplateResult } from "lit";
 
 import { briefingCard } from "./briefing";
-import { canSetHours, dayAndDate, hoursText, isToday, plannedFor, type Ctx } from "./context";
+import { canActFor, dayAndDate, hoursText, isToday, plannedFor, type Ctx } from "./context";
 import { band, localHours, localTime, ms, WEEKDAYS } from "./format";
 import { arrow, dial, icon, ring, weather, type IconName } from "./glyphs";
 import {
@@ -995,7 +995,7 @@ function hoursLine(ctx: Ctx, day: Day, index: number): TemplateResult {
   const text = hoursText(ctx, day.date, day.hours, ctx.forecast!.lights);
   const label = day.changed ? t("hours.changed", { hours: text }) : text;
   const cls = `ci hrs ${day.changed ? "changed" : ""}`;
-  if (!canSetHours(ctx)) {
+  if (!canActFor(ctx)) {
     return html`<div class=${cls}>${icon("account")}<span>${label}</span></div>`;
   }
   return html`<div class=${cls}>

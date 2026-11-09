@@ -165,7 +165,8 @@
     "take_out": "Remover do calendário",
     "stop_tracking": "Parar de acompanhar",
     "removed": "Evento removido de {calendar}",
-    "stopped": "O SailCast parou de acompanhar este evento"
+    "stopped": "O SailCast parou de acompanhar este evento",
+    "not_yours": "Só um administrador, ou {sailor} na própria conta, pode removê-lo do calendário."
   },
   "add": {
     "title": "Adicionar a um calendário",
@@ -188,7 +189,8 @@
     "hint": "O SailCast adiciona o evento em seu nome, então valem as permissões do próprio calendário.",
     "submit": "Adicionar ao calendário",
     "need_title": "Dê um título ao evento.",
-    "added": "Evento adicionado a {calendar}"
+    "added": "Evento adicionado a {calendar}",
+    "not_yours": "Só um administrador, ou {sailor} na própria conta, pode adicionar as janelas de {sailor} a um calendário."
   },
   "auto": {
     "title": "Calendário automático · {sailor}",

@@ -96,9 +96,12 @@ export function dayAndDate(ctx: Ctx, day: Day): string {
   });
 }
 
-/** Whether this user can change the chosen sailor's hours: admins, or the sailor's own. */
-export function canSetHours(ctx: Ctx): boolean {
-  const user = ctx.sailor?.user;
+/**
+ * Whether the user can change a sailor's hours and plan their sails: an
+ * administrator any sailor's, and anyone else the sailor linked to them.
+ */
+export function canActFor(ctx: Ctx, sailor: Sailor | undefined = ctx.sailor): boolean {
+  const user = sailor?.user;
   return ctx.admin || (!!user && user === ctx.hass.user?.id);
 }
 

@@ -285,6 +285,7 @@ The repository holds no personal data. Tests run on responses recorded at made-u
 - European warnings: [MeteoAlarm](https://meteoalarm.org) (EUMETNET), from each country's national weather service, under terms equivalent to CC BY 4.0. None of these is for navigation.
 - Buoy readings: NOAA's [National Data Buoy Center](https://www.ndbc.noaa.gov). Airport reports: the [Aviation Weather Center](https://aviationweather.gov).
 - Maps: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through Home Assistant's own map tiles, with [OpenFreeMap](https://openfreemap.org) as a fallback; seamarks from [OpenSeaMap](https://www.openseamap.org) (CC BY-SA 2.0). Drawn with [MapLibre GL JS](https://maplibre.org) (BSD-3-Clause). The shoreline that fetch is measured on is OpenStreetMap's water, from [OpenFreeMap](https://openfreemap.org)'s tiles (© OpenMapTiles).
+- The panel bundles [Lit](https://lit.dev) (BSD-3-Clause), MapLibre GL JS and [Material Design Icons](https://pictogrammers.com/library/mdi/) (Apache-2.0 icons, MIT code). Their license notices ship with it, in `custom_components/sailcast/frontend/THIRD_PARTY_LICENSES.md`.
 - Wordmark: [Outfit](https://github.com/Outfitio/Outfit-Fonts), under the SIL Open Font License 1.1. More in [docs/brand](docs/brand/README.md).
 
 ## License

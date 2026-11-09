@@ -165,7 +165,8 @@
     "take_out": "Uit de agenda halen",
     "stop_tracking": "Stoppen met volgen",
     "removed": "Verwijderd uit {calendar}",
-    "stopped": "SailCast volgt de zeiltocht niet meer"
+    "stopped": "SailCast volgt de zeiltocht niet meer",
+    "not_yours": "Alleen een beheerder, of {sailor} met een eigen account, kan dit uit de agenda halen."
   },
   "add": {
     "title": "Aan een agenda toevoegen",
@@ -188,7 +189,8 @@
     "hint": "SailCast voegt de afspraak namens jou toe, dus de rechten van de agenda zelf gelden.",
     "submit": "Aan agenda toevoegen",
     "need_title": "Geef de afspraak een titel.",
-    "added": "Toegevoegd aan {calendar}"
+    "added": "Toegevoegd aan {calendar}",
+    "not_yours": "Alleen een beheerder, of {sailor} met een eigen account, kan de zeilvensters van {sailor} aan een agenda toevoegen."
   },
   "auto": {
     "title": "Automatische agenda · {sailor}",

@@ -440,6 +440,18 @@ async def ws_briefing(
     connection.send_error(msg["id"], code, message)
 
 
+def _acts_for(
+    connection: websocket_api.ActiveConnection, sailor: profiles.Sailor | None
+) -> bool:
+    """Return whether the user can change a sailor's plans and hours.
+
+    Administrators can change anyone's, and other users only those of the
+    sailor linked to them.
+    """
+    user = connection.user
+    return user.is_admin or (sailor is not None and sailor.user == user.id)
+
+
 def _warning_source(data: SailCastData, spot: Spot) -> dict[str, Any] | None:
     """Return who a spot's warnings come from, and for MeteoAlarm, which services."""
     if not spot.marine_zone:
@@ -790,7 +802,11 @@ async def ws_calendar_add(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Add a sailing window to one of the user's calendars."""
+    """Add a sailing window to one of the user's calendars.
+
+    As with a sailor's hours, administrators can plan sails for any sailor,
+    and other users for the sailor the panel opens on for them.
+    """
     if (data := _data(hass, connection, msg)) is None:
         return
     if not connection.user.permissions.check_entity(msg["calendar"], POLICY_CONTROL):
@@ -806,6 +822,8 @@ async def ws_calendar_add(
             msg["id"], websocket_api.ERR_NOT_FOUND, "Unknown spot, sailor or boat"
         )
         return
+    if not _acts_for(connection, sailor):
+        raise Unauthorized
     start, end = (
         dt_util.as_utc(dt_util.as_local(msg[key])) for key in ("start", "end")
     )
@@ -848,7 +866,11 @@ async def ws_calendar_remove(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Take a planned sail out of its calendar, or just stop watching it."""
+    """Take a planned sail out of its calendar, or just stop watching it.
+
+    Only someone who could have planned it can: an administrator, or the
+    sailor's own user, who also needs to be able to change the calendar.
+    """
     if (data := _data(hass, connection, msg)) is None:
         return
     sail = data.planner.store.get(msg["planned"])
@@ -857,6 +879,8 @@ async def ws_calendar_remove(
         return
     if not connection.user.permissions.check_entity(sail.calendar, POLICY_CONTROL):
         raise Unauthorized(entity_id=sail.calendar)
+    if not _acts_for(connection, data.profiles.sailors.get(sail.sailor)):
+        raise Unauthorized
     deleted = await data.planner.async_remove(sail)
     connection.send_result(msg["id"], {"deleted": deleted})
 
@@ -941,7 +965,7 @@ def ws_hours(
     if sailor is None:
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Unknown sailor")
         return
-    if not connection.user.is_admin and sailor.user != connection.user.id:
+    if not _acts_for(connection, sailor):
         raise Unauthorized
     day: date = msg["date"]
     if day < dt_util.now().date():

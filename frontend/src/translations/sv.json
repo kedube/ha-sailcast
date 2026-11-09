@@ -165,7 +165,8 @@
     "take_out": "Ta bort den från kalendern",
     "stop_tracking": "Sluta bevaka",
     "removed": "Togs bort från {calendar}",
-    "stopped": "SailCast har slutat bevaka den"
+    "stopped": "SailCast har slutat bevaka den",
+    "not_yours": "Bara en administratör, eller {sailor} inloggad med sitt eget konto, kan ta bort den från kalendern."
   },
   "add": {
     "title": "Lägg till i en kalender",
@@ -188,7 +189,8 @@
     "hint": "SailCast lägger till händelsen i ditt namn, så kalenderns egna behörigheter gäller.",
     "submit": "Lägg till i kalendern",
     "need_title": "Ge händelsen en titel.",
-    "added": "Lades till i {calendar}"
+    "added": "Lades till i {calendar}",
+    "not_yours": "Bara en administratör, eller {sailor} inloggad med sitt eget konto, kan lägga till fönster för {sailor} i en kalender."
   },
   "auto": {
     "title": "Automatisk kalender · {sailor}",

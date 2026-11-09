@@ -165,7 +165,8 @@
     "take_out": "Aus dem Kalender entfernen",
     "stop_tracking": "Nicht mehr beobachten",
     "removed": "Aus {calendar} entfernt",
-    "stopped": "SailCast beobachtet den Termin nicht mehr"
+    "stopped": "SailCast beobachtet den Termin nicht mehr",
+    "not_yours": "Nur eine Administratorin oder ein Administrator, oder {sailor} mit dem eigenen Konto, kann ihn aus dem Kalender entfernen."
   },
   "add": {
     "title": "In einen Kalender eintragen",
@@ -188,7 +189,8 @@
     "hint": "SailCast trägt den Termin in deinem Namen ein, daher gelten die Berechtigungen des Kalenders.",
     "submit": "In Kalender eintragen",
     "need_title": "Gib dem Termin einen Titel.",
-    "added": "In {calendar} eingetragen"
+    "added": "In {calendar} eingetragen",
+    "not_yours": "Nur eine Administratorin oder ein Administrator, oder {sailor} mit dem eigenen Konto, kann die Segelfenster von {sailor} in einen Kalender eintragen."
   },
   "auto": {
     "title": "Automatischer Kalender · {sailor}",

@@ -51,6 +51,15 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # Minified code drops the bundled packages' license notices, so the
+      # build writes them beside the panel, and they have to be there.
+      - name: Check the bundled packages' licenses
+        run: |
+          notices=../custom_components/sailcast/frontend/THIRD_PARTY_LICENSES.md
+          for package in lit maplibre-gl @mdi/js; do
+            grep -q "^## $package - " "$notices" ||
+              { echo "$package's license is missing from $notices"; exit 1; }
+          done
 
   hassfest:
     name: Home Assistant validation

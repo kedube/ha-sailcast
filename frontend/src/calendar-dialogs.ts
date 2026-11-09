@@ -5,7 +5,7 @@
  */
 import { html, nothing, type TemplateResult } from "lit";
 
-import { dayAndDate, hoursText } from "./context";
+import { canActFor, dayAndDate, hoursText } from "./context";
 import {
   checked,
   define,
@@ -116,19 +116,21 @@ export class ScWindowDialog extends ScDialog {
         <span>${ctx.spot?.name} · ${ctx.sailor?.name} · ${ctx.boat?.name}</span>
       </div>
       ${
-        calendars.length
-          ? html`<label class="fld">
-              <span class="lbl">${t("add.calendar")}</span>
-              <select name="calendar">
-                ${calendars.map(
-                  (item) =>
-                    html`<option value=${item.entity_id} ?selected=${item === chosen}>
-                      ${calendarLabel(item, item.entity_id)}
-                    </option>`,
-                )}
-              </select>
-            </label>`
-          : html`<p class="form-err">${t("add.no_calendars")}</p>`
+        !canActFor(ctx)
+          ? html`<p class="form-err">${t("add.not_yours", { sailor: ctx.sailor?.name ?? "" })}</p>`
+          : calendars.length
+            ? html`<label class="fld">
+                <span class="lbl">${t("add.calendar")}</span>
+                <select name="calendar">
+                  ${calendars.map(
+                    (item) =>
+                      html`<option value=${item.entity_id} ?selected=${item === chosen}>
+                        ${calendarLabel(item, item.entity_id)}
+                      </option>`,
+                  )}
+                </select>
+              </label>`
+            : html`<p class="form-err">${t("add.no_calendars")}</p>`
       }
       <label class="fld">
         <span class="lbl">${t("add.event_title")}</span>
@@ -209,7 +211,8 @@ export class ScWindowDialog extends ScDialog {
   }
 
   protected footer(): TemplateResult {
-    return this.actions(this.t("add.submit"), !this.ctx.config.calendars.length);
+    const { ctx } = this;
+    return this.actions(this.t("add.submit"), !ctx.config.calendars.length || !canActFor(ctx));
   }
 
   protected async submit(form: HTMLFormElement): Promise<string | void> {
@@ -265,27 +268,34 @@ export class ScPlannedDialog extends ScDialog {
       <p class="hint">${plannedStatus(ctx, sail)}</p>
       <p class="hint">${explanation}</p>
       ${
-        sail.can_delete
-          ? nothing
-          : html`<p class="hint">
-              ${t("planned.cannot_delete", { calendar: calendar?.via ?? sail.calendar })}
-            </p>`
+        !canActFor(ctx, sailor)
+          ? html`<p class="hint">${t("planned.not_yours", { sailor: sailor?.name ?? "" })}</p>`
+          : sail.can_delete
+            ? nothing
+            : html`<p class="hint">
+                ${t("planned.cannot_delete", { calendar: calendar?.via ?? sail.calendar })}
+              </p>`
       }
     `;
   }
 
   protected footer(): TemplateResult {
-    const { sail } = this;
-    return html`<button
-        type="button"
-        class="btn btn-danger"
-        ?disabled=${this.busy}
-        @click=${() => this.remove_()}
-      >
-        ${icon("calRemove")}<span
-          >${this.t(sail.can_delete ? "planned.take_out" : "planned.stop_tracking")}</span
-        >
-      </button>
+    const { ctx, sail } = this;
+    const sailor = ctx.config.sailors.find((item) => item.id === sail.sailor);
+    return html`${
+        canActFor(ctx, sailor)
+          ? html`<button
+              type="button"
+              class="btn btn-danger"
+              ?disabled=${this.busy}
+              @click=${() => this.remove_()}
+            >
+              ${icon("calRemove")}<span
+                >${this.t(sail.can_delete ? "planned.take_out" : "planned.stop_tracking")}</span
+              >
+            </button>`
+          : nothing
+      }
       <span class="grow"></span>
       <button type="submit" class="btn btn-primary">${this.t("dialog.done")}</button>`;
   }

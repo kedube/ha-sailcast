@@ -37,6 +37,9 @@ export default defineConfig(({ command }) => ({
     modulePreload: false,
     // MapLibre's own chunk is about 1 MB; it only loads with the spot map.
     chunkSizeWarningLimit: 1200,
+    // The bundled packages' licenses, such as Lit's and MapLibre's BSD notices,
+    // which minified code doesn't carry. It goes in the release zip.
+    license: { fileName: "THIRD_PARTY_LICENSES.md" },
     rollupOptions: {
       input: "src/sailcast-panel.ts",
       output: {

@@ -165,7 +165,8 @@
     "take_out": "Usuń z kalendarza",
     "stop_tracking": "Przestań obserwować",
     "removed": "Usunięto z kalendarza {calendar}",
-    "stopped": "SailCast przestał je obserwować"
+    "stopped": "SailCast przestał je obserwować",
+    "not_yours": "Tylko administrator albo {sailor} zalogowany na własne konto może usunąć je z kalendarza."
   },
   "add": {
     "title": "Dodaj do kalendarza",
@@ -188,7 +189,8 @@
     "hint": "SailCast dodaje wydarzenie w twoim imieniu, więc obowiązują uprawnienia samego kalendarza.",
     "submit": "Dodaj do kalendarza",
     "need_title": "Nadaj wydarzeniu tytuł.",
-    "added": "Dodano do kalendarza {calendar}"
+    "added": "Dodano do kalendarza {calendar}",
+    "not_yours": "Tylko administrator albo {sailor} zalogowany na własne konto może dodać okna użytkownika {sailor} do kalendarza."
   },
   "auto": {
     "title": "Automatyczny kalendarz · {sailor}",

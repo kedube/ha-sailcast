@@ -165,7 +165,8 @@
     "take_out": "Odebrat z kalendáře",
     "stop_tracking": "Přestat sledovat",
     "removed": "Odebráno z kalendáře {calendar}",
-    "stopped": "SailCast už plavbu nesleduje"
+    "stopped": "SailCast už plavbu nesleduje",
+    "not_yours": "Odebrat ho z kalendáře může jen správce, nebo {sailor} přihlášený pod vlastním účtem."
   },
   "add": {
     "title": "Přidat do kalendáře",
@@ -188,7 +189,8 @@
     "hint": "SailCast přidá událost vaším jménem, takže platí oprávnění daného kalendáře.",
     "submit": "Přidat do kalendáře",
     "need_title": "Zadejte název události.",
-    "added": "Přidáno do kalendáře {calendar}"
+    "added": "Přidáno do kalendáře {calendar}",
+    "not_yours": "Okna pro {sailor} může do kalendáře přidat jen správce, nebo {sailor} přihlášený pod vlastním účtem."
   },
   "auto": {
     "title": "Automatický kalendář · {sailor}",

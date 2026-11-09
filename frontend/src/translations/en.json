@@ -165,7 +165,8 @@
     "take_out": "Take it out of the calendar",
     "stop_tracking": "Stop watching",
     "removed": "Removed from {calendar}",
-    "stopped": "SailCast stopped watching it"
+    "stopped": "SailCast stopped watching it",
+    "not_yours": "Only an administrator, or {sailor} signed in as themselves, can take it out."
   },
   "add": {
     "title": "Add to a calendar",
@@ -188,7 +189,8 @@
     "hint": "SailCast adds the event as you, so the calendar's own permissions apply.",
     "submit": "Add to calendar",
     "need_title": "Give the event a title.",
-    "added": "Added to {calendar}"
+    "added": "Added to {calendar}",
+    "not_yours": "Only an administrator, or {sailor} signed in as themselves, can add {sailor}'s windows to a calendar."
   },
   "auto": {
     "title": "Automatic calendar · {sailor}",

@@ -165,7 +165,8 @@
     "take_out": "Retirer du calendrier",
     "stop_tracking": "Ne plus suivre",
     "removed": "Retiré de {calendar}",
-    "stopped": "SailCast ne le suit plus"
+    "stopped": "SailCast ne le suit plus",
+    "not_yours": "Seul un administrateur, ou {sailor} connecté avec son propre compte, peut le retirer du calendrier."
   },
   "add": {
     "title": "Ajouter à un calendrier",
@@ -188,7 +189,8 @@
     "hint": "SailCast ajoute l'événement en votre nom : les autorisations propres au calendrier s'appliquent donc.",
     "submit": "Ajouter au calendrier",
     "need_title": "Donnez un titre à l'événement.",
-    "added": "Ajouté à {calendar}"
+    "added": "Ajouté à {calendar}",
+    "not_yours": "Seul un administrateur, ou {sailor} connecté avec son propre compte, peut ajouter les créneaux de {sailor} à un calendrier."
   },
   "auto": {
     "title": "Calendrier automatique · {sailor}",

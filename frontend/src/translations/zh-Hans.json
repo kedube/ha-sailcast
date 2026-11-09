@@ -165,7 +165,8 @@
     "take_out": "从日历中移除",
     "stop_tracking": "停止跟踪",
     "removed": "已从 {calendar} 中移除",
-    "stopped": "SailCast 已停止跟踪"
+    "stopped": "SailCast 已停止跟踪",
+    "not_yours": "只有管理员，或以自己账户登录的 {sailor}，才能将其从日历中移除。"
   },
   "add": {
     "title": "添加到日历",
@@ -188,7 +189,8 @@
     "hint": "SailCast 以您的身份添加事件，因此适用该日历自身的权限。",
     "submit": "添加到日历",
     "need_title": "请为事件填写标题。",
-    "added": "已添加到 {calendar}"
+    "added": "已添加到 {calendar}",
+    "not_yours": "只有管理员，或以自己账户登录的 {sailor}，才能把 {sailor} 的航行窗口添加到日历。"
   },
   "auto": {
     "title": "自动日历 · {sailor}",
