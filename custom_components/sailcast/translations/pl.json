@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Godziny na każdy dzień",
-              "description": "Dla wybranych wyżej dni żeglowania. Zostaw godzinę pustą, aby zaczynać o wschodzie lub kończyć o zachodzie słońca, albo o każdej godzinie na łodzi ze światłami nawigacyjnymi. Pojedynczy dzień, na przykład wolny, zmienisz w panelu SailCast.",
+              "description": "Dla wybranych wyżej dni żeglowania: kiedy żeglarz ma czas, w jednym lub kilku przedziałach, na przykład 9–11 i 15–19. Dzień bez godzin trwa od wschodu do zachodu słońca albo przez każdą godzinę na łodzi ze światłami nawigacyjnymi; pusty początek lub koniec oznacza wschód lub zachód słońca. Pojedynczy dzień, na przykład wolny, zmienisz w panelu SailCast.",
               "data": {
-                "mon_start": "Poniedziałek: najwcześniejszy początek",
-                "mon_end": "Poniedziałek: najpóźniejszy koniec",
-                "tue_start": "Wtorek: najwcześniejszy początek",
-                "tue_end": "Wtorek: najpóźniejszy koniec",
-                "wed_start": "Środa: najwcześniejszy początek",
-                "wed_end": "Środa: najpóźniejszy koniec",
-                "thu_start": "Czwartek: najwcześniejszy początek",
-                "thu_end": "Czwartek: najpóźniejszy koniec",
-                "fri_start": "Piątek: najwcześniejszy początek",
-                "fri_end": "Piątek: najpóźniejszy koniec",
-                "sat_start": "Sobota: najwcześniejszy początek",
-                "sat_end": "Sobota: najpóźniejszy koniec",
-                "sun_start": "Niedziela: najwcześniejszy początek",
-                "sun_end": "Niedziela: najpóźniejszy koniec"
+                "mon": "Poniedziałek",
+                "tue": "Wtorek",
+                "wed": "Środa",
+                "thu": "Czwartek",
+                "fri": "Piątek",
+                "sat": "Sobota",
+                "sun": "Niedziela"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Godziny na każdy dzień",
-              "description": "Dla wybranych wyżej dni żeglowania. Zostaw godzinę pustą, aby zaczynać o wschodzie lub kończyć o zachodzie słońca, albo o każdej godzinie na łodzi ze światłami nawigacyjnymi. Pojedynczy dzień, na przykład wolny, zmienisz w panelu SailCast.",
+              "description": "Dla wybranych wyżej dni żeglowania: kiedy żeglarz ma czas, w jednym lub kilku przedziałach, na przykład 9–11 i 15–19. Dzień bez godzin trwa od wschodu do zachodu słońca albo przez każdą godzinę na łodzi ze światłami nawigacyjnymi; pusty początek lub koniec oznacza wschód lub zachód słońca. Pojedynczy dzień, na przykład wolny, zmienisz w panelu SailCast.",
               "data": {
-                "mon_start": "Poniedziałek: najwcześniejszy początek",
-                "mon_end": "Poniedziałek: najpóźniejszy koniec",
-                "tue_start": "Wtorek: najwcześniejszy początek",
-                "tue_end": "Wtorek: najpóźniejszy koniec",
-                "wed_start": "Środa: najwcześniejszy początek",
-                "wed_end": "Środa: najpóźniejszy koniec",
-                "thu_start": "Czwartek: najwcześniejszy początek",
-                "thu_end": "Czwartek: najpóźniejszy koniec",
-                "fri_start": "Piątek: najwcześniejszy początek",
-                "fri_end": "Piątek: najpóźniejszy koniec",
-                "sat_start": "Sobota: najwcześniejszy początek",
-                "sat_end": "Sobota: najpóźniejszy koniec",
-                "sun_start": "Niedziela: najwcześniejszy początek",
-                "sun_end": "Niedziela: najpóźniejszy koniec"
+                "mon": "Poniedziałek",
+                "tue": "Wtorek",
+                "wed": "Środa",
+                "thu": "Czwartek",
+                "fri": "Piątek",
+                "sat": "Sobota",
+                "sun": "Niedziela"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Inny żeglarz ma już takie imię.",
         "unknown_boat": "Ta łódź została usunięta. Wybierz inną.",
         "no_days": "Wybierz co najmniej jeden dzień.",
-        "end_before_start": "Najpóźniejszy koniec musi być później niż najwcześniejszy początek.",
+        "end_before_start": "{day}: każdy przedział musi kończyć się po swoim początku.",
+        "hours_overlap": "{day}: dwa przedziały się nakładają. Tylko pierwszy może zaczynać się o wschodzie słońca i tylko ostatni kończyć o zachodzie.",
+        "too_many_hours": "{day}: najwyżej 4 przedziały godzin.",
         "ideal_out_of_range": "Użyj wartości od 0 do 40 kn.",
         "ideal_high_below_low": "Górna granica zakresu musi być wyższa niż dolna.",
         "coldest_out_of_range": "Użyj wartości od −20 do 35 °C (od −4 do 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Piątek",
         "sat": "Sobota",
         "sun": "Niedziela"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Od",
+          "description": "Zostaw puste, aby zacząć o wschodzie słońca."
+        },
+        "end": {
+          "name": "Do",
+          "description": "Zostaw puste, aby skończyć o zachodzie słońca."
+        }
       }
     },
     "rain": {

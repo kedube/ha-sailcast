@@ -13,7 +13,7 @@ from datetime import date, datetime
 from types import MappingProxyType
 
 from .nowcast import Adjustment, Observation
-from .profiles import Boat, Hours, Profiles, Sailor, SizeClass, Spot
+from .profiles import Boat, DayHours, Profiles, Sailor, SizeClass, Spot
 from .providers import TideEvent, Tides
 from .providers.noaa_coops import CurrentEvent
 from .rating import Rating, rate
@@ -108,14 +108,14 @@ class Outlook:
     spot: Spot
     boats: tuple[BoatOutlook, ...]
     sizes: Mapping[SizeClass, tuple[Rating, ...]]
-    changes: Mapping[date, Hours | None] = field(default_factory=dict)
+    changes: Mapping[date, DayHours | None] = field(default_factory=dict)
 
     @property
     def default(self) -> BoatOutlook | None:
         """Return the sailor's usual boat's outlook."""
         return self.boats[0] if self.boats else None
 
-    def hours_on(self, day: date) -> Hours | None:
+    def hours_on(self, day: date) -> DayHours | None:
         """Return the sailor's hours on a date, or None if they don't sail."""
         return self.sailor.hours_on(day, self.changes)
 
@@ -147,7 +147,7 @@ def day_windows(boat: Boat, slots: Sequence[Slot], day: Daylight) -> list[Window
 def compute(
     profiles: Profiles,
     conditions: Mapping[str, SpotConditions],
-    changes: Mapping[str, Mapping[date, Hours | None]] = MappingProxyType({}),
+    changes: Mapping[str, Mapping[date, DayHours | None]] = MappingProxyType({}),
 ) -> Results:
     """Return the outlook for every sailor at every spot with conditions.
 
@@ -167,7 +167,7 @@ def outlook(
     sailor: Sailor,
     conditions: SpotConditions,
     boats: Mapping[str, Boat],
-    changes: Mapping[date, Hours | None] = MappingProxyType({}),
+    changes: Mapping[date, DayHours | None] = MappingProxyType({}),
 ) -> Outlook:
     """Return a sailor's week at a spot, for every boat size and their boats.
 

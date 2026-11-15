@@ -105,20 +105,45 @@ export function canActFor(ctx: Ctx, sailor: Sailor | undefined = ctx.sailor): bo
   return ctx.admin || (!!user && user === ctx.hass.user?.id);
 }
 
+/** Whether a day's hours are the whole day: one stretch without times, or none. */
+export function allDay(hours: DayHours): boolean {
+  return hours.every((stretch) => !stretch.start && !stretch.end);
+}
+
 /**
- * A day's hours in words, such as "5 PM to sunset", "Sunrise to sunset" or
- * "Not sailing". In a boat with lights, a missing time is no limit.
+ * Stretches of hours in words, such as "5 PM to sunset" or "9 AM to 11 AM,
+ * 3 PM to 7 PM". A missing time reads as `start` or `end`, such as sunrise
+ * and sunset, or midnight in a boat with lights.
  */
-export function hoursText(ctx: Ctx, date: string, hours: DayHours | null, lights: boolean): string {
+export function stretchesText(
+  ctx: Ctx,
+  date: string,
+  hours: DayHours,
+  start: string,
+  end: string,
+): string {
   const { t, fmt } = ctx;
-  if (!hours) return t("week.not_sailing");
-  if (!hours.start && !hours.end) return t(lights ? "hours.any_time" : "hours.daylight");
   const time = (value: string | null, fallback: string): string =>
     value
       ? fmt.hourOf(date, Number(value.slice(0, 2)) + Number(value.slice(3, 5)) / 60)
       : t(fallback);
-  return t("hours.span", {
-    start: time(hours.start, lights ? "hours.midnight" : "settings.sunrise"),
-    end: time(hours.end, lights ? "hours.midnight" : "settings.sunset"),
-  });
+  return hours
+    .map((stretch) =>
+      t("hours.span", { start: time(stretch.start, start), end: time(stretch.end, end) }),
+    )
+    .join(t("advice.list_separator"));
+}
+
+/**
+ * A day's hours in words, such as "5 PM to sunset", "9 AM to 11 AM, 3 PM to
+ * 7 PM", "Sunrise to sunset" or "Not sailing". In a boat with lights, a
+ * missing time is no limit.
+ */
+export function hoursText(ctx: Ctx, date: string, hours: DayHours | null, lights: boolean): string {
+  const { t } = ctx;
+  if (!hours) return t("week.not_sailing");
+  if (allDay(hours)) return t(lights ? "hours.any_time" : "hours.daylight");
+  return lights
+    ? stretchesText(ctx, date, hours, "hours.midnight", "hours.midnight")
+    : stretchesText(ctx, date, hours, "settings.sunrise", "settings.sunset");
 }

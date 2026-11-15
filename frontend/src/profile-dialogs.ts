@@ -8,11 +8,13 @@ import { html, nothing, type TemplateResult } from "lit";
 import {
   checked,
   define,
+  editable,
+  type EditedStretch,
   fieldNumber,
-  hourSelect,
-  hourTime,
   numberOrNull,
+  saved,
   ScDialog,
+  stretchRows,
   ticked,
   value,
 } from "./dialog";
@@ -23,7 +25,6 @@ import type { StationMark } from "./spot-map";
 import { positionText, savedSourceText } from "./text";
 import type {
   Comfort,
-  DayHours,
   SensorKey,
   Shoreline,
   SizeClass,
@@ -103,14 +104,25 @@ export class ScSailorDialog extends ProfileDialog {
     ...ProfileDialog.properties,
     boats: { state: true },
     days: { state: true },
+    stretches: { state: true },
   };
   /** The boats ticked so far, for the usual-boat choice. */
   declare boats?: string[];
   /** The days ticked so far, whose hours can be chosen. */
   declare days?: string[];
+  /** Each day's stretches of hours as they're edited, ticked or not. */
+  declare stretches: Record<string, EditedStretch[]>;
 
   private get sailor() {
     return this.ctx.config.sailors.find((item) => item.id === this.profileId);
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    if (this.stretches) return;
+    // A new sailor sails every day, sunrise to sunset.
+    const week = this.sailor?.week;
+    this.stretches = Object.fromEntries(WEEKDAYS.map((day) => [day, editable(week?.[day])]));
   }
 
   protected heading(): string {
@@ -125,10 +137,8 @@ export class ScSailorDialog extends ProfileDialog {
     const boats =
       this.boats ?? sailor?.boats ?? ctx.config.boats.slice(0, 1).map((boat) => boat.id);
     const skill = sailor?.skill ?? "beginner";
-    // A new sailor sails every day, sunrise to sunset.
-    const week: Partial<Record<string, DayHours>> =
-      sailor?.week ?? Object.fromEntries(WEEKDAYS.map((day) => [day, { start: null, end: null }]));
-    const days = this.days ?? WEEKDAYS.filter((day) => week[day]);
+    // A new sailor sails every day.
+    const days = this.days ?? WEEKDAYS.filter((day) => !sailor || sailor.week[day]);
     const comfort: Comfort = sailor?.comfort ?? {
       ideal_low: null,
       ideal_high: null,
@@ -206,32 +216,33 @@ export class ScSailorDialog extends ProfileDialog {
           <span></span>
           <span class="lbl">${t("sailor.from")}</span>
           <span class="lbl">${t("sailor.until")}</span>
+          <span></span>
           ${WEEKDAYS.map((day, index) => {
             const sails = days.includes(day);
-            const name = fmt.weekday(`2026-11-0${2 + index}`, "long");
-            return html`<label class="dayt"
-                ><input
-                  type="checkbox"
-                  name="days"
-                  value=${day}
-                  ?checked=${sails}
-                  @change=${(event: Event) => {
-                    const on = (event.target as HTMLInputElement).checked;
-                    this.days = WEEKDAYS.filter((item) =>
-                      item === day ? on : days.includes(item),
-                    );
-                  }}
-                /><span>${t(`weekday.${day}`)}</span></label
-              >
-              ${hourSelect(ctx, `start_${day}`, false, week[day]?.start, {
-                label: t("sailor.from_day", { day: name }),
-                disabled: !sails,
-              })}
-              ${hourSelect(ctx, `end_${day}`, true, week[day]?.end, {
-                label: t("sailor.until_day", { day: name }),
-                disabled: !sails,
-              })}
-              ${this.err(`${day}_end`)}`;
+            return html`${stretchRows(ctx, this.stretches[day], {
+              day: fmt.weekday(`2026-11-0${2 + index}`, "long"),
+              disabled: !sails,
+              // The day's checkbox leads its first stretch.
+              lead: (row) =>
+                row === 0
+                  ? html`<label class="dayt"
+                      ><input
+                        type="checkbox"
+                        name="days"
+                        value=${day}
+                        ?checked=${sails}
+                        @change=${(event: Event) => {
+                          const on = (event.target as HTMLInputElement).checked;
+                          this.days = WEEKDAYS.filter((item) =>
+                            item === day ? on : days.includes(item),
+                          );
+                        }}
+                      /><span>${t(`weekday.${day}`)}</span></label
+                    >`
+                  : html`<span></span>`,
+              changed: (stretches) => (this.stretches = { ...this.stretches, [day]: stretches }),
+            })}
+            ${this.err(day)}`;
           })}
         </div>
         ${this.err("days")}
@@ -322,15 +333,9 @@ export class ScSailorDialog extends ProfileDialog {
     const boats = checked(form, "boats");
     const first = value(form, "default");
     const coldest = numberOrNull(form, "coldest");
-    // The days ticked, each with its own hours.
+    // The days ticked, each with its own stretches of hours.
     const hours = Object.fromEntries(
-      checked(form, "days").map((day) => [
-        day,
-        {
-          start: hourTime(value(form, `start_${day}`)),
-          end: hourTime(value(form, `end_${day}`)),
-        },
-      ]),
+      checked(form, "days").map((day) => [day, saved(this.stretches[day])]),
     );
     return this.save("sailor", name, {
       skill: value(form, "skill"),

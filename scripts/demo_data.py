@@ -29,6 +29,7 @@ from custom_components.sailcast.nowcast import AIRPORT, BUOY, Observation  # noq
 from custom_components.sailcast.outlook import SpotConditions, compute  # noqa: E402
 from custom_components.sailcast.planner import sail_status  # noqa: E402
 from custom_components.sailcast.profiles import (  # noqa: E402
+    ALL_DAY,
     AutoCalendar,
     Boat,
     Hours,
@@ -150,10 +151,11 @@ SAILORS = (
         name="Alex",
         skill=Skill.INTERMEDIATE,
         boats=("keelboat", "cruiser"),
+        # Sundays have a break in the middle of the day.
         week={
-            "wed": Hours("13:00:00"),
-            "sat": Hours("09:00:00"),
-            "sun": Hours("09:00:00", "15:00:00"),
+            "wed": (Hours("13:00:00"),),
+            "sat": (Hours("09:00:00"),),
+            "sun": (Hours("09:00:00", "11:00:00"), Hours("13:00:00", "15:00:00")),
         },
         auto_calendar=AutoCalendar(
             calendar="calendar.family",
@@ -168,11 +170,11 @@ SAILORS = (
         name="Sam",
         skill=Skill.BEGINNER,
         boats=("keelboat",),
-        week=dict.fromkeys(("mon", "tue", "wed", "thu", "fri", "sat", "sun"), Hours()),
+        week=dict.fromkeys(("mon", "tue", "wed", "thu", "fri", "sat", "sun"), ALL_DAY),
     ),
 )
 # Alex took Friday off, so is free all day.
-HOURS = {"alex": {date(2026, 11, 6): Hours()}}
+HOURS = {"alex": {date(2026, 11, 6): ALL_DAY}}
 CALENDARS = [
     {
         "entity_id": "calendar.family",

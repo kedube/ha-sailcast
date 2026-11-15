@@ -8,15 +8,17 @@ saved either way is valid.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Container, Iterable, Mapping
+from collections.abc import Container, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from enum import StrEnum
+from itertools import pairwise
 from types import MappingProxyType
 from typing import Any, Final
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, WEEKDAYS
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AHEAD,
@@ -94,6 +96,13 @@ COLDEST_RANGE: Final = (-20.0, 35.0)
 # far ahead, as the last day counted from today (1 is today and tomorrow).
 MIN_SCORES: Final = (60, 80)
 AHEAD_DAYS: Final = (1, 2, 4, 6)
+
+# The most stretches of hours a sailor can set on one day, such as a morning
+# and an evening.
+MAX_STRETCHES: Final = 4
+# Where a stretch without a start or end begins or finishes, for comparing.
+DAY_START: Final = "00:00:00"
+DAY_END: Final = "24:00:00"
 
 
 class WaterType(StrEnum):
@@ -280,10 +289,11 @@ class AutoCalendar:
 
 @dataclass(frozen=True, slots=True)
 class Hours:
-    """When a sailor can sail on a day, from `start` to `end`.
+    """One stretch of a day a sailor can sail in, from `start` to `end`.
 
     Both are times of day such as "17:00:00". A missing start or end means
-    sunrise or sunset, or midnight in a boat with navigation lights.
+    sunrise or sunset, or midnight in a boat with navigation lights. A day
+    can have several stretches, such as 9 to 11 and 3 to 7.
     """
 
     start: str | None = None
@@ -294,6 +304,47 @@ class Hours:
         """Read the hours, which may have neither time."""
         data = data or {}
         return cls(start=data.get(CONF_START), end=data.get(CONF_END))
+
+    @property
+    def bounds(self) -> tuple[str, str]:
+        """Return the start and end, a missing one as the day's own."""
+        return self.start or DAY_START, self.end or DAY_END
+
+
+# A day's hours: one stretch or more, earliest first.
+type DayHours = tuple[Hours, ...]
+
+# Free all day: sunrise to sunset, or any hour in a boat with lights.
+ALL_DAY: Final[DayHours] = (Hours(),)
+
+
+def day_hours(data: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None) -> DayHours:
+    """Read a day's hours, earliest first.
+
+    Days saved before a day could have several stretches hold one start and
+    end. A day without any stretch is free all day.
+    """
+    if data is None or isinstance(data, Mapping):
+        return (Hours.from_data(data),)
+    stretches = sorted((Hours.from_data(item) for item in data), key=_order)
+    return tuple(stretches) or ALL_DAY
+
+
+def _order(hours: Hours) -> tuple[str, str]:
+    return hours.bounds
+
+
+def hours_data(hours: DayHours) -> list[dict[str, str | None]]:
+    """Return a day's hours as they're saved: each stretch's start and end."""
+    return [{CONF_START: item.start, CONF_END: item.end} for item in hours]
+
+
+def clock(value: str | None) -> str | None:
+    """Return a time of day such as "9:00" as "09:00:00", or None for none."""
+    if not value:
+        return None
+    parsed = dt_util.parse_time(value)
+    return parsed.strftime("%H:%M:%S") if parsed else value
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -309,7 +360,7 @@ class Sailor:
     name: str
     skill: Skill
     boats: tuple[str, ...]
-    week: Mapping[str, Hours] = field(default_factory=dict, hash=False)
+    week: Mapping[str, DayHours] = field(default_factory=dict, hash=False)
     user: str | None = None
     comfort: Comfort = Comfort()
     auto_calendar: AutoCalendar | None = None
@@ -320,8 +371,8 @@ class Sailor:
         return tuple(day for day in WEEKDAYS if day in self.week)
 
     def hours_on(
-        self, day: date, changes: Mapping[date, Hours | None] = MappingProxyType({})
-    ) -> Hours | None:
+        self, day: date, changes: Mapping[date, DayHours | None] = MappingProxyType({})
+    ) -> DayHours | None:
         """Return their hours on a date, or None if they don't sail that day.
 
         A change made for the date comes first, then the weekday's hours.
@@ -351,7 +402,7 @@ class Sailor:
         )
 
 
-def week_hours(data: Mapping[str, Any]) -> dict[str, Hours]:
+def week_hours(data: Mapping[str, Any]) -> dict[str, DayHours]:
     """Return a sailor's saved hours on each day they sail, Monday first.
 
     Sailors saved before each day had hours of its own have one start and
@@ -359,8 +410,8 @@ def week_hours(data: Mapping[str, Any]) -> dict[str, Hours]:
     """
     days = in_order(data[CONF_DAYS], WEEKDAYS)
     if (hours := data.get(CONF_HOURS)) is None:
-        return dict.fromkeys(days, Hours(data.get(CONF_START), data.get(CONF_END)))
-    return {day: Hours.from_data(hours.get(day)) for day in days}
+        return dict.fromkeys(days, (Hours(data.get(CONF_START), data.get(CONF_END)),))
+    return {day: day_hours(hours.get(day)) for day in days}
 
 
 @dataclass(frozen=True, slots=True)
@@ -469,14 +520,32 @@ def check_sailor(
     return errors
 
 
-def check_hours(hours: Mapping[str, Mapping[str, Any]]) -> dict[str, str]:
-    """Return errors in each day's hours, under the day's end, such as mon_end."""
-    errors = {}
-    for day, times in hours.items():
-        start, end = times.get(CONF_START), times.get(CONF_END)
-        if start and end and start >= end:
-            errors[f"{day}_{CONF_END}"] = "end_before_start"
-    return errors
+def check_hours(
+    hours: Mapping[str, Mapping[str, Any] | Sequence[Mapping[str, Any]]],
+) -> dict[str, str]:
+    """Return errors in each day's hours, by day, such as "mon"."""
+    return {
+        day: error
+        for day, times in hours.items()
+        if (error := check_day(day_hours(times)))
+    }
+
+
+def check_day(hours: Sequence[Hours]) -> str | None:
+    """Return what's wrong with a day's hours, if anything.
+
+    Each stretch has to end after it starts, and stretches can't overlap,
+    so only the first can start at sunrise and only the last finish at
+    sunset. One stretch can start where another ends.
+    """
+    if len(hours) > MAX_STRETCHES:
+        return "too_many_hours"
+    if any(start >= end for start, end in (item.bounds for item in hours)):
+        return "end_before_start"
+    ordered = sorted(item.bounds for item in hours)
+    if any(first[1] > second[0] for first, second in pairwise(ordered)):
+        return "hours_overlap"
+    return None
 
 
 def check_comfort(comfort: Mapping[str, Any]) -> dict[str, str]:

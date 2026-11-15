@@ -5,14 +5,16 @@
  */
 import { html, nothing, type TemplateResult } from "lit";
 
-import { canActFor, dayAndDate, hoursText } from "./context";
+import { allDay, canActFor, dayAndDate, hoursText } from "./context";
 import {
   checked,
   define,
+  editable,
+  type EditedStretch,
   errorText,
-  hourSelect,
-  hourTime,
+  saved,
   ScDialog,
+  stretchRows,
   ticked,
   value,
 } from "./dialog";
@@ -521,19 +523,28 @@ type HoursChoice = "free" | "off" | "set";
 
 /**
  * Change the sailor's hours for one date, such as a day off: free all day,
- * not sailing, or hours of its own. The usual hours stay as they are.
+ * not sailing, or hours of its own, in one stretch or more. The usual hours
+ * stay as they are.
  */
 export class ScHoursDialog extends ScDialog {
   static override properties = {
     ...ScDialog.properties,
     dayIndex: { type: Number },
     choice: { state: true },
+    stretches: { state: true },
   };
   declare dayIndex: number;
   declare choice?: HoursChoice;
+  /** The date's own stretches as they're edited, from its hours now. */
+  declare stretches: EditedStretch[];
 
   private get day(): Day {
     return this.ctx.forecast!.days[this.dayIndex];
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.stretches ??= editable(this.day.hours);
   }
 
   protected heading(): string {
@@ -546,7 +557,7 @@ export class ScHoursDialog extends ScDialog {
     const day = this.day;
     const lights = ctx.forecast!.lights;
     const hours = day.hours;
-    const choice = this.choice ?? (!hours ? "off" : !hours.start && !hours.end ? "free" : "set");
+    const choice = this.choice ?? (!hours ? "off" : allDay(hours) ? "free" : "set");
     // The weekday's own hours, Monday first.
     const weekday = WEEKDAYS[(new Date(`${day.date}T12:00:00Z`).getUTCDay() + 6) % 7];
     const usual = ctx.sailor!.week[weekday] ?? null;
@@ -573,7 +584,7 @@ export class ScHoursDialog extends ScDialog {
                   ><b>${t(`hours.${key}`)}</b
                   ><span
                     >${t(`hours.${key}_hint`, {
-                      hours: hoursText(ctx, day.date, { start: null, end: null }, lights),
+                      hours: hoursText(ctx, day.date, [{ start: null, end: null }], lights),
                     })}</span
                   ></span
                 ></label
@@ -582,15 +593,14 @@ export class ScHoursDialog extends ScDialog {
         </div>
         ${
           choice === "set"
-            ? html`<div class="two">
-                <label class="fld">
-                  <span class="lbl">${t("sailor.from")}</span>
-                  ${hourSelect(ctx, "start", false, hours?.start)}
-                </label>
-                <label class="fld">
-                  <span class="lbl">${t("sailor.until")}</span>
-                  ${hourSelect(ctx, "end", true, hours?.end)}
-                </label>
+            ? html`<div class="stretches">
+                <span class="lbl">${t("sailor.from")}</span>
+                <span class="lbl">${t("sailor.until")}</span>
+                <span></span>
+                ${stretchRows(ctx, this.stretches, {
+                  day: fmt.weekday(day.date, "long"),
+                  changed: (stretches) => (this.stretches = stretches),
+                })}
               </div>`
             : nothing
         }
@@ -636,8 +646,8 @@ export class ScHoursDialog extends ScDialog {
       choice === "off"
         ? "off"
         : choice === "free"
-          ? { start: null, end: null }
-          : { start: hourTime(value(form, "start")), end: hourTime(value(form, "end")) };
+          ? [{ start: null, end: null }]
+          : saved(this.stretches);
     const result = await ctx.api.setHours(ctx.sailor!.id, this.day.date, hours);
     if (result.errors) {
       return Object.values(result.errors)

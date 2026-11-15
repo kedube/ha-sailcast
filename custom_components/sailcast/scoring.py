@@ -5,9 +5,9 @@ from how well the wind fits the sailor's ideal range, takes off points for
 gusts, waves, rain, cold and poor visibility, and is capped by the safety
 rating. A sailor's comfort settings change the ideal range, the rain penalty
 and where cold starts to count, but never the rating. A sailing window is two
-or more hours in a row, in daylight and in the sailor's hours that day,
-scoring 60 or more. In a boat with navigation lights, hours after dark count
-too.
+or more hours in a row, in daylight and in one of the sailor's stretches of
+hours that day, scoring 60 or more. In a boat with navigation lights, hours
+after dark count too.
 """
 
 from __future__ import annotations
@@ -22,7 +22,15 @@ from types import MappingProxyType
 from typing import Final
 
 from .limits import BOAT_LIMITS, FOOT, SKILL_WIND_LIMITS, Level
-from .profiles import Comfort, Hours, RainTolerance, SizeClass, Skill
+from .profiles import (
+    DAY_END,
+    DAY_START,
+    Comfort,
+    Hours,
+    RainTolerance,
+    SizeClass,
+    Skill,
+)
 from .rating import Rating
 from .timeline import Hour
 
@@ -147,21 +155,38 @@ def score(
     return max(0, round_half_up(value))
 
 
-def is_available(hours: Hours | None, hour: datetime) -> bool:
+def is_available(hours: Sequence[Hours] | None, hour: datetime) -> bool:
     """Return whether a sailor can sail in the hour that begins at `hour`.
 
-    `hour` is in local time, and `hours` are the sailor's hours that day, or
-    None if they don't sail then. A missing start or end is no limit here:
-    without navigation lights, the boat's daylight keeps it to sunrise and
-    sunset.
+    `hour` is in local time, and `hours` are the sailor's stretches of hours
+    that day, or None if they don't sail then. The hour has to fit in one
+    stretch, or in stretches that meet. A missing start or end is no limit
+    here: without navigation lights, the boat's daylight keeps it to sunrise
+    and sunset.
     """
     if hours is None:
         return False
-    if hours.start is not None and hour.time() < time.fromisoformat(hours.start):
+    return any(_fits(start, end, hour) for start, end in _joined(hours))
+
+
+def _joined(hours: Sequence[Hours]) -> list[tuple[str, str]]:
+    """Return the stretches' starts and ends, with any that meet made one."""
+    joined: list[tuple[str, str]] = []
+    for start, end in sorted(item.bounds for item in hours):
+        if joined and joined[-1][1] >= start:
+            joined[-1] = (joined[-1][0], max(joined[-1][1], end))
+        else:
+            joined.append((start, end))
+    return joined
+
+
+def _fits(start: str, end: str, hour: datetime) -> bool:
+    """Return whether the hour that begins at `hour` is inside a stretch."""
+    if start != DAY_START and hour.time() < time.fromisoformat(start):
         return False
-    if hours.end is not None:
-        end = time.fromisoformat(hours.end)
-        return hour + HOUR <= datetime.combine(hour.date(), end, hour.tzinfo)
+    if end != DAY_END:
+        finish = datetime.combine(hour.date(), time.fromisoformat(end), hour.tzinfo)
+        return hour + HOUR <= finish
     return True
 
 

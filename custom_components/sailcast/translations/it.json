@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Orari di ogni giorno",
-              "description": "Per i giorni di navigazione scelti sopra. Lascia vuoto un orario per partire all'alba o rientrare al tramonto, o a qualsiasi ora con una barca con luci di navigazione. Un singolo giorno, come un giorno libero, si cambia nel pannello di SailCast.",
+              "description": "Per i giorni di navigazione scelti sopra: quando il velista è libero, in una o più fasce orarie, per esempio 9–11 e 15–19. Un giorno senza orari va dall'alba al tramonto, o a qualsiasi ora con una barca con luci di navigazione; un inizio o una fine vuoti indicano l'alba o il tramonto. Un singolo giorno, come un giorno libero, si cambia nel pannello di SailCast.",
               "data": {
-                "mon_start": "Lunedì: partenza non prima delle",
-                "mon_end": "Lunedì: rientro entro le",
-                "tue_start": "Martedì: partenza non prima delle",
-                "tue_end": "Martedì: rientro entro le",
-                "wed_start": "Mercoledì: partenza non prima delle",
-                "wed_end": "Mercoledì: rientro entro le",
-                "thu_start": "Giovedì: partenza non prima delle",
-                "thu_end": "Giovedì: rientro entro le",
-                "fri_start": "Venerdì: partenza non prima delle",
-                "fri_end": "Venerdì: rientro entro le",
-                "sat_start": "Sabato: partenza non prima delle",
-                "sat_end": "Sabato: rientro entro le",
-                "sun_start": "Domenica: partenza non prima delle",
-                "sun_end": "Domenica: rientro entro le"
+                "mon": "Lunedì",
+                "tue": "Martedì",
+                "wed": "Mercoledì",
+                "thu": "Giovedì",
+                "fri": "Venerdì",
+                "sat": "Sabato",
+                "sun": "Domenica"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Orari di ogni giorno",
-              "description": "Per i giorni di navigazione scelti sopra. Lascia vuoto un orario per partire all'alba o rientrare al tramonto, o a qualsiasi ora con una barca con luci di navigazione. Un singolo giorno, come un giorno libero, si cambia nel pannello di SailCast.",
+              "description": "Per i giorni di navigazione scelti sopra: quando il velista è libero, in una o più fasce orarie, per esempio 9–11 e 15–19. Un giorno senza orari va dall'alba al tramonto, o a qualsiasi ora con una barca con luci di navigazione; un inizio o una fine vuoti indicano l'alba o il tramonto. Un singolo giorno, come un giorno libero, si cambia nel pannello di SailCast.",
               "data": {
-                "mon_start": "Lunedì: partenza non prima delle",
-                "mon_end": "Lunedì: rientro entro le",
-                "tue_start": "Martedì: partenza non prima delle",
-                "tue_end": "Martedì: rientro entro le",
-                "wed_start": "Mercoledì: partenza non prima delle",
-                "wed_end": "Mercoledì: rientro entro le",
-                "thu_start": "Giovedì: partenza non prima delle",
-                "thu_end": "Giovedì: rientro entro le",
-                "fri_start": "Venerdì: partenza non prima delle",
-                "fri_end": "Venerdì: rientro entro le",
-                "sat_start": "Sabato: partenza non prima delle",
-                "sat_end": "Sabato: rientro entro le",
-                "sun_start": "Domenica: partenza non prima delle",
-                "sun_end": "Domenica: rientro entro le"
+                "mon": "Lunedì",
+                "tue": "Martedì",
+                "wed": "Mercoledì",
+                "thu": "Giovedì",
+                "fri": "Venerdì",
+                "sat": "Sabato",
+                "sun": "Domenica"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Un altro velista ha già questo nome.",
         "unknown_boat": "Quella barca è stata rimossa. Scegline un'altra.",
         "no_days": "Scegli almeno un giorno.",
-        "end_before_start": "L'orario di rientro deve essere dopo quello di partenza.",
+        "end_before_start": "{day}: ogni fascia oraria deve finire dopo il suo inizio.",
+        "hours_overlap": "{day}: due fasce orarie si sovrappongono. Solo la prima può iniziare all'alba e solo l'ultima finire al tramonto.",
+        "too_many_hours": "{day}: al massimo 4 fasce orarie.",
         "ideal_out_of_range": "Usa un valore tra 0 e 40 kn.",
         "ideal_high_below_low": "Il valore massimo deve essere superiore al minimo.",
         "coldest_out_of_range": "Usa un valore tra −20 e 35 °C (tra −4 e 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Venerdì",
         "sat": "Sabato",
         "sun": "Domenica"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Da",
+          "description": "Lascia vuoto per l'alba."
+        },
+        "end": {
+          "name": "Fino a",
+          "description": "Lascia vuoto per il tramonto."
+        }
       }
     },
     "rain": {

@@ -33,25 +33,53 @@ def test_profiles_from_entry(full_entry: MockConfigEntry) -> None:
     assert alex.skill is Skill.INTERMEDIATE
     assert alex.boats == ("boat_keelboat", "boat_cruiser")
     assert alex.days == ("sat", "sun")
-    assert alex.week["sat"] == profiles.Hours("09:00:00", None)
+    assert alex.week["sat"] == (profiles.Hours("09:00:00", None),)
 
 
 def test_hours_from_before_each_day_had_its_own() -> None:
     """A sailor saved with one start and end gets them on every day they sail."""
     old = {"days": ["sun", "sat"], "start": "09:00:00", "end": "15:00:00"}
     assert profiles.week_hours(old) == {
-        "sat": profiles.Hours("09:00:00", "15:00:00"),
-        "sun": profiles.Hours("09:00:00", "15:00:00"),
+        "sat": (profiles.Hours("09:00:00", "15:00:00"),),
+        "sun": (profiles.Hours("09:00:00", "15:00:00"),),
     }
-    new = {
+    # Then each day had one start and end of its own.
+    one = {
         "days": ["fri", "sat"],
         "hours": {"fri": {"start": "17:00:00", "end": None}, "mon": {}},
     }
     # A sailing day without hours of its own runs sunrise to sunset.
-    assert profiles.week_hours(new) == {
-        "fri": profiles.Hours("17:00:00", None),
-        "sat": profiles.Hours(),
+    assert profiles.week_hours(one) == {
+        "fri": (profiles.Hours("17:00:00", None),),
+        "sat": profiles.ALL_DAY,
     }
+
+
+def test_several_stretches_a_day() -> None:
+    """A day can have several stretches, read earliest first; none is all day."""
+    data = {
+        "days": ["sat", "sun"],
+        "hours": {
+            "sat": [
+                {"start": "15:00:00", "end": "19:00:00"},
+                {"start": "09:00:00", "end": "11:00:00"},
+                {"start": None, "end": "07:00:00"},
+            ],
+            "sun": [],
+        },
+    }
+    assert profiles.week_hours(data) == {
+        "sat": (
+            profiles.Hours(None, "07:00:00"),
+            profiles.Hours("09:00:00", "11:00:00"),
+            profiles.Hours("15:00:00", "19:00:00"),
+        ),
+        "sun": profiles.ALL_DAY,
+    }
+    assert profiles.hours_data(profiles.week_hours(data)["sat"][1:]) == [
+        {"start": "09:00:00", "end": "11:00:00"},
+        {"start": "15:00:00", "end": "19:00:00"},
+    ]
 
 
 def test_hours_on_a_date() -> None:
@@ -61,14 +89,14 @@ def test_hours_on_a_date() -> None:
         name="Alex",
         skill=Skill.INTERMEDIATE,
         boats=("boat",),
-        week={"sat": profiles.Hours("09:00:00")},
+        week={"sat": (profiles.Hours("09:00:00"),)},
     )
     saturday, sunday = date(2026, 11, 7), date(2026, 11, 8)
-    assert sailor.hours_on(saturday) == profiles.Hours("09:00:00")
+    assert sailor.hours_on(saturday) == (profiles.Hours("09:00:00"),)
     assert sailor.hours_on(sunday) is None
-    changes = {saturday: None, sunday: profiles.Hours()}
+    changes = {saturday: None, sunday: profiles.ALL_DAY}
     assert sailor.hours_on(saturday, changes) is None
-    assert sailor.hours_on(sunday, changes) == profiles.Hours()
+    assert sailor.hours_on(sunday, changes) == profiles.ALL_DAY
 
 
 def test_boat_lights() -> None:
@@ -110,8 +138,8 @@ def test_as_dict_is_sorted_by_name(full_entry: MockConfigEntry) -> None:
         "skill": "intermediate",
         "boats": ("boat_keelboat", "boat_cruiser"),
         "week": {
-            "sat": {"start": "09:00:00", "end": None},
-            "sun": {"start": "09:00:00", "end": None},
+            "sat": ({"start": "09:00:00", "end": None},),
+            "sun": ({"start": "09:00:00", "end": None},),
         },
         "user": None,
         "comfort": {
@@ -133,13 +161,16 @@ def test_check_name() -> None:
 
 
 def test_check_sailor() -> None:
-    """A sailor needs known boats, a day, and each day's finish after its start."""
+    """A sailor needs known boats, a day, and each day's hours in order."""
     good = {
         "boats": ["a"],
         "days": ["fri", "sat"],
         "hours": {
-            "fri": {"start": "17:00:00", "end": None},
-            "sat": {"start": "08:00:00", "end": "12:00:00"},
+            "fri": [{"start": "17:00:00", "end": None}],
+            "sat": [
+                {"start": "08:00:00", "end": "12:00:00"},
+                {"start": "15:00:00", "end": "19:00:00"},
+            ],
         },
     }
     assert profiles.check_sailor(good, {"a"}) == {}
@@ -147,10 +178,56 @@ def test_check_sailor() -> None:
         "boats": "unknown_boat"
     }
     assert profiles.check_sailor(good | {"days": []}, {"a"}) == {"days": "no_days"}
-    late = {"sat": {"start": "08:00:00", "end": "08:00:00"}}
+    # Errors are by day.
+    late = {"sat": [{"start": "08:00:00", "end": "08:00:00"}]}
     assert profiles.check_sailor(good | {"hours": late}, {"a"}) == {
-        "sat_end": "end_before_start"
+        "sat": "end_before_start"
     }
+    # A day saved with one start and end is checked too.
+    assert profiles.check_hours({"sat": {"start": "08:00:00", "end": "07:00:00"}}) == {
+        "sat": "end_before_start"
+    }
+
+
+def _day(*stretches: tuple[str | None, str | None]) -> list[profiles.Hours]:
+    return [profiles.Hours(start, end) for start, end in stretches]
+
+
+@pytest.mark.parametrize(
+    ("stretches", "error"),
+    [
+        ([(None, None)], None),
+        ([("09:00:00", "11:00:00"), ("15:00:00", "19:00:00")], None),
+        # In any order, and one can start where another ends.
+        ([("15:00:00", "19:00:00"), ("09:00:00", "15:00:00")], None),
+        # Sunrise to 7 AM, and 5 PM to sunset.
+        ([(None, "07:00:00"), ("17:00:00", None)], None),
+        ([("09:00:00", "12:00:00"), ("11:00:00", "14:00:00")], "hours_overlap"),
+        ([("08:00:00", "18:00:00"), ("09:00:00", "11:00:00")], "hours_overlap"),
+        # Only the first can start at sunrise, and only the last end at sunset.
+        ([(None, "11:00:00"), (None, "13:00:00")], "hours_overlap"),
+        ([("17:00:00", None), ("19:00:00", "21:00:00")], "hours_overlap"),
+        ([(None, None), ("09:00:00", "11:00:00")], "hours_overlap"),
+        ([("09:00:00", "11:00:00"), ("13:00:00", "13:00:00")], "end_before_start"),
+        (
+            [(f"{hour:02}:00:00", f"{hour:02}:30:00") for hour in range(8, 13)],
+            "too_many_hours",
+        ),
+    ],
+)
+def test_check_day(
+    stretches: list[tuple[str | None, str | None]], error: str | None
+) -> None:
+    """Stretches end after they start and don't overlap, up to four a day."""
+    assert profiles.check_day(_day(*stretches)) == error
+
+
+def test_clock() -> None:
+    """Times from the setup dialog are kept as hours, minutes and seconds."""
+    assert profiles.clock("9:00") == "09:00:00"
+    assert profiles.clock("17:30:00") == "17:30:00"
+    assert profiles.clock("") is None
+    assert profiles.clock(None) is None
 
 
 def test_spots_from_before_sources(entry: MockConfigEntry) -> None:

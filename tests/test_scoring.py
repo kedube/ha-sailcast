@@ -235,12 +235,33 @@ def test_ensemble_spread_lowers_confidence() -> None:
 def test_is_available() -> None:
     """Sailors sail between the day's start and end, and not on days off."""
     saturday_9 = DAY + timedelta(hours=9)
-    assert is_available(Hours(), saturday_9)
+    assert is_available((Hours(),), saturday_9)
     assert not is_available(None, saturday_9)
-    assert is_available(Hours("09:00:00"), saturday_9)
-    assert not is_available(Hours("09:30:00"), saturday_9)
-    assert is_available(Hours(end="10:00:00"), saturday_9)
-    assert not is_available(Hours(end="09:59:00"), saturday_9)
+    assert is_available((Hours("09:00:00"),), saturday_9)
+    assert not is_available((Hours("09:30:00"),), saturday_9)
+    assert is_available((Hours(end="10:00:00"),), saturday_9)
+    assert not is_available((Hours(end="09:59:00"),), saturday_9)
+
+
+def test_available_in_several_stretches() -> None:
+    """An hour counts in any of the day's stretches, but not in the gap between."""
+    day = (Hours("09:00:00", "11:00:00"), Hours("15:00:00", "19:00:00"))
+    free = [
+        hour for hour in range(24) if is_available(day, DAY + timedelta(hours=hour))
+    ]
+    assert free == [9, 10, 15, 16, 17, 18]
+    # Stretches that meet are one, even off the hour.
+    meeting = (Hours("09:30:00", "10:30:00"), Hours("10:30:00", "12:00:00"))
+    free = [
+        hour for hour in range(24) if is_available(meeting, DAY + timedelta(hours=hour))
+    ]
+    assert free == [10, 11]
+    # Sunrise to 7 AM, and 5 PM to sunset: no limit before and after.
+    edges = (Hours(end="07:00:00"), Hours("17:00:00"))
+    free = [
+        hour for hour in range(24) if is_available(edges, DAY + timedelta(hours=hour))
+    ]
+    assert free == [0, 1, 2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 23]
 
 
 def test_steady_level() -> None:

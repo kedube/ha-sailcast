@@ -51,12 +51,12 @@ A sailor is a person who sails. Each one is a device, with ratings, scores and w
 | Usual boat | The boat SailCast rates unless the sailor picks another. |
 | Other boats | Other boats the sailor takes out. The panel can rate any of them. |
 | Sailing days | The days windows are found on. Every day unless you change it. |
-| Hours each day | When windows can start and end, set for each sailing day, such as 5 PM on weekdays and sunrise at weekends. Left empty, they follow sunrise and sunset, or allow any hour in a boat with navigation lights. Sailors saved before each day had its own hours keep their one start and finish on every sailing day. |
+| Hours each day | When windows can start and end, set for each sailing day, such as 5 PM on weekdays and sunrise at weekends. A day can have up to four stretches, for a break in the day, such as 9 AM to 11 AM and 3 PM to 7 PM: in the panel, **+** adds one and **×** takes it out. Each stretch has its own windows, and stretches can't overlap, though one can start where another ends. A day without hours, or a start or finish left empty, follows sunrise and sunset, or allows any hour in a boat with navigation lights. Sailors saved before each day had its own hours keep their one start and finish on every sailing day. |
 | Home Assistant user | The panel opens on this sailor for that user. |
 
 ### One day's hours
 
-For one date, such as a day off, change the hours under that day in the week view: **Free all day**, **Not sailing**, or hours of its own. Only that date changes, and SailCast forgets the change once the day has passed. **Back to usual hours** undoes it. Administrators can change any sailor's day, and other users the sailor that's linked to them. These changes are kept by SailCast, not in the sailor's settings.
+For one date, such as a day off, change the hours under that day in the week view: **Free all day**, **Not sailing**, or hours of its own, with a break in the day if you like. Only that date changes, and SailCast forgets the change once the day has passed. **Back to usual hours** undoes it. Administrators can change any sailor's day, and other users the sailor that's linked to them. These changes are kept by SailCast, not in the sailor's settings.
 
 ### Comfort
 

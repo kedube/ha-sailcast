@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Zeiten je Tag",
-              "description": "Für die oben gewählten Segeltage. Leer gelassen beginnt der Tag bei Sonnenaufgang und endet bei Sonnenuntergang, oder zu jeder Stunde in einem Boot mit Positionslichtern. Einen einzelnen Tag, etwa einen freien Tag, änderst du im SailCast-Panel.",
+              "description": "Für die oben gewählten Segeltage: wann der Segler Zeit hat, in einem oder mehreren Zeiträumen, etwa 9 bis 11 Uhr und 15 bis 19 Uhr. Ein Tag ohne Zeiten reicht von Sonnenaufgang bis Sonnenuntergang, oder jede Stunde in einem Boot mit Positionslichtern; ein leerer Beginn oder ein leeres Ende bedeutet Sonnenaufgang oder Sonnenuntergang. Einen einzelnen Tag, etwa einen freien Tag, änderst du im SailCast-Panel.",
               "data": {
-                "mon_start": "Montag: frühester Beginn",
-                "mon_end": "Montag: spätestes Ende",
-                "tue_start": "Dienstag: frühester Beginn",
-                "tue_end": "Dienstag: spätestes Ende",
-                "wed_start": "Mittwoch: frühester Beginn",
-                "wed_end": "Mittwoch: spätestes Ende",
-                "thu_start": "Donnerstag: frühester Beginn",
-                "thu_end": "Donnerstag: spätestes Ende",
-                "fri_start": "Freitag: frühester Beginn",
-                "fri_end": "Freitag: spätestes Ende",
-                "sat_start": "Samstag: frühester Beginn",
-                "sat_end": "Samstag: spätestes Ende",
-                "sun_start": "Sonntag: frühester Beginn",
-                "sun_end": "Sonntag: spätestes Ende"
+                "mon": "Montag",
+                "tue": "Dienstag",
+                "wed": "Mittwoch",
+                "thu": "Donnerstag",
+                "fri": "Freitag",
+                "sat": "Samstag",
+                "sun": "Sonntag"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Zeiten je Tag",
-              "description": "Für die oben gewählten Segeltage. Leer gelassen beginnt der Tag bei Sonnenaufgang und endet bei Sonnenuntergang, oder zu jeder Stunde in einem Boot mit Positionslichtern. Einen einzelnen Tag, etwa einen freien Tag, änderst du im SailCast-Panel.",
+              "description": "Für die oben gewählten Segeltage: wann der Segler Zeit hat, in einem oder mehreren Zeiträumen, etwa 9 bis 11 Uhr und 15 bis 19 Uhr. Ein Tag ohne Zeiten reicht von Sonnenaufgang bis Sonnenuntergang, oder jede Stunde in einem Boot mit Positionslichtern; ein leerer Beginn oder ein leeres Ende bedeutet Sonnenaufgang oder Sonnenuntergang. Einen einzelnen Tag, etwa einen freien Tag, änderst du im SailCast-Panel.",
               "data": {
-                "mon_start": "Montag: frühester Beginn",
-                "mon_end": "Montag: spätestes Ende",
-                "tue_start": "Dienstag: frühester Beginn",
-                "tue_end": "Dienstag: spätestes Ende",
-                "wed_start": "Mittwoch: frühester Beginn",
-                "wed_end": "Mittwoch: spätestes Ende",
-                "thu_start": "Donnerstag: frühester Beginn",
-                "thu_end": "Donnerstag: spätestes Ende",
-                "fri_start": "Freitag: frühester Beginn",
-                "fri_end": "Freitag: spätestes Ende",
-                "sat_start": "Samstag: frühester Beginn",
-                "sat_end": "Samstag: spätestes Ende",
-                "sun_start": "Sonntag: frühester Beginn",
-                "sun_end": "Sonntag: spätestes Ende"
+                "mon": "Montag",
+                "tue": "Dienstag",
+                "wed": "Mittwoch",
+                "thu": "Donnerstag",
+                "fri": "Freitag",
+                "sat": "Samstag",
+                "sun": "Sonntag"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Ein anderer Segler hat schon diesen Namen.",
         "unknown_boat": "Dieses Boot wurde entfernt. Wähle ein anderes.",
         "no_days": "Wähle mindestens einen Tag.",
-        "end_before_start": "Das späteste Ende muss nach dem frühesten Beginn liegen.",
+        "end_before_start": "{day}: Jeder Zeitraum muss nach seinem Beginn enden.",
+        "hours_overlap": "{day}: Zwei der Zeiträume überschneiden sich. Nur der erste kann bei Sonnenaufgang beginnen und nur der letzte bei Sonnenuntergang enden.",
+        "too_many_hours": "{day}: Höchstens 4 Zeiträume.",
         "ideal_out_of_range": "Verwende 0 bis 40 kn.",
         "ideal_high_below_low": "Das obere Ende des Bereichs muss über dem unteren liegen.",
         "coldest_out_of_range": "Verwende −20 bis 35 °C (−4 bis 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Freitag",
         "sat": "Samstag",
         "sun": "Sonntag"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Von",
+          "description": "Leer lassen für Sonnenaufgang."
+        },
+        "end": {
+          "name": "Bis",
+          "description": "Leer lassen für Sonnenuntergang."
+        }
       }
     },
     "rain": {

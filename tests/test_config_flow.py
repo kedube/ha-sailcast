@@ -7,7 +7,9 @@ from typing import Any
 from homeassistant.config_entries import SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import config_validation as cv
 from homeassistant.util.unit_system import US_CUSTOMARY_SYSTEM
+import probatio
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
@@ -422,7 +424,8 @@ async def test_sailor_needs_a_boat(hass: HomeAssistant, entry: MockConfigEntry) 
 async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> None:
     """A sailor's usual boat comes first, and days are kept in week order.
 
-    Each day they sail keeps its own hours; the other days' are dropped.
+    Each day they sail keeps its own hours, earliest first; the other days'
+    are dropped. A day without hours is free all day.
     """
     result = await _add(
         hass,
@@ -438,10 +441,9 @@ async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> N
         | SECTIONS
         | {
             "hours": {
-                "fri_start": "17:00:00",
-                "fri_end": "20:30:00",
-                "sun_end": "16:30:00",
-                "mon_start": "06:00:00",
+                "fri": [{"start": "17:00:00", "end": "20:30:00"}],
+                "sun": [{"start": "15:00", "end": "19:00"}, {"end": "11:00:00"}],
+                "mon": [{"start": "06:00:00"}],
             }
         },
     )
@@ -456,9 +458,12 @@ async def test_add_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> N
         "boats": ["boat_cruiser", "boat_keelboat"],
         "days": ["fri", "sat", "sun"],
         "hours": {
-            "fri": {"start": "17:00:00", "end": "20:30:00"},
-            "sat": {"start": None, "end": None},
-            "sun": {"start": None, "end": "16:30:00"},
+            "fri": [{"start": "17:00:00", "end": "20:30:00"}],
+            "sat": [{"start": None, "end": None}],
+            "sun": [
+                {"start": None, "end": "11:00:00"},
+                {"start": "15:00:00", "end": "19:00:00"},
+            ],
         },
         **NO_EXTRAS,
     }
@@ -493,8 +498,23 @@ async def test_new_sailor_defaults(hass: HomeAssistant, entry: MockConfigEntry) 
     [
         ({"days": []}, {"days": "no_days"}),
         (
-            {"hours": {"sat_start": "15:00:00", "sat_end": "09:00:00"}},
-            {"sat_end": "end_before_start"},
+            {"hours": {"sat": [{"start": "15:00:00", "end": "09:00:00"}]}},
+            {"hours": "end_before_start"},
+        ),
+        (
+            {
+                "hours": {
+                    "sat": [
+                        {"start": "09:00:00", "end": "12:00:00"},
+                        {"start": "11:00:00", "end": "14:00:00"},
+                    ]
+                }
+            },
+            {"hours": "hours_overlap"},
+        ),
+        (
+            {"hours": {"sat": [{"start": f"{hour:02}:00:00"} for hour in range(5)]}},
+            {"hours": "too_many_hours"},
         ),
     ],
 )
@@ -504,7 +524,10 @@ async def test_sailor_errors(
     changes: dict[str, Any],
     errors: dict[str, str],
 ) -> None:
-    """Missing days and a day's finish before its start are caught."""
+    """Missing days and a day's hours out of order are caught.
+
+    A day's hours show their error above the hours, with the day's name.
+    """
     result = await _edit(hass, full_entry, "sailor_alex")
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -519,6 +542,8 @@ async def test_sailor_errors(
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == errors
+    if "hours" in errors:
+        assert result["description_placeholders"] == {"day": "Saturday"}
 
 
 async def test_boat_removed_while_editing(
@@ -551,9 +576,13 @@ async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> 
     result = await _edit(hass, full_entry, "sailor_alex")
     assert _suggested(result, "default_boat") == "boat_keelboat"
     assert _suggested(result, "other_boats") == ["boat_cruiser"]
-    assert _suggested_in(result, "hours", "sat_start") == "09:00:00"
-    assert _suggested_in(result, "hours", "sun_start") == "09:00:00"
+    assert _suggested_in(result, "hours", "sat") == [{"start": "09:00:00"}]
+    assert _suggested_in(result, "hours", "sun") == [{"start": "09:00:00"}]
 
+    split = [
+        {"start": "09:00:00", "end": "11:00:00"},
+        {"start": "15:00:00", "end": "19:00:00"},
+    ]
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
         {
@@ -563,19 +592,66 @@ async def test_edit_sailor(hass: HomeAssistant, full_entry: MockConfigEntry) -> 
             "days": ["sat", "sun"],
         }
         | SECTIONS
-        | {"hours": {"sat_start": "09:00:00"}},
+        | {"hours": {"sat": split}},
     )
     assert result["type"] is FlowResultType.ABORT
     assert dict(full_entry.subentries["sailor_alex"].data) == {
         "skill": "advanced",
         "boats": ["boat_cruiser"],
         "days": ["sat", "sun"],
-        "hours": {
-            "sat": {"start": "09:00:00", "end": None},
-            "sun": {"start": None, "end": None},
-        },
+        "hours": {"sat": split, "sun": [{"start": None, "end": None}]},
         **NO_EXTRAS,
     }
+    # The stretches show again, and a day free all day shows none.
+    result = await _edit(hass, full_entry, "sailor_alex")
+    assert _suggested_in(result, "hours", "sat") == split
+    assert _suggested_in(result, "hours", "sun") is None
+
+
+async def test_sailor_form_for_the_frontend(
+    hass: HomeAssistant, full_entry: MockConfigEntry
+) -> None:
+    """The form goes to the frontend as Home Assistant sends it.
+
+    Each day is a list of stretches, each an optional start and end time,
+    named by the "hours" selector translations.
+    """
+    split = [
+        {"start": "09:00:00", "end": "11:00:00"},
+        {"start": "15:00:00", "end": None},
+    ]
+    subentry = full_entry.subentries["sailor_alex"]
+    hass.config_entries.async_update_subentry(
+        full_entry,
+        subentry,
+        data={**subentry.data, "hours": {"sat": split, "sun": []}},
+    )
+    result = await _edit(hass, full_entry, "sailor_alex")
+    fields = probatio.to_field_list(
+        result["data_schema"], custom_serializer=cv.custom_serializer
+    )
+    hours = next(field for field in fields if field["name"] == "hours")
+    assert hours["type"] == "expandable"
+    days = {field["name"]: field for field in hours["schema"]}
+    assert list(days) == ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    assert days["sat"]["selector"] == {
+        "object": {
+            "fields": {
+                "start": {"selector": {"time": {}}, "required": False},
+                "end": {"selector": {"time": {}}, "required": False},
+            },
+            "multiple": True,
+            "translation_key": "hours",
+        }
+    }
+    # A stretch to sunset has no end to show, and a day free all day no rows.
+    assert days["sat"]["description"] == {
+        "suggested_value": [
+            {"start": "09:00:00", "end": "11:00:00"},
+            {"start": "15:00:00"},
+        ]
+    }
+    assert "description" not in days["sun"]
 
 
 async def test_spot_from_before_sources(
@@ -594,12 +670,12 @@ async def test_spot_from_before_sources(
 
 
 def _suggested_in(result: dict[str, Any], section: str, field: str) -> Any:
-    """Return the value a form suggests for a field in a section."""
+    """Return the value a form suggests for a field in a section, or None."""
     for key, value in result["data_schema"].schema.items():
         if key == section:
             for inner in value.schema.schema:
                 if inner == field:
-                    return inner.description["suggested_value"]
+                    return (inner.description or {}).get("suggested_value")
     raise KeyError(f"{section}.{field}")
 
 

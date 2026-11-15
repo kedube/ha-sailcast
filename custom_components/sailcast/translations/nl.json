@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Tijden per dag",
-              "description": "Voor de zeildagen hierboven. Laat een tijd leeg om bij zonsopkomst te beginnen of bij zonsondergang te stoppen, of voor elk uur met een boot met navigatieverlichting. Eén dag, zoals een vrije dag, wijzig je in het SailCast-paneel.",
+              "description": "Voor de zeildagen hierboven: wanneer de zeiler kan, in één tijdvak of meer, zoals 9 tot 11 uur en 15 tot 19 uur. Een dag zonder tijden loopt van zonsopkomst tot zonsondergang, of elk uur met een boot met navigatieverlichting; een lege begin- of eindtijd betekent zonsopkomst of zonsondergang. Eén dag, zoals een vrije dag, wijzig je in het SailCast-paneel.",
               "data": {
-                "mon_start": "Maandag: vroegste begintijd",
-                "mon_end": "Maandag: laatste eindtijd",
-                "tue_start": "Dinsdag: vroegste begintijd",
-                "tue_end": "Dinsdag: laatste eindtijd",
-                "wed_start": "Woensdag: vroegste begintijd",
-                "wed_end": "Woensdag: laatste eindtijd",
-                "thu_start": "Donderdag: vroegste begintijd",
-                "thu_end": "Donderdag: laatste eindtijd",
-                "fri_start": "Vrijdag: vroegste begintijd",
-                "fri_end": "Vrijdag: laatste eindtijd",
-                "sat_start": "Zaterdag: vroegste begintijd",
-                "sat_end": "Zaterdag: laatste eindtijd",
-                "sun_start": "Zondag: vroegste begintijd",
-                "sun_end": "Zondag: laatste eindtijd"
+                "mon": "Maandag",
+                "tue": "Dinsdag",
+                "wed": "Woensdag",
+                "thu": "Donderdag",
+                "fri": "Vrijdag",
+                "sat": "Zaterdag",
+                "sun": "Zondag"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Tijden per dag",
-              "description": "Voor de zeildagen hierboven. Laat een tijd leeg om bij zonsopkomst te beginnen of bij zonsondergang te stoppen, of voor elk uur met een boot met navigatieverlichting. Eén dag, zoals een vrije dag, wijzig je in het SailCast-paneel.",
+              "description": "Voor de zeildagen hierboven: wanneer de zeiler kan, in één tijdvak of meer, zoals 9 tot 11 uur en 15 tot 19 uur. Een dag zonder tijden loopt van zonsopkomst tot zonsondergang, of elk uur met een boot met navigatieverlichting; een lege begin- of eindtijd betekent zonsopkomst of zonsondergang. Eén dag, zoals een vrije dag, wijzig je in het SailCast-paneel.",
               "data": {
-                "mon_start": "Maandag: vroegste begintijd",
-                "mon_end": "Maandag: laatste eindtijd",
-                "tue_start": "Dinsdag: vroegste begintijd",
-                "tue_end": "Dinsdag: laatste eindtijd",
-                "wed_start": "Woensdag: vroegste begintijd",
-                "wed_end": "Woensdag: laatste eindtijd",
-                "thu_start": "Donderdag: vroegste begintijd",
-                "thu_end": "Donderdag: laatste eindtijd",
-                "fri_start": "Vrijdag: vroegste begintijd",
-                "fri_end": "Vrijdag: laatste eindtijd",
-                "sat_start": "Zaterdag: vroegste begintijd",
-                "sat_end": "Zaterdag: laatste eindtijd",
-                "sun_start": "Zondag: vroegste begintijd",
-                "sun_end": "Zondag: laatste eindtijd"
+                "mon": "Maandag",
+                "tue": "Dinsdag",
+                "wed": "Woensdag",
+                "thu": "Donderdag",
+                "fri": "Vrijdag",
+                "sat": "Zaterdag",
+                "sun": "Zondag"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Een andere zeiler heeft deze naam al.",
         "unknown_boat": "Die boot is verwijderd. Kies een andere.",
         "no_days": "Kies minstens één dag.",
-        "end_before_start": "De laatste eindtijd moet na de vroegste begintijd liggen.",
+        "end_before_start": "{day}: elk tijdvak moet na zijn begin eindigen.",
+        "hours_overlap": "{day}: twee tijdvakken overlappen. Alleen het eerste kan bij zonsopkomst beginnen en alleen het laatste bij zonsondergang eindigen.",
+        "too_many_hours": "{day}: hoogstens 4 tijdvakken.",
         "ideal_out_of_range": "Gebruik 0 tot 40 kn.",
         "ideal_high_below_low": "De bovengrens moet hoger zijn dan de ondergrens.",
         "coldest_out_of_range": "Gebruik −20 tot 35 °C (−4 tot 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Vrijdag",
         "sat": "Zaterdag",
         "sun": "Zondag"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Van",
+          "description": "Laat leeg voor zonsopkomst."
+        },
+        "end": {
+          "name": "Tot",
+          "description": "Laat leeg voor zonsondergang."
+        }
       }
     },
     "rain": {

@@ -236,7 +236,7 @@ async def test_briefing(
     assert [day["date"] for day in days] == [f"2026-11-0{n}" for n in range(2, 9)]
     # Alex sails at the weekend, from 9 AM until sunset.
     assert days[0]["sailing_hours"] is None
-    assert days[5]["sailing_hours"] == {"from": "09:00"}
+    assert days[5]["sailing_hours"] == [{"from": "09:00"}]
     saturday = days[5]
     assert saturday["weekday"] == "Saturday"
     assert saturday["sunset"] == "16:53"
@@ -329,6 +329,33 @@ async def test_changed_forecast(
     assert result["headline"] == "Ein neuer Text."
     assert result["current"] is True
     assert len(stand_in.tasks) == 2
+
+
+async def test_hours_with_a_break(
+    hass: HomeAssistant,
+    ai_on: MockConfigEntry,
+    stand_in: StandInTask,
+    send: Send,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A day with a break in it gives the AI each stretch of the sailor's hours."""
+    split = [{"start": "09:00", "end": "11:00"}, {"start": "13:00"}]
+    response = await send("hours", sailor="sailor_alex", date="2026-11-08", hours=split)
+    assert response["result"] == {"date": "2026-11-08"}
+    # The results are worked out again once the debouncer's second is up.
+    freezer.tick(timedelta(seconds=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    await send("briefing", **WRITE)
+    (task,) = stand_in.tasks
+    sunday = asked_data(task)["days"][6]
+    assert sunday["date"] == "2026-11-08"
+    assert sunday["sailing_hours"] == [
+        {"from": "09:00", "to": "11:00"},
+        {"from": "13:00"},
+    ]
+    assert '"sailing_hours" lists when the sailor can go' in task.instructions
 
 
 async def test_hours_gone_by(

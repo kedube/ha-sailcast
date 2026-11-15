@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Tider per dag",
-              "description": "För seglingsdagarna ovan. Lämna en tid tom för att börja vid soluppgången eller sluta vid solnedgången, eller vilken timme som helst i en båt med lanternor. En enskild dag, till exempel en ledig dag, ändrar du i SailCast-panelen.",
+              "description": "För seglingsdagarna ovan: när seglaren är ledig, i en eller flera tidsperioder, till exempel 9–11 och 15–19. En dag utan tider gäller från soluppgång till solnedgång, eller vilken timme som helst i en båt med lanternor; en tom start eller sluttid betyder soluppgång eller solnedgång. En enskild dag, till exempel en ledig dag, ändrar du i SailCast-panelen.",
               "data": {
-                "mon_start": "Måndag: tidigaste start",
-                "mon_end": "Måndag: senaste sluttid",
-                "tue_start": "Tisdag: tidigaste start",
-                "tue_end": "Tisdag: senaste sluttid",
-                "wed_start": "Onsdag: tidigaste start",
-                "wed_end": "Onsdag: senaste sluttid",
-                "thu_start": "Torsdag: tidigaste start",
-                "thu_end": "Torsdag: senaste sluttid",
-                "fri_start": "Fredag: tidigaste start",
-                "fri_end": "Fredag: senaste sluttid",
-                "sat_start": "Lördag: tidigaste start",
-                "sat_end": "Lördag: senaste sluttid",
-                "sun_start": "Söndag: tidigaste start",
-                "sun_end": "Söndag: senaste sluttid"
+                "mon": "Måndag",
+                "tue": "Tisdag",
+                "wed": "Onsdag",
+                "thu": "Torsdag",
+                "fri": "Fredag",
+                "sat": "Lördag",
+                "sun": "Söndag"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Tider per dag",
-              "description": "För seglingsdagarna ovan. Lämna en tid tom för att börja vid soluppgången eller sluta vid solnedgången, eller vilken timme som helst i en båt med lanternor. En enskild dag, till exempel en ledig dag, ändrar du i SailCast-panelen.",
+              "description": "För seglingsdagarna ovan: när seglaren är ledig, i en eller flera tidsperioder, till exempel 9–11 och 15–19. En dag utan tider gäller från soluppgång till solnedgång, eller vilken timme som helst i en båt med lanternor; en tom start eller sluttid betyder soluppgång eller solnedgång. En enskild dag, till exempel en ledig dag, ändrar du i SailCast-panelen.",
               "data": {
-                "mon_start": "Måndag: tidigaste start",
-                "mon_end": "Måndag: senaste sluttid",
-                "tue_start": "Tisdag: tidigaste start",
-                "tue_end": "Tisdag: senaste sluttid",
-                "wed_start": "Onsdag: tidigaste start",
-                "wed_end": "Onsdag: senaste sluttid",
-                "thu_start": "Torsdag: tidigaste start",
-                "thu_end": "Torsdag: senaste sluttid",
-                "fri_start": "Fredag: tidigaste start",
-                "fri_end": "Fredag: senaste sluttid",
-                "sat_start": "Lördag: tidigaste start",
-                "sat_end": "Lördag: senaste sluttid",
-                "sun_start": "Söndag: tidigaste start",
-                "sun_end": "Söndag: senaste sluttid"
+                "mon": "Måndag",
+                "tue": "Tisdag",
+                "wed": "Onsdag",
+                "thu": "Torsdag",
+                "fri": "Fredag",
+                "sat": "Lördag",
+                "sun": "Söndag"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "En annan seglare har redan det här namnet.",
         "unknown_boat": "Den båten har tagits bort. Välj en annan.",
         "no_days": "Välj minst en dag.",
-        "end_before_start": "Senaste sluttid måste vara efter tidigaste start.",
+        "end_before_start": "{day}: varje tidsperiod måste sluta efter att den börjat.",
+        "hours_overlap": "{day}: två tidsperioder överlappar. Bara den första kan börja vid soluppgången och bara den sista sluta vid solnedgången.",
+        "too_many_hours": "{day}: högst 4 tidsperioder.",
         "ideal_out_of_range": "Använd 0–40 knop.",
         "ideal_high_below_low": "Intervallets övre gräns måste vara över den nedre.",
         "coldest_out_of_range": "Använd −20 till 35 °C (−4 till 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Fredag",
         "sat": "Lördag",
         "sun": "Söndag"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Från",
+          "description": "Lämna tomt för soluppgången."
+        },
+        "end": {
+          "name": "Till",
+          "description": "Lämna tomt för solnedgången."
+        }
       }
     },
     "rain": {

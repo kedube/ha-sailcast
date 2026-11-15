@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Horario de cada día",
-              "description": "Para los días de navegación de arriba. Deja una hora en blanco para empezar al amanecer o terminar con la puesta de sol, o a cualquier hora en un barco con luces de navegación. Un solo día, como un día libre, se cambia en el panel de SailCast.",
+              "description": "Para los días de navegación de arriba: cuándo puede navegar, en una franja horaria o más, como de 9:00 a 11:00 y de 15:00 a 19:00. Un día sin horas va del amanecer a la puesta de sol, o a cualquier hora en un barco con luces de navegación; un inicio o fin vacío significa el amanecer o la puesta de sol. Un solo día, como un día libre, se cambia en el panel de SailCast.",
               "data": {
-                "mon_start": "Lunes: inicio más temprano",
-                "mon_end": "Lunes: fin más tardío",
-                "tue_start": "Martes: inicio más temprano",
-                "tue_end": "Martes: fin más tardío",
-                "wed_start": "Miércoles: inicio más temprano",
-                "wed_end": "Miércoles: fin más tardío",
-                "thu_start": "Jueves: inicio más temprano",
-                "thu_end": "Jueves: fin más tardío",
-                "fri_start": "Viernes: inicio más temprano",
-                "fri_end": "Viernes: fin más tardío",
-                "sat_start": "Sábado: inicio más temprano",
-                "sat_end": "Sábado: fin más tardío",
-                "sun_start": "Domingo: inicio más temprano",
-                "sun_end": "Domingo: fin más tardío"
+                "mon": "Lunes",
+                "tue": "Martes",
+                "wed": "Miércoles",
+                "thu": "Jueves",
+                "fri": "Viernes",
+                "sat": "Sábado",
+                "sun": "Domingo"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Horario de cada día",
-              "description": "Para los días de navegación de arriba. Deja una hora en blanco para empezar al amanecer o terminar con la puesta de sol, o a cualquier hora en un barco con luces de navegación. Un solo día, como un día libre, se cambia en el panel de SailCast.",
+              "description": "Para los días de navegación de arriba: cuándo puede navegar, en una franja horaria o más, como de 9:00 a 11:00 y de 15:00 a 19:00. Un día sin horas va del amanecer a la puesta de sol, o a cualquier hora en un barco con luces de navegación; un inicio o fin vacío significa el amanecer o la puesta de sol. Un solo día, como un día libre, se cambia en el panel de SailCast.",
               "data": {
-                "mon_start": "Lunes: inicio más temprano",
-                "mon_end": "Lunes: fin más tardío",
-                "tue_start": "Martes: inicio más temprano",
-                "tue_end": "Martes: fin más tardío",
-                "wed_start": "Miércoles: inicio más temprano",
-                "wed_end": "Miércoles: fin más tardío",
-                "thu_start": "Jueves: inicio más temprano",
-                "thu_end": "Jueves: fin más tardío",
-                "fri_start": "Viernes: inicio más temprano",
-                "fri_end": "Viernes: fin más tardío",
-                "sat_start": "Sábado: inicio más temprano",
-                "sat_end": "Sábado: fin más tardío",
-                "sun_start": "Domingo: inicio más temprano",
-                "sun_end": "Domingo: fin más tardío"
+                "mon": "Lunes",
+                "tue": "Martes",
+                "wed": "Miércoles",
+                "thu": "Jueves",
+                "fri": "Viernes",
+                "sat": "Sábado",
+                "sun": "Domingo"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Ya hay otro navegante con este nombre.",
         "unknown_boat": "Ese barco se ha eliminado. Elige otro.",
         "no_days": "Elige al menos un día.",
-        "end_before_start": "El fin más tardío tiene que ser posterior al inicio más temprano.",
+        "end_before_start": "{day}: cada franja tiene que terminar después de empezar.",
+        "hours_overlap": "{day}: dos franjas se solapan. Solo la primera puede empezar al amanecer y solo la última terminar con la puesta de sol.",
+        "too_many_hours": "{day}: hasta 4 franjas horarias.",
         "ideal_out_of_range": "Usa de 0 a 40 kn.",
         "ideal_high_below_low": "El máximo del rango tiene que ser mayor que el mínimo.",
         "coldest_out_of_range": "Usa de −20 a 35 °C (de −4 a 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Viernes",
         "sat": "Sábado",
         "sun": "Domingo"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Desde",
+          "description": "Déjalo vacío para el amanecer."
+        },
+        "end": {
+          "name": "Hasta",
+          "description": "Déjalo vacío para la puesta de sol."
+        }
       }
     },
     "rain": {

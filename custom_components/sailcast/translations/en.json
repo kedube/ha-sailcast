@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Hours each day",
-              "description": "For the sailing days above. Leave a time empty to start at sunrise or finish at sunset, or for any hour in a boat with navigation lights. One day, such as a day off, can be changed in the SailCast panel.",
+              "description": "For the sailing days above: when the sailor is free, in one stretch or more, such as 9 AM to 11 AM and 3 PM to 7 PM. A day without hours runs from sunrise to sunset, or any hour in a boat with navigation lights, and an empty start or finish means sunrise or sunset. One day, such as a day off, can be changed in the SailCast panel.",
               "data": {
-                "mon_start": "Monday: earliest start",
-                "mon_end": "Monday: latest finish",
-                "tue_start": "Tuesday: earliest start",
-                "tue_end": "Tuesday: latest finish",
-                "wed_start": "Wednesday: earliest start",
-                "wed_end": "Wednesday: latest finish",
-                "thu_start": "Thursday: earliest start",
-                "thu_end": "Thursday: latest finish",
-                "fri_start": "Friday: earliest start",
-                "fri_end": "Friday: latest finish",
-                "sat_start": "Saturday: earliest start",
-                "sat_end": "Saturday: latest finish",
-                "sun_start": "Sunday: earliest start",
-                "sun_end": "Sunday: latest finish"
+                "mon": "Monday",
+                "tue": "Tuesday",
+                "wed": "Wednesday",
+                "thu": "Thursday",
+                "fri": "Friday",
+                "sat": "Saturday",
+                "sun": "Sunday"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Hours each day",
-              "description": "For the sailing days above. Leave a time empty to start at sunrise or finish at sunset, or for any hour in a boat with navigation lights. One day, such as a day off, can be changed in the SailCast panel.",
+              "description": "For the sailing days above: when the sailor is free, in one stretch or more, such as 9 AM to 11 AM and 3 PM to 7 PM. A day without hours runs from sunrise to sunset, or any hour in a boat with navigation lights, and an empty start or finish means sunrise or sunset. One day, such as a day off, can be changed in the SailCast panel.",
               "data": {
-                "mon_start": "Monday: earliest start",
-                "mon_end": "Monday: latest finish",
-                "tue_start": "Tuesday: earliest start",
-                "tue_end": "Tuesday: latest finish",
-                "wed_start": "Wednesday: earliest start",
-                "wed_end": "Wednesday: latest finish",
-                "thu_start": "Thursday: earliest start",
-                "thu_end": "Thursday: latest finish",
-                "fri_start": "Friday: earliest start",
-                "fri_end": "Friday: latest finish",
-                "sat_start": "Saturday: earliest start",
-                "sat_end": "Saturday: latest finish",
-                "sun_start": "Sunday: earliest start",
-                "sun_end": "Sunday: latest finish"
+                "mon": "Monday",
+                "tue": "Tuesday",
+                "wed": "Wednesday",
+                "thu": "Thursday",
+                "fri": "Friday",
+                "sat": "Saturday",
+                "sun": "Sunday"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Another sailor already has this name.",
         "unknown_boat": "That boat has been removed. Pick another.",
         "no_days": "Pick at least one day.",
-        "end_before_start": "The latest finish has to be after the earliest start.",
+        "end_before_start": "{day}: each stretch of hours has to end after it starts.",
+        "hours_overlap": "{day}: two stretches of hours overlap. Only the first can start at sunrise, and only the last can finish at sunset.",
+        "too_many_hours": "{day}: use up to 4 stretches of hours.",
         "ideal_out_of_range": "Use 0 to 40 kt.",
         "ideal_high_below_low": "The top of the range has to be above the bottom.",
         "coldest_out_of_range": "Use −20 to 35 °C (−4 to 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Friday",
         "sat": "Saturday",
         "sun": "Sunday"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "From",
+          "description": "Leave empty for sunrise."
+        },
+        "end": {
+          "name": "Until",
+          "description": "Leave empty for sunset."
+        }
       }
     },
     "rain": {

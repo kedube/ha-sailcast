@@ -66,9 +66,11 @@ def week(
                 "sunset": day.sunset.isoformat(),
                 "over": not ahead,
                 "available": any(boat.hours[index].available for index in ahead),
-                # The sailor's hours that day, None if they don't sail, and
-                # whether they were set for this date.
-                "hours": None if sailor_hours is None else asdict(sailor_hours),
+                # The sailor's stretches of hours that day, None if they
+                # don't sail, and whether they were set for this date.
+                "hours": None
+                if sailor_hours is None
+                else [asdict(item) for item in sailor_hours],
                 "changed": day.date in outlook.changes,
                 "score": day_score(slots, windows),
                 "confidence": agreement[0] if agreement else None,

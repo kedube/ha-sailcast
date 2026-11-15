@@ -31,7 +31,7 @@ from .const import CONF_WORLDTIDES_KEY, DOMAIN
 from .nowcast import AIRPORT, BUOY, SENSORS, Observation
 from .outlook import Results, SpotConditions, compute
 from .planner import Planner
-from .profiles import Hours, Profiles, Spot
+from .profiles import DayHours, Profiles, Spot
 from .providers import (
     ProviderError,
     Readings,
@@ -673,7 +673,7 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
         zone: tzinfo,
         now: datetime,
         sensors: dict[str, Readings],
-        hours: dict[str, dict[date, Hours | None]],
+        hours: dict[str, dict[date, DayHours | None]],
     ) -> Results:
         """Build each spot's timeline and every outlook, in a worker thread."""
         conditions = {

@@ -5,7 +5,7 @@
  */
 import { html, nothing, type TemplateResult } from "lit";
 
-import type { Ctx } from "./context";
+import { stretchesText, type Ctx } from "./context";
 import { localTime, WEEKDAYS } from "./format";
 import { icon } from "./glyphs";
 import { positionText, savedSourceText } from "./text";
@@ -67,28 +67,33 @@ export function limitBars(ctx: Ctx, size: SizeClass): TemplateResult {
   </div>`;
 }
 
-/** A sailor's days and hours, the days with the same hours together. */
+/**
+ * A sailor's days and hours, the days with the same hours together, such as
+ * "Weekends: 9 AM to 11 AM, 3 PM to 7 PM".
+ */
 export function sailingTimes(ctx: Ctx, sailor: Sailor): string {
-  const { t, fmt } = ctx;
-  const time = (value: string | null, fallback: string): string =>
-    value
-      ? fmt.hourOf("2026-11-02", Number(value.slice(0, 2)) + Number(value.slice(3, 5)) / 60)
-      : t(fallback);
+  const { t } = ctx;
   const groups = new Map<string, string[]>();
   for (const day of WEEKDAYS) {
     const hours = sailor.week[day];
     if (!hours) continue;
-    const key = `${hours.start}-${hours.end}`;
+    const key = JSON.stringify(hours);
     groups.set(key, [...(groups.get(key) ?? []), day]);
   }
   return [...groups.values()]
     .map((days) => {
-      const hours = sailor.week[days[0]]!;
-      return t("settings.times", {
+      const text = t("settings.times", {
         days: daysText(ctx, days),
-        start: time(hours.start, "settings.sunrise"),
-        end: time(hours.end, "settings.sunset"),
+        hours: stretchesText(
+          ctx,
+          "2026-11-02",
+          sailor.week[days[0]]!,
+          "settings.sunrise",
+          "settings.sunset",
+        ),
       });
+      // Each group starts like a sentence, such as "Every day: sunrise to sunset".
+      return text.charAt(0).toUpperCase() + text.slice(1);
     })
     .join(" · ");
 }

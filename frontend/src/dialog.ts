@@ -4,10 +4,12 @@
  * closing, and a delete button that asks for a second select.
  */
 import { html, LitElement, nothing, type TemplateResult } from "lit";
+import { repeat } from "lit/directives/repeat.js";
 
 import type { Ctx } from "./context";
 import { icon } from "./glyphs";
 import { styles } from "./styles";
+import type { DayHours, Stretch } from "./types";
 
 export abstract class ScDialog extends LitElement {
   static override styles = styles;
@@ -205,28 +207,39 @@ export function define(name: string, element: CustomElementConstructor): void {
   if (!customElements.get(name)) customElements.define(name, element);
 }
 
-// A sailor's earliest start and latest finish, on the hour. A boat with
+// The hours a stretch of a sailor's day can start and finish on. A boat with
 // navigation lights can sail at any of them.
 const STARTS = Array.from({ length: 24 }, (_, index) => index);
 const ENDS = Array.from({ length: 23 }, (_, index) => index + 1);
 
 /**
  * A choice of the hour a sailor starts or finishes, sunrise or sunset when
- * it's left empty. `time` is the one chosen, such as "17:00:00".
+ * it's left empty. `time` is the one chosen, such as "17:00:00", and
+ * `changed` gets the new one.
  */
 export function hourSelect(
   ctx: Ctx,
   name: string,
   end: boolean,
   time: string | null | undefined,
-  options: { label?: string; disabled?: boolean } = {},
+  options: {
+    label?: string;
+    disabled?: boolean;
+    changed?: (time: string | null) => void;
+  } = {},
 ): TemplateResult {
   const { t, fmt } = ctx;
   const chosen = time ? Number(time.slice(0, 2)) : null;
+  const changed = options.changed;
   return html`<select
     name=${name}
     aria-label=${options.label ?? nothing}
     ?disabled=${options.disabled ?? false}
+    @change=${
+      changed
+        ? (event: Event) => changed(hourTime((event.target as HTMLSelectElement).value))
+        : nothing
+    }
   >
     <option value="">${t(end ? "sailor.sunset" : "sailor.sunrise")}</option>
     ${(end ? ENDS : STARTS).map(
@@ -241,4 +254,111 @@ export function hourSelect(
 /** An hour chosen in an hourSelect as a time, such as "17:00:00", or null for none. */
 export function hourTime(hour: string): string | null {
   return hour ? `${hour.padStart(2, "0")}:00:00` : null;
+}
+
+/** The most stretches of hours a sailor can set on one day. */
+export const MAX_STRETCHES = 4;
+
+/** A stretch of hours being edited, with a key that stays with its row. */
+export interface EditedStretch extends Stretch {
+  key: number;
+}
+
+let lastKey = 0;
+
+/** Stretches of hours ready to edit, a whole day if there are none. */
+export function editable(hours: DayHours | null | undefined): EditedStretch[] {
+  const stretches = hours?.length ? hours : [{ start: null, end: null }];
+  return stretches.map((stretch) => ({ start: stretch.start, end: stretch.end, key: ++lastKey }));
+}
+
+/**
+ * A stretch to add after the others: from the hour after the last one ends,
+ * until sunset. After one that runs to sunset there's no room, so it's
+ * sunrise to sunset, for the sailor to change.
+ */
+export function nextStretch(stretches: readonly Stretch[]): EditedStretch {
+  const end = stretches.at(-1)?.end;
+  const hour = end ? Number(end.slice(0, 2)) + 1 : 24;
+  return { start: hour < 24 ? hourTime(String(hour)) : null, end: null, key: ++lastKey };
+}
+
+/** Stretches as they're saved, without their keys. */
+export function saved(stretches: readonly EditedStretch[]): DayHours {
+  return stretches.map(({ start, end }) => ({ start, end }));
+}
+
+/**
+ * A day's stretches of hours as rows of From and Until choices, for a grid
+ * with a column for each and one for a button. The first row's button adds
+ * a stretch, up to four, and the others' take theirs out. `lead` is a cell
+ * before each row, such as the day's own checkbox, and `day` names the day
+ * for screen readers.
+ */
+export function stretchRows(
+  ctx: Ctx,
+  stretches: EditedStretch[],
+  options: {
+    day: string;
+    disabled?: boolean;
+    lead?: (index: number) => TemplateResult;
+    changed: (stretches: EditedStretch[]) => void;
+  },
+): TemplateResult {
+  const { t } = ctx;
+  const { day, disabled = false, lead, changed } = options;
+  const edit = (key: number, change: Partial<Stretch>) =>
+    changed(stretches.map((item) => (item.key === key ? { ...item, ...change } : item)));
+  return html`${repeat(
+    stretches,
+    (stretch) => stretch.key,
+    (stretch, index) =>
+      html`${lead?.(index) ?? nothing}
+      ${hourSelect(ctx, `start_${stretch.key}`, false, stretch.start, {
+        label: t("sailor.from_day", { day }),
+        disabled,
+        changed: (start) => edit(stretch.key, { start }),
+      })}
+      ${hourSelect(ctx, `end_${stretch.key}`, true, stretch.end, {
+        label: t("sailor.until_day", { day }),
+        disabled,
+        changed: (end) => edit(stretch.key, { end }),
+      })}
+      ${
+        index === 0
+          ? html`<button
+              type="button"
+              class="icon-btn add-hrs"
+              aria-label=${t("sailor.add_hours", { day })}
+              title=${t(
+                stretches.length < MAX_STRETCHES ? "sailor.add_hours" : "sailor.most_hours",
+                {
+                  day,
+                  count: MAX_STRETCHES,
+                },
+              )}
+              ?disabled=${disabled || stretches.length >= MAX_STRETCHES}
+              @click=${() => changed([...stretches, nextStretch(stretches)])}
+            >
+              ${icon("plus")}
+            </button>`
+          : html`<button
+              type="button"
+              class="icon-btn"
+              aria-label=${t("sailor.remove_hours", { day })}
+              title=${t("sailor.remove_hours", { day })}
+              ?disabled=${disabled}
+              @click=${(event: Event) => {
+                // Keep the keyboard nearby, on the stretch before this one.
+                const root = (event.currentTarget as HTMLElement).getRootNode() as ParentNode;
+                root
+                  .querySelector<HTMLElement>(`[name="end_${stretches[index - 1].key}"]`)
+                  ?.focus();
+                changed(stretches.filter((item) => item.key !== stretch.key));
+              }}
+            >
+              ${icon("close")}
+            </button>`
+      }`,
+  )}`;
 }

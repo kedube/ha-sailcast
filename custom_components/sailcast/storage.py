@@ -20,8 +20,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
-from .const import CONF_END, CONF_START, DOMAIN
-from .profiles import Hours
+from .const import DOMAIN
+from .profiles import DayHours, day_hours, hours_data
 
 STORAGE_VERSION: Final = 1
 STORAGE_KEY: Final = f"{DOMAIN}.panel"
@@ -88,7 +88,7 @@ class SailCastStore:
         self._preferences: dict[str, dict[str, str]] = {}
         self._planned: dict[str, PlannedSail] = {}
         self._skipped: dict[str, set[date]] = {}
-        self._hours: dict[str, dict[date, Hours | None]] = {}
+        self._hours: dict[str, dict[date, DayHours | None]] = {}
 
     async def async_load(self) -> None:
         """Read what was saved."""
@@ -104,11 +104,10 @@ class SailCastStore:
             sailor: {date.fromisoformat(day) for day in days}
             for sailor, days in stored.get("skipped", {}).items()
         }
+        # Dates saved before a day could have several stretches hold one.
         self._hours = {
             sailor: {
-                date.fromisoformat(day): (
-                    None if times is None else Hours.from_data(times)
-                )
+                date.fromisoformat(day): None if times is None else day_hours(times)
                 for day, times in days.items()
             }
             for sailor, days in stored.get("hours", {}).items()
@@ -172,12 +171,12 @@ class SailCastStore:
         self._skipped[sailor] = set(days)
         self.async_changed()
 
-    def hours(self, sailor: str) -> dict[date, Hours | None]:
+    def hours(self, sailor: str) -> dict[date, DayHours | None]:
         """Return the hours a sailor set for single dates; None is not sailing."""
         return dict(self._hours.get(sailor, {}))
 
     @callback
-    def set_hours(self, sailor: str, day: date, hours: Hours | None) -> None:
+    def set_hours(self, sailor: str, day: date, hours: DayHours | None) -> None:
         """Set a sailor's hours for one date: None for not sailing."""
         self._hours.setdefault(sailor, {})[day] = hours
         self.async_changed()
@@ -231,9 +230,7 @@ class SailCastStore:
             },
             "hours": {
                 sailor: {
-                    day.isoformat(): None
-                    if value is None
-                    else {CONF_START: value.start, CONF_END: value.end}
+                    day.isoformat(): None if value is None else hours_data(value)
                     for day, value in sorted(hours.items())
                 }
                 for sailor, hours in self._hours.items()

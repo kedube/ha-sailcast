@@ -119,8 +119,9 @@ export class Api {
   }
 
   /**
-   * Set a sailor's hours for one date: "off" for not sailing, hours without
-   * times for the whole day, or "usual" to go back to the weekday's hours.
+   * Set a sailor's hours for one date: "off" for not sailing, stretches of
+   * hours (one without times for the whole day), or "usual" to go back to
+   * the weekday's hours.
    */
   setHours(
     sailor: string,

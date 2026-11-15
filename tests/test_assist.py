@@ -139,7 +139,7 @@ async def test_day(
     assert isinstance(day, dict)
     assert day["spot"] == "River"
     assert day["weekday"] == "Saturday"
-    assert day["sailing_hours"] == {"from": "09:00"}
+    assert day["sailing_hours"] == [{"from": "09:00"}]
     assert [window["boat"] for window in day["windows"]] == ["Keelboat", "Cruiser"]
     assert day["tides"]
     hours = day["hours"]

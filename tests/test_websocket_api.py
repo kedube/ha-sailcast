@@ -247,12 +247,32 @@ async def test_save_sailor(
 ) -> None:
     """A sailor's hours, comfort and automatic adding are checked and kept in order.
 
-    The days they sail are the ones with hours, each with its own.
+    The days they sail are the ones with hours, each with its own stretches,
+    earliest first; a day without any is free all day.
     """
+    overlapping = {
+        "sat": [{"start": "09:00", "end": "12:00"}, {"start": "11:00", "end": "13:00"}]
+    }
+    response = await send(
+        "settings/save",
+        kind="sailor",
+        profile="sailor_sam",
+        name="Sam",
+        data={"skill": "beginner", "boats": ["boat_keelboat"], "hours": overlapping},
+    )
+    assert response["result"] == {"errors": {"sat": "hours_overlap"}}
+
     data = {
         "skill": "beginner",
         "boats": ["boat_cruiser", "boat_keelboat", "boat_cruiser"],
-        "hours": {"sun": {"start": "09:00"}, "fri": {"start": "17:30", "end": None}},
+        "hours": {
+            "sun": [
+                {"start": "15:00", "end": "19:00"},
+                {"start": "09:00", "end": "11:00"},
+            ],
+            "fri": [{"start": "17:30", "end": None}],
+            "sat": [],
+        },
         "comfort": {"ideal_low": 6, "ideal_high": 12, "coldest": 8.5, "rain": "avoid"},
         "auto_calendar": {
             "calendar": "calendar.sam_sailing",
@@ -277,10 +297,14 @@ async def test_save_sailor(
     assert dict(loaded.subentries["sailor_sam"].data) == {
         "skill": "beginner",
         "boats": ["boat_cruiser", "boat_keelboat"],
-        "days": ["fri", "sun"],
+        "days": ["fri", "sat", "sun"],
         "hours": {
-            "fri": {"start": "17:30:00", "end": None},
-            "sun": {"start": "09:00:00", "end": None},
+            "fri": [{"start": "17:30:00", "end": None}],
+            "sat": [{"start": None, "end": None}],
+            "sun": [
+                {"start": "09:00:00", "end": "11:00:00"},
+                {"start": "15:00:00", "end": "19:00:00"},
+            ],
         },
         "user": None,
         "comfort": {"ideal_low": 6, "ideal_high": 12, "coldest": 8.5, "rain": "avoid"},
@@ -594,6 +618,7 @@ async def test_hours_for_a_date(
     """A date can be free all day, not for sailing, or have hours of its own.
 
     Alex sails at weekends from 9 AM. Undoing a change brings those back.
+    A date's own hours can have several stretches.
     """
 
     async def day(when: str) -> dict[str, Any]:
@@ -610,10 +635,10 @@ async def test_hours_for_a_date(
         False,
         False,
     )
-    result = await send("hours", sailor="sailor_alex", date="2026-11-06", hours={})
+    result = await send("hours", sailor="sailor_alex", date="2026-11-06", hours=[{}])
     assert result["result"] == {"date": "2026-11-06"}
     friday = await day("2026-11-06")
-    assert friday["hours"] == {"start": None, "end": None}
+    assert friday["hours"] == [{"start": None, "end": None}]
     assert friday["changed"]
     assert friday["available"]
 
@@ -626,23 +651,35 @@ async def test_hours_for_a_date(
     )
     assert saturday["windows"] == []
 
-    late = {"start": "12:00", "end": "10:00"}
+    late = [{"start": "12:00", "end": "10:00"}]
     result = await send("hours", sailor="sailor_alex", date="2026-11-08", hours=late)
-    assert result["result"] == {"errors": {"end": "end_before_start"}}
-    morning = {"start": "10:00", "end": "12:00"}
-    await send("hours", sailor="sailor_alex", date="2026-11-08", hours=morning)
+    assert result["result"] == {"errors": {"hours": "end_before_start"}}
+    overlapping = [{"start": "10:00", "end": "13:00"}, {"start": "12:00"}]
+    result = await send(
+        "hours", sailor="sailor_alex", date="2026-11-08", hours=overlapping
+    )
+    assert result["result"] == {"errors": {"hours": "hours_overlap"}}
+    split = [{"start": "13:00", "end": "15:00"}, {"start": "10:00", "end": "12:00"}]
+    await send("hours", sailor="sailor_alex", date="2026-11-08", hours=split)
     sunday = await day("2026-11-08")
-    assert sunday["hours"] == {"start": "10:00:00", "end": "12:00:00"}
-    # 10 AM to noon in San Diego, in UTC.
+    assert sunday["hours"] == [
+        {"start": "10:00:00", "end": "12:00:00"},
+        {"start": "13:00:00", "end": "15:00:00"},
+    ]
+    # 10 AM to noon and 1 to 3 PM in San Diego, in UTC.
     assert all(
-        window["start"] >= "2026-11-08T18:00:00+00:00"
-        and window["end"] <= "2026-11-08T20:00:00+00:00"
+        "2026-11-08T18:00:00+00:00" <= window["start"] < window["end"]
+        and (
+            window["end"] <= "2026-11-08T20:00:00+00:00"
+            or window["start"] >= "2026-11-08T21:00:00+00:00"
+        )
+        and window["end"] <= "2026-11-08T23:00:00+00:00"
         for window in sunday["windows"]
     )
 
     await send("hours", sailor="sailor_alex", date="2026-11-07", hours="usual")
     saturday = await day("2026-11-07")
-    assert saturday["hours"] == {"start": "09:00:00", "end": None}
+    assert saturday["hours"] == [{"start": "09:00:00", "end": None}]
     assert not saturday["changed"]
     assert set(hass.data[DATA_STORE].hours("sailor_alex")) == {
         date(2026, 11, 6),

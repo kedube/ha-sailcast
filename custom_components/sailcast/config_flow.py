@@ -40,6 +40,8 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    ObjectSelector,
+    ObjectSelectorConfig,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -49,6 +51,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
     TimeSelector,
 )
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
 import probatio
 
@@ -234,7 +237,13 @@ class SailCastOptionsFlow(OptionsFlow):
 
 
 class ProfileFlow(ConfigSubentryFlow, ABC):
-    """Add or edit a profile. Each kind of profile defines its own form."""
+    """Add or edit a profile. Each kind of profile defines its own form.
+
+    `_placeholders` fill in the form's texts and error messages, such as the
+    day an error is on.
+    """
+
+    _placeholders: dict[str, str]
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -259,6 +268,7 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
         if reason := self._abort_reason():
             return self.async_abort(reason=reason)
         await self._async_prepare()
+        self._placeholders = {}
         errors: dict[str, str] = {}
         if user_input is not None:
             name = user_input[CONF_NAME].strip()
@@ -276,6 +286,7 @@ class ProfileFlow(ConfigSubentryFlow, ABC):
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(self._schema(), user_input),
             errors=errors,
+            description_placeholders=self._placeholders,
         )
 
     async def _async_done(
@@ -657,15 +668,24 @@ class SailorFlow(ProfileFlow):
     """
 
     _users: list[SelectOptionDict]
+    _weekdays: dict[str, str]
 
     async def _async_prepare(self) -> None:
-        """Look up the people who can be linked to a sailor."""
+        """Look up the people who can be linked to a sailor, and the day names.
+
+        Days are named in Home Assistant's language, for errors in their hours.
+        """
         users = await self.hass.auth.async_get_users()
         self._users = [
             SelectOptionDict(value=user.id, label=user.name or user.id)
             for user in sorted(users, key=lambda user: (user.name or "").casefold())
             if not user.system_generated and user.is_active
         ]
+        found = await async_get_translations(
+            self.hass, self.hass.config.language, "selector", {DOMAIN}
+        )
+        prefix = f"component.{DOMAIN}.selector.{CONF_DAYS}.options."
+        self._weekdays = {day: found.get(prefix + day, day) for day in WEEKDAYS}
 
     def _boat_options(self) -> list[SelectOptionDict]:
         boats = sorted(
@@ -716,14 +736,10 @@ class SailorFlow(ProfileFlow):
                 probatio.Required(CONF_DAYS): _select(
                     WEEKDAYS, CONF_DAYS, multiple=True, mode=SelectSelectorMode.LIST
                 ),
-                # Each day's earliest start and latest finish, such as mon_start.
+                # Each day's stretches of hours, such as 9 to 11 and 3 to 7.
                 probatio.Required(CONF_HOURS): section(
                     probatio.Schema(
-                        {
-                            probatio.Optional(f"{day}_{key}"): TimeSelector()
-                            for day in WEEKDAYS
-                            for key in (CONF_START, CONF_END)
-                        }
+                        {probatio.Optional(day): _hours_selector() for day in WEEKDAYS}
                     ),
                     {"collapsed": False},
                 ),
@@ -821,13 +837,7 @@ class SailorFlow(ProfileFlow):
                 dict.fromkeys([default, *user_input.get(CONF_OTHER_BOATS, ())])
             ),
             CONF_DAYS: days,
-            CONF_HOURS: {
-                day: {
-                    CONF_START: times.get(f"{day}_{CONF_START}"),
-                    CONF_END: times.get(f"{day}_{CONF_END}"),
-                }
-                for day in days
-            },
+            CONF_HOURS: {day: _day_data(times.get(day) or ()) for day in days},
             CONF_USER: user_input.get(CONF_USER) or None,
             CONF_COMFORT: {
                 CONF_IDEAL_LOW: comfort.get(CONF_IDEAL_LOW),
@@ -864,11 +874,21 @@ class SailorFlow(ProfileFlow):
             CONF_NAME: subentry.title,
             CONF_SKILL: data[CONF_SKILL],
             CONF_DAYS: list(data[CONF_DAYS]),
+            # A day free from sunrise to sunset has no stretches to show.
             CONF_HOURS: {
-                f"{day}_{key}": value
+                day: [
+                    {
+                        key: value
+                        for key, value in (
+                            (CONF_START, item.start),
+                            (CONF_END, item.end),
+                        )
+                        if value
+                    }
+                    for item in hours
+                ]
                 for day, hours in profiles.week_hours(data).items()
-                for key, value in ((CONF_START, hours.start), (CONF_END, hours.end))
-                if value
+                if hours != profiles.ALL_DAY
             },
             CONF_COMFORT: {
                 CONF_RAIN: profiles.RainTolerance.SOME.value,
@@ -898,12 +918,49 @@ class SailorFlow(ProfileFlow):
         # Boat problems show on the usual boat, the one field that's required.
         if CONF_BOATS in errors:
             errors[CONF_DEFAULT_BOAT] = errors.pop(CONF_BOATS)
+        # A day's hours show their problem above the hours, naming the day:
+        # Home Assistant shows no errors on the fields inside a section.
+        by_day = {day: errors.pop(day) for day in WEEKDAYS if day in errors}
+        if by_day:
+            day, error = next(iter(by_day.items()))
+            errors[CONF_HOURS] = error
+            self._placeholders["day"] = self._weekdays[day]
         if (auto := data[CONF_AUTO_CALENDAR]) and not (
             (entity := calendar_entity(self.hass, auto[CONF_CALENDAR]))
             and supports(entity, CalendarEntityFeature.CREATE_EVENT)
         ):
             errors[CONF_CALENDAR] = "calendar_read_only"
         return errors
+
+
+def _hours_selector() -> ObjectSelector:
+    """Return a list of one day's stretches of hours, each a start and an end.
+
+    A stretch's empty start or end is sunrise or sunset, and a day without
+    any is free from sunrise to sunset.
+    """
+    return ObjectSelector(
+        ObjectSelectorConfig(
+            fields={
+                CONF_START: {"selector": TimeSelector(), "required": False},
+                CONF_END: {"selector": TimeSelector(), "required": False},
+            },
+            multiple=True,
+            translation_key=CONF_HOURS,
+        )
+    )
+
+
+def _day_data(items: Iterable[Mapping[str, Any]]) -> list[dict[str, str | None]]:
+    """Return a day's stretches from the form as they're saved, earliest first."""
+    return profiles.hours_data(
+        profiles.day_hours(
+            [
+                {key: profiles.clock(item.get(key)) for key in (CONF_START, CONF_END)}
+                for item in items
+            ]
+        )
+    )
 
 
 def _auto_defaults(spots: list[SelectOptionDict]) -> dict[str, Any]:

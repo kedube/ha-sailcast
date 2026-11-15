@@ -167,7 +167,8 @@ AUTO_CALENDAR_DATA: Final = probatio.Schema(
         probatio.Required(CONF_SPOTS): [cv.string],
     }
 )
-# A day's hours; a missing time means sunrise or sunset, or any hour with lights.
+# One stretch of a day's hours; a missing time means sunrise or sunset, or
+# any hour with lights. A day can have several, and none is the whole day.
 HOURS_DATA: Final = probatio.Schema(
     {
         probatio.Optional(CONF_START, default=None): _time_of_day,
@@ -179,7 +180,7 @@ SAILOR_DATA: Final = probatio.Schema(
         probatio.Required(CONF_SKILL): _choices(profiles.Skill),
         probatio.Required(CONF_BOATS): [cv.string],
         # The hours on each day of the week they sail; the others they don't.
-        probatio.Required(CONF_HOURS): {_choices(WEEKDAYS): HOURS_DATA},
+        probatio.Required(CONF_HOURS): {_choices(WEEKDAYS): [HOURS_DATA]},
         probatio.Optional(CONF_USER, default=None): probatio.Maybe(cv.string),
         probatio.Optional(CONF_COMFORT, default=dict): COMFORT_DATA,
         probatio.Optional(CONF_AUTO_CALENDAR, default=None): probatio.Maybe(
@@ -642,9 +643,13 @@ async def _async_check(
         return errors
     boats = {s.subentry_id for s in subentries if s.subentry_type == SUBENTRY_BOAT}
     spots = {s.subentry_id for s in subentries if s.subentry_type == SUBENTRY_SPOT}
-    # Saved as the setup dialogs save it: the days, and the hours on each.
+    # Saved as the setup dialogs save it: the days, and the hours on each,
+    # earliest first.
     data[CONF_DAYS] = profiles.in_order(data[CONF_HOURS], WEEKDAYS)
-    data[CONF_HOURS] = {day: data[CONF_HOURS][day] for day in data[CONF_DAYS]}
+    data[CONF_HOURS] = {
+        day: profiles.hours_data(profiles.day_hours(data[CONF_HOURS][day]))
+        for day in data[CONF_DAYS]
+    }
     data[CONF_BOATS] = list(dict.fromkeys(data[CONF_BOATS]))
     errors.update(profiles.check_sailor(data, boats, spots))
     if (user := data.get(CONF_USER)) and await hass.auth.async_get_user(user) is None:
@@ -944,8 +949,9 @@ def ws_planned_skipped(
         probatio.Required("sailor"): cv.string,
         probatio.Required("date"): cv.date,
         # "usual" goes back to the sailor's hours on that day of the week and
-        # "off" is not sailing; hours without times are the whole day.
-        probatio.Required(CONF_HOURS): probatio.Any("usual", "off", HOURS_DATA),
+        # "off" is not sailing. Otherwise the day's stretches of hours: one
+        # without times, or none, is the whole day.
+        probatio.Required(CONF_HOURS): probatio.Any("usual", "off", [HOURS_DATA]),
     }
 )
 @callback
@@ -979,13 +985,12 @@ def ws_hours(
         store.clear_hours(sailor.id, day)
     elif hours == "off":
         store.set_hours(sailor.id, day, None)
-    elif errors := profiles.check_hours({day.isoformat(): hours}):
-        connection.send_result(
-            msg["id"], {"errors": {CONF_END: next(iter(errors.values()))}}
-        )
-        return
     else:
-        store.set_hours(sailor.id, day, profiles.Hours.from_data(hours))
+        stretches = profiles.day_hours(hours)
+        if error := profiles.check_day(stretches):
+            connection.send_result(msg["id"], {"errors": {CONF_HOURS: error}})
+            return
+        store.set_hours(sailor.id, day, stretches)
     entry = _entry(hass)
     if entry is not None:
         entry.async_create_background_task(

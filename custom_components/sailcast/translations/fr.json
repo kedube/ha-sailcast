@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Horaires de chaque jour",
-              "description": "Pour les jours de navigation choisis plus haut. Laissez une heure vide pour partir au lever du soleil ou rentrer au coucher du soleil, ou à toute heure avec un bateau équipé de feux de navigation. Un seul jour, comme un jour de congé, se modifie dans le panneau SailCast.",
+              "description": "Pour les jours de navigation choisis plus haut : quand le marin est disponible, en une ou plusieurs plages, par exemple de 9 h à 11 h et de 15 h à 19 h. Un jour sans horaires va du lever au coucher du soleil, ou à toute heure avec un bateau équipé de feux de navigation ; un début ou une fin vide signifie le lever ou le coucher du soleil. Un seul jour, comme un jour de congé, se modifie dans le panneau SailCast.",
               "data": {
-                "mon_start": "Lundi : départ au plus tôt",
-                "mon_end": "Lundi : retour au plus tard",
-                "tue_start": "Mardi : départ au plus tôt",
-                "tue_end": "Mardi : retour au plus tard",
-                "wed_start": "Mercredi : départ au plus tôt",
-                "wed_end": "Mercredi : retour au plus tard",
-                "thu_start": "Jeudi : départ au plus tôt",
-                "thu_end": "Jeudi : retour au plus tard",
-                "fri_start": "Vendredi : départ au plus tôt",
-                "fri_end": "Vendredi : retour au plus tard",
-                "sat_start": "Samedi : départ au plus tôt",
-                "sat_end": "Samedi : retour au plus tard",
-                "sun_start": "Dimanche : départ au plus tôt",
-                "sun_end": "Dimanche : retour au plus tard"
+                "mon": "Lundi",
+                "tue": "Mardi",
+                "wed": "Mercredi",
+                "thu": "Jeudi",
+                "fri": "Vendredi",
+                "sat": "Samedi",
+                "sun": "Dimanche"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Horaires de chaque jour",
-              "description": "Pour les jours de navigation choisis plus haut. Laissez une heure vide pour partir au lever du soleil ou rentrer au coucher du soleil, ou à toute heure avec un bateau équipé de feux de navigation. Un seul jour, comme un jour de congé, se modifie dans le panneau SailCast.",
+              "description": "Pour les jours de navigation choisis plus haut : quand le marin est disponible, en une ou plusieurs plages, par exemple de 9 h à 11 h et de 15 h à 19 h. Un jour sans horaires va du lever au coucher du soleil, ou à toute heure avec un bateau équipé de feux de navigation ; un début ou une fin vide signifie le lever ou le coucher du soleil. Un seul jour, comme un jour de congé, se modifie dans le panneau SailCast.",
               "data": {
-                "mon_start": "Lundi : départ au plus tôt",
-                "mon_end": "Lundi : retour au plus tard",
-                "tue_start": "Mardi : départ au plus tôt",
-                "tue_end": "Mardi : retour au plus tard",
-                "wed_start": "Mercredi : départ au plus tôt",
-                "wed_end": "Mercredi : retour au plus tard",
-                "thu_start": "Jeudi : départ au plus tôt",
-                "thu_end": "Jeudi : retour au plus tard",
-                "fri_start": "Vendredi : départ au plus tôt",
-                "fri_end": "Vendredi : retour au plus tard",
-                "sat_start": "Samedi : départ au plus tôt",
-                "sat_end": "Samedi : retour au plus tard",
-                "sun_start": "Dimanche : départ au plus tôt",
-                "sun_end": "Dimanche : retour au plus tard"
+                "mon": "Lundi",
+                "tue": "Mardi",
+                "wed": "Mercredi",
+                "thu": "Jeudi",
+                "fri": "Vendredi",
+                "sat": "Samedi",
+                "sun": "Dimanche"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Un autre marin porte déjà ce nom.",
         "unknown_boat": "Ce bateau a été supprimé. Choisissez-en un autre.",
         "no_days": "Choisissez au moins un jour.",
-        "end_before_start": "Le retour au plus tard doit être après le départ au plus tôt.",
+        "end_before_start": "{day} : chaque plage doit finir après son début.",
+        "hours_overlap": "{day} : deux plages se chevauchent. Seule la première peut commencer au lever du soleil, et seule la dernière finir au coucher du soleil.",
+        "too_many_hours": "{day} : 4 plages horaires au plus.",
         "ideal_out_of_range": "Indiquez une valeur entre 0 et 40 nd.",
         "ideal_high_below_low": "Le haut de la plage doit être supérieur au bas.",
         "coldest_out_of_range": "Indiquez une valeur entre −20 et 35 °C (−4 et 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Vendredi",
         "sat": "Samedi",
         "sun": "Dimanche"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "À partir de",
+          "description": "Laissez vide pour le lever du soleil."
+        },
+        "end": {
+          "name": "Jusqu'à",
+          "description": "Laissez vide pour le coucher du soleil."
+        }
       }
     },
     "rain": {

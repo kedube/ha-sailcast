@@ -72,10 +72,11 @@ emoji.
 The data is SailCast's forecast for the coming days: for each day and each \
 spot, the conditions and any official warnings, and for each of the sailor's \
 boats, its score out of 100, its safety ratings hour by hour and its sailing \
-windows. "sailing_hours" is when the sailor can go that day: a missing end \
-means sunrise or sunset, or any hour in a boat with navigation lights, and \
-null means they don't sail that day. Use only this data and the spots' notes, \
-and don't make up numbers.
+windows. "sailing_hours" lists when the sailor can go that day, which can be \
+more than one stretch, such as a morning and an evening: a missing "from" or \
+"to" means sunrise or sunset, or any hour in a boat with navigation lights, \
+and null means they don't sail that day. Use only this data and the spots' \
+notes, and don't make up numbers.
 
 - The safety ratings and windows come from SailCast's rules and are final. \
 Never contradict or soften them, never call conditions safer than rated, and \

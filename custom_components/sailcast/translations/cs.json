@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Hodiny pro každý den",
-              "description": "Pro výše zvolené dny plavby. Necháte-li čas prázdný, začátek bude při východu a konec při západu slunce, nebo v kteroukoli hodinu na lodi s navigačními světly. Jeden den, třeba volno, změníte v panelu SailCast.",
+              "description": "Pro výše zvolené dny plavby: kdy má jachtař čas, v jednom či více úsecích, třeba 9–11 a 15–19. Den bez hodin trvá od východu do západu slunce, nebo kteroukoli hodinu na lodi s navigačními světly; prázdný začátek nebo konec znamená východ nebo západ slunce. Jeden den, třeba volno, změníte v panelu SailCast.",
               "data": {
-                "mon_start": "Pondělí: nejčasnější začátek",
-                "mon_end": "Pondělí: nejpozdější konec",
-                "tue_start": "Úterý: nejčasnější začátek",
-                "tue_end": "Úterý: nejpozdější konec",
-                "wed_start": "Středa: nejčasnější začátek",
-                "wed_end": "Středa: nejpozdější konec",
-                "thu_start": "Čtvrtek: nejčasnější začátek",
-                "thu_end": "Čtvrtek: nejpozdější konec",
-                "fri_start": "Pátek: nejčasnější začátek",
-                "fri_end": "Pátek: nejpozdější konec",
-                "sat_start": "Sobota: nejčasnější začátek",
-                "sat_end": "Sobota: nejpozdější konec",
-                "sun_start": "Neděle: nejčasnější začátek",
-                "sun_end": "Neděle: nejpozdější konec"
+                "mon": "Pondělí",
+                "tue": "Úterý",
+                "wed": "Středa",
+                "thu": "Čtvrtek",
+                "fri": "Pátek",
+                "sat": "Sobota",
+                "sun": "Neděle"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Hodiny pro každý den",
-              "description": "Pro výše zvolené dny plavby. Necháte-li čas prázdný, začátek bude při východu a konec při západu slunce, nebo v kteroukoli hodinu na lodi s navigačními světly. Jeden den, třeba volno, změníte v panelu SailCast.",
+              "description": "Pro výše zvolené dny plavby: kdy má jachtař čas, v jednom či více úsecích, třeba 9–11 a 15–19. Den bez hodin trvá od východu do západu slunce, nebo kteroukoli hodinu na lodi s navigačními světly; prázdný začátek nebo konec znamená východ nebo západ slunce. Jeden den, třeba volno, změníte v panelu SailCast.",
               "data": {
-                "mon_start": "Pondělí: nejčasnější začátek",
-                "mon_end": "Pondělí: nejpozdější konec",
-                "tue_start": "Úterý: nejčasnější začátek",
-                "tue_end": "Úterý: nejpozdější konec",
-                "wed_start": "Středa: nejčasnější začátek",
-                "wed_end": "Středa: nejpozdější konec",
-                "thu_start": "Čtvrtek: nejčasnější začátek",
-                "thu_end": "Čtvrtek: nejpozdější konec",
-                "fri_start": "Pátek: nejčasnější začátek",
-                "fri_end": "Pátek: nejpozdější konec",
-                "sat_start": "Sobota: nejčasnější začátek",
-                "sat_end": "Sobota: nejpozdější konec",
-                "sun_start": "Neděle: nejčasnější začátek",
-                "sun_end": "Neděle: nejpozdější konec"
+                "mon": "Pondělí",
+                "tue": "Úterý",
+                "wed": "Středa",
+                "thu": "Čtvrtek",
+                "fri": "Pátek",
+                "sat": "Sobota",
+                "sun": "Neděle"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Toto jméno už má jiný jachtař.",
         "unknown_boat": "Tato loď byla odebrána. Vyberte jinou.",
         "no_days": "Vyberte alespoň jeden den.",
-        "end_before_start": "Nejpozdější konec musí být po nejčasnějším začátku.",
+        "end_before_start": "{day}: každý úsek musí skončit po svém začátku.",
+        "hours_overlap": "{day}: dva úseky se překrývají. Jen první může začínat při východu slunce a jen poslední končit při západu.",
+        "too_many_hours": "{day}: nejvýše 4 úseky.",
         "ideal_out_of_range": "Použijte 0 až 40 kn.",
         "ideal_high_below_low": "Horní mez rozsahu musí být vyšší než dolní.",
         "coldest_out_of_range": "Použijte −20 až 35 °C (−4 až 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Pátek",
         "sat": "Sobota",
         "sun": "Neděle"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "Od",
+          "description": "Nechte prázdné pro východ slunce."
+        },
+        "end": {
+          "name": "Do",
+          "description": "Nechte prázdné pro západ slunce."
+        }
       }
     },
     "rain": {

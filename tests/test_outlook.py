@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from custom_components.sailcast.outlook import BoatOutlook, SpotConditions, outlook
 from custom_components.sailcast.profiles import (
+    ALL_DAY,
     Boat,
     Hours,
     Sailor,
@@ -74,7 +75,7 @@ def sailor(start: str | None = None, end: str | None = None) -> Sailor:
         name="Alex",
         skill=Skill.INTERMEDIATE,
         boats=(LIT.id, UNLIT.id),
-        week={"sat": Hours(start, end)},
+        week={"sat": (Hours(start, end),)},
     )
 
 
@@ -130,27 +131,58 @@ def test_each_day_has_its_own_hours() -> None:
         name="Alex",
         skill=Skill.INTERMEDIATE,
         boats=(LIT.id, UNLIT.id),
-        week={"fri": Hours("17:00:00"), "sat": Hours("09:00:00", "12:00:00")},
+        week={"fri": (Hours("17:00:00"),), "sat": (Hours("09:00:00", "12:00:00"),)},
     )
     lit, unlit = outlook(weekly, conditions(), BOATS).boats
     assert spans(lit) == spans(unlit) == [(at(9), at(12))]
     assert weekly.days == ("fri", "sat")
 
 
+def test_a_window_in_each_stretch() -> None:
+    """With a break in the day, each stretch of hours has its own window."""
+    split = Sailor(
+        id="sailor_alex",
+        name="Alex",
+        skill=Skill.INTERMEDIATE,
+        boats=(LIT.id, UNLIT.id),
+        week={
+            "sat": (Hours("09:00:00", "11:00:00"), Hours("15:00:00", "19:00:00")),
+        },
+    )
+    found = outlook(split, conditions(), BOATS)
+    lit, unlit = found.boats
+    assert spans(lit) == [(at(9), at(11)), (at(15), at(19))]
+    # Without lights, the evening stretch ends at sunset.
+    assert spans(unlit) == [(at(9), at(11)), (at(15), DAY.sunset)]
+    assert [item.available for item in lit.hours] == [
+        hour in (9, 10, 15, 16, 17, 18) for hour in range(24)
+    ]
+    page = week(found, lit, conditions(), at(5).astimezone(UTC))
+    assert page["days"][0]["hours"] == [
+        {"start": "09:00:00", "end": "11:00:00"},
+        {"start": "15:00:00", "end": "19:00:00"},
+    ]
+
+
 def test_hours_set_for_a_date_come_first() -> None:
     """A date's hours beat the weekday's: free all day, not sailing, or set hours."""
     usual = sailor("09:00:00", "12:00:00")
     # Free all day: sunrise to sunset, or every hour in a boat with lights.
-    lit, unlit = outlook(usual, conditions(), BOATS, {DAY.date: Hours()}).boats
+    lit, unlit = outlook(usual, conditions(), BOATS, {DAY.date: ALL_DAY}).boats
     assert spans(lit) == [(at(0), at(24))]
     assert spans(unlit) == [(DAY.sunrise, DAY.sunset)]
     # Not sailing.
     lit, unlit = outlook(usual, conditions(), BOATS, {DAY.date: None}).boats
     assert spans(lit) == spans(unlit) == []
     # Hours of their own.
-    changed = {DAY.date: Hours("13:00:00", "16:00:00")}
+    changed = {DAY.date: (Hours("13:00:00", "16:00:00"),)}
     lit, unlit = outlook(usual, conditions(), BOATS, changed).boats
     assert spans(lit) == spans(unlit) == [(at(13), at(16))]
+    # Or several stretches.
+    split = {DAY.date: (Hours("06:00:00", "08:00:00"), Hours("13:00:00", "16:00:00"))}
+    lit, unlit = outlook(usual, conditions(), BOATS, split).boats
+    assert spans(lit) == [(at(6), at(8)), (at(13), at(16))]
+    assert spans(unlit) == [(DAY.sunrise, at(8)), (at(13), at(16))]
     # A change for another date leaves this one alone.
     lit, unlit = outlook(usual, conditions(), BOATS, {date(2026, 11, 8): None}).boats
     assert spans(unlit) == [(at(9), at(12))]
@@ -163,14 +195,14 @@ def test_a_day_off() -> None:
         name="Alex",
         skill=Skill.INTERMEDIATE,
         boats=(UNLIT.id,),
-        week={"sun": Hours()},
+        week={"sun": ALL_DAY},
     )
     assert spans(outlook(sundays, conditions(), BOATS).boats[0]) == []
-    found = outlook(sundays, conditions(), BOATS, {DAY.date: Hours()})
+    found = outlook(sundays, conditions(), BOATS, {DAY.date: ALL_DAY})
     assert spans(found.boats[0]) == [(DAY.sunrise, DAY.sunset)]
 
     page = week(found, found.boats[0], conditions(), at(5).astimezone(UTC))
-    assert page["days"][0]["hours"] == {"start": None, "end": None}
+    assert page["days"][0]["hours"] == [{"start": None, "end": None}]
     assert page["days"][0]["changed"] is True
     usual = outlook(sundays, conditions(), BOATS)
     page = week(usual, usual.boats[0], conditions(), at(5).astimezone(UTC))

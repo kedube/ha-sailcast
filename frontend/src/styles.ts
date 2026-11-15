@@ -2253,24 +2253,50 @@ export const styles = css`
     gap: 6px;
   }
   /* A sailor's days, a row each: whether they sail, and from and until when. */
-  .dayhours {
+  /* Each day's stretches of hours: From, Until and a button to add or take
+     one out, after the day's checkbox in a sailor's week. */
+  .dayhours,
+  .stretches {
     display: grid;
-    grid-template-columns: auto repeat(2, minmax(0, 1fr));
+    grid-template-columns: auto repeat(2, minmax(0, 1fr)) 34px;
     align-items: center;
     gap: 6px 8px;
   }
-  .dayhours > .lbl {
+  .stretches {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) 34px;
+    margin-top: 12px;
+  }
+  .dayhours > .lbl,
+  .stretches > .lbl {
     font-size: 12px;
   }
   .dayhours .fld-err {
     grid-column: 1 / -1;
   }
-  .dayhours select {
+  .dayhours select,
+  .stretches select {
     min-height: 34px;
     padding: 4px 8px;
   }
   .dayhours select:disabled {
     opacity: 0.45;
+  }
+  .dayhours .icon-btn,
+  .stretches .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .dayhours .icon-btn .i,
+  .stretches .icon-btn .i {
+    width: 18px;
+    height: 18px;
+  }
+  .dayhours .icon-btn:disabled,
+  .stretches .icon-btn:disabled {
+    opacity: 0.35;
+    background: transparent;
+    color: var(--sc-fg2);
+    cursor: default;
   }
   .dayt {
     position: relative;

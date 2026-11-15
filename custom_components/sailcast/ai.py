@@ -433,15 +433,24 @@ def _conditions(summary: Mapping[str, Any], units: Units) -> dict[str, Any]:
     return {key: value for key, value in found.items() if value is not None}
 
 
-def _sailing_hours(hours: Mapping[str, Any] | None) -> dict[str, str] | None:
-    """Return when the sailor can go that day; a missing end means sunrise or sunset."""
+def _sailing_hours(
+    hours: Sequence[Mapping[str, Any]] | None,
+) -> list[dict[str, str]] | None:
+    """Return when the sailor can go that day, one item for each stretch.
+
+    A stretch's missing end means sunrise or sunset, so a day free all day
+    has one item without either.
+    """
     if hours is None:
         return None
-    return {
-        key: str(hours[name])[:5]
-        for key, name in (("from", "start"), ("to", "end"))
-        if hours.get(name)
-    }
+    return [
+        {
+            key: str(item[name])[:5]
+            for key, name in (("from", "start"), ("to", "end"))
+            if item.get(name)
+        }
+        for item in hours
+    ]
 
 
 class Units:

@@ -180,7 +180,7 @@ The main entry's options hold the API keys for optional providers, the AI briefi
 
 The panel's Settings tab lists the sailors, boats and spots and edits them in place. The mockup's Settings tab shows the layout.
 
-- **Sailors:** name, skill, boats and default boat, sailing days with each day's hours, and linked Home Assistant user. Automatic calendar adding has its own dialog, reached from Settings or the week view. One date's hours, such as a day off, are changed from the week view instead (free all day, not sailing, or hours of its own), by an administrator or the sailor's linked user; SailCast keeps those in its own store until the date has passed.
+- **Sailors:** name, skill, boats and default boat, sailing days with each day's hours (up to four stretches a day, for a break in the day), and linked Home Assistant user. Automatic calendar adding has its own dialog, reached from Settings or the week view. One date's hours, such as a day off, are changed from the week view instead (free all day, not sailing, or hours of its own), by an administrator or the sailor's linked user; SailCast keeps those in its own store until the date has passed.
 - **Boats:** name, size and length. Each boat shows its size's limits as a scale, so you can see where caution and dangerous start.
 - **Spots:** a pin on a map, the wind map's radius, name, water type and data sources. To add a spot, you select the water to drop the pin, and SailCast suggests the nearest tide, current and buoy stations and airport, with their distances, and shows them on the map. Your own sensors can be picked for wind, gusts, direction, air and water. As the pin moves, SailCast measures the open water around it, warns when it's on land, and checks the directions open to the sea for a new spot. Rivers and lakes can override the measured fetch with one distance. You can drag the pin later.
 
@@ -682,7 +682,7 @@ Danish, Portuguese and Norwegian come next, at about 1% each. They're strong sai
   - a higher skill level never gives a worse rating or a lower score
   - each skill limit, at and just past each number
   - the skill limit uses sustained wind only; gusts never trigger it
-  - windows stay inside the sailor's sailing days and each day's hours, with a date's own hours first
+  - windows stay inside the sailor's sailing days and each day's stretches of hours, with a date's own hours first
 - **Test profiles:** a 20 ft small keelboat and a 34 ft cruiser, at the three test spots, at all three skill levels.
 - **Providers:** tests against recorded responses. They were recorded on November 2 at three made-up spots in San Diego, chosen to cover the same cases as the home spots: a harmonic and a subordinate tide station, a subordinate current station, a pin that's in its marine zone and one that isn't, and a live Small Craft Advisory. Sources abroad were recorded on November 3 in the Solent, the Wadden Sea and on Lake Garda, with Lake Tahoe's Lake Wind Advisory, a Canadian marine area and a KNMI coastal warning. CHS's predictions, WorldTides' and MeteoAlarm's region outlines are made up for the tests, since they can't be passed on or need a key. `scripts/record_fixtures.py` records them again.
 - **Config flow, subentries, entities, the WebSocket API and the calendar:** tested with `pytest-homeassistant`, Home Assistant's own test package, published from core with each release. Its version is Home Assistant's, 2026.11.0, the oldest SailCast supports; it took over from `pytest-homeassistant-custom-component`, which stopped at 2026.10.

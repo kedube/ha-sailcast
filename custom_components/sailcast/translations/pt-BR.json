@@ -163,22 +163,15 @@
           "sections": {
             "hours": {
               "name": "Horário de cada dia",
-              "description": "Para os dias de velejar escolhidos acima. Deixe um horário em branco para começar ao nascer do sol ou terminar ao pôr do sol, ou a qualquer hora num barco com luzes de navegação. Um único dia, como uma folga, se muda no painel do SailCast.",
+              "description": "Para os dias de velejar escolhidos acima: quando o velejador está livre, em uma ou mais faixas de horário, como das 9h às 11h e das 15h às 19h. Um dia sem horários vai do nascer ao pôr do sol, ou a qualquer hora num barco com luzes de navegação; um início ou término vazio significa o nascer ou o pôr do sol. Um único dia, como uma folga, se muda no painel do SailCast.",
               "data": {
-                "mon_start": "Segunda-feira: início mais cedo",
-                "mon_end": "Segunda-feira: término mais tarde",
-                "tue_start": "Terça-feira: início mais cedo",
-                "tue_end": "Terça-feira: término mais tarde",
-                "wed_start": "Quarta-feira: início mais cedo",
-                "wed_end": "Quarta-feira: término mais tarde",
-                "thu_start": "Quinta-feira: início mais cedo",
-                "thu_end": "Quinta-feira: término mais tarde",
-                "fri_start": "Sexta-feira: início mais cedo",
-                "fri_end": "Sexta-feira: término mais tarde",
-                "sat_start": "Sábado: início mais cedo",
-                "sat_end": "Sábado: término mais tarde",
-                "sun_start": "Domingo: início mais cedo",
-                "sun_end": "Domingo: término mais tarde"
+                "mon": "Segunda-feira",
+                "tue": "Terça-feira",
+                "wed": "Quarta-feira",
+                "thu": "Quinta-feira",
+                "fri": "Sexta-feira",
+                "sat": "Sábado",
+                "sun": "Domingo"
               }
             },
             "comfort": {
@@ -233,22 +226,15 @@
           "sections": {
             "hours": {
               "name": "Horário de cada dia",
-              "description": "Para os dias de velejar escolhidos acima. Deixe um horário em branco para começar ao nascer do sol ou terminar ao pôr do sol, ou a qualquer hora num barco com luzes de navegação. Um único dia, como uma folga, se muda no painel do SailCast.",
+              "description": "Para os dias de velejar escolhidos acima: quando o velejador está livre, em uma ou mais faixas de horário, como das 9h às 11h e das 15h às 19h. Um dia sem horários vai do nascer ao pôr do sol, ou a qualquer hora num barco com luzes de navegação; um início ou término vazio significa o nascer ou o pôr do sol. Um único dia, como uma folga, se muda no painel do SailCast.",
               "data": {
-                "mon_start": "Segunda-feira: início mais cedo",
-                "mon_end": "Segunda-feira: término mais tarde",
-                "tue_start": "Terça-feira: início mais cedo",
-                "tue_end": "Terça-feira: término mais tarde",
-                "wed_start": "Quarta-feira: início mais cedo",
-                "wed_end": "Quarta-feira: término mais tarde",
-                "thu_start": "Quinta-feira: início mais cedo",
-                "thu_end": "Quinta-feira: término mais tarde",
-                "fri_start": "Sexta-feira: início mais cedo",
-                "fri_end": "Sexta-feira: término mais tarde",
-                "sat_start": "Sábado: início mais cedo",
-                "sat_end": "Sábado: término mais tarde",
-                "sun_start": "Domingo: início mais cedo",
-                "sun_end": "Domingo: término mais tarde"
+                "mon": "Segunda-feira",
+                "tue": "Terça-feira",
+                "wed": "Quarta-feira",
+                "thu": "Quinta-feira",
+                "fri": "Sexta-feira",
+                "sat": "Sábado",
+                "sun": "Domingo"
               }
             },
             "comfort": {
@@ -291,7 +277,9 @@
         "name_taken": "Já existe outro velejador com este nome.",
         "unknown_boat": "Esse barco foi removido. Escolha outro.",
         "no_days": "Escolha pelo menos um dia.",
-        "end_before_start": "O término mais tarde tem que ser depois do início mais cedo.",
+        "end_before_start": "{day}: cada faixa tem que terminar depois do início.",
+        "hours_overlap": "{day}: duas faixas se sobrepõem. Só a primeira pode começar ao nascer do sol e só a última terminar ao pôr do sol.",
+        "too_many_hours": "{day}: no máximo 4 faixas de horário.",
         "ideal_out_of_range": "Use de 0 a 40 nós.",
         "ideal_high_below_low": "O limite superior da faixa tem que ser maior que o inferior.",
         "coldest_out_of_range": "Use de −20 a 35 °C (−4 a 95 °F).",
@@ -350,6 +338,18 @@
         "fri": "Sexta-feira",
         "sat": "Sábado",
         "sun": "Domingo"
+      }
+    },
+    "hours": {
+      "fields": {
+        "start": {
+          "name": "De",
+          "description": "Deixe em branco para o nascer do sol."
+        },
+        "end": {
+          "name": "Até",
+          "description": "Deixe em branco para o pôr do sol."
+        }
       }
     },
     "rain": {

@@ -103,13 +103,20 @@ export interface AutoCalendar {
 }
 
 /**
- * When a sailor can sail on a day, as times such as "17:00:00". A missing
- * start or end means sunrise or sunset, or any hour in a boat with lights.
+ * One stretch of a day a sailor can sail in, as times such as "17:00:00". A
+ * missing start or end means sunrise or sunset, or any hour in a boat with
+ * lights.
  */
-export interface DayHours {
+export interface Stretch {
   start: string | null;
   end: string | null;
 }
+
+/**
+ * When a sailor can sail on a day: one stretch or more, earliest first, such
+ * as 9 AM to 11 AM and 3 PM to 7 PM.
+ */
+export type DayHours = Stretch[];
 
 export interface Sailor {
   id: string;
@@ -257,7 +264,7 @@ export interface Day {
   over: boolean;
   /** Whether the sailor is free at any of those hours still to come. */
   available: boolean;
-  /** The sailor's hours that day, or null if they don't sail. */
+  /** The sailor's stretches of hours that day, or null if they don't sail. */
   hours: DayHours | null;
   /** Whether those hours were set for this date, rather than the weekday's. */
   changed: boolean;

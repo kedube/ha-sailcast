@@ -165,6 +165,8 @@ const FAMILIES: Record<string, string[]> = {
     "unknown_boat",
     "no_days",
     "end_before_start",
+    "hours_overlap",
+    "too_many_hours",
     "ideal_out_of_range",
     "ideal_high_below_low",
     "coldest_out_of_range",
