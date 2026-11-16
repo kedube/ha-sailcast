@@ -42,7 +42,11 @@ async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None
     hass.config_entries.async_update_subentry(
         loaded,
         spot,
-        data=dict(spot.data) | {"source_names": {"tide_station": "Point Loma"}},
+        data=dict(spot.data)
+        | {
+            "source_names": {"tide_station": "Point Loma"},
+            "notes": "Launch from the north ramp; the breeze fills by noon",
+        },
     )
     await hass.async_block_till_done()
     diagnostics = await async_get_config_entry_diagnostics(hass, loaded)
@@ -57,6 +61,7 @@ async def test_diagnostics(hass: HomeAssistant, loaded: MockConfigEntry) -> None
         "Alex",
         "user_alex",
         "Point Loma",
+        "north ramp",
     ):
         assert private not in text, private
     assert diagnostics["sources"]["SailCast forecast"]["last_update_success"]

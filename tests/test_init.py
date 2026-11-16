@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Iterable
 from types import MappingProxyType
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.config_entries import (
     ConfigEntryDisabler,
@@ -13,12 +16,15 @@ from homeassistant.config_entries import (
     ConfigSubentry,
 )
 from homeassistant.core import HomeAssistant
-from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
+from custom_components.sailcast import SHORELINE_CHECK
 from custom_components.sailcast.const import SUBENTRY_BOAT
 from custom_components.sailcast.shoreline import Shorelines
 from custom_components.sailcast.storage import DATA_STORE
+
+from .conftest import set_up
 
 
 async def test_panel_added_and_removed(
@@ -148,3 +154,36 @@ async def test_change_during_setup(
 
     assert full_entry.state is ConfigEntryState.LOADED
     assert dinghy.subentry_id in full_entry.runtime_data.profiles.boats
+
+
+async def test_shoreline_check_stops_with_entry(
+    hass: HomeAssistant,
+    full_entry: MockConfigEntry,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The hourly shoreline check is the entry's, so deleting SailCast stops it.
+
+    Otherwise it could save the pins again after their file was deleted.
+    """
+    await set_up(hass, full_entry, freezer)
+    started = asyncio.Event()
+    stopped = asyncio.Event()
+
+    async def measure_pins(_: Shorelines, pins: Iterable[Any]) -> bool:
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            stopped.set()
+            raise
+        return False
+
+    with patch.object(Shorelines, "async_measure_pins", measure_pins):
+        freezer.tick(SHORELINE_CHECK)
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        assert started.is_set()
+        await hass.config_entries.async_remove(full_entry.entry_id)
+        await hass.async_block_till_done()
+        assert stopped.is_set()

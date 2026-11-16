@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+import math
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
+from custom_components.sailcast.geo import distance_to_area_km
 from custom_components.sailcast.providers import (
     ProviderError,
     fetch_json,
@@ -98,6 +101,22 @@ def test_tides_error() -> None:
     """A station without predictions is an error."""
     with pytest.raises(ProviderError, match="9410166"):
         noaa_coops.parse_tide_events(fixture("noaa_tides_9410166_h"), "9410166")
+    # An error written as plain text is one too.
+    with pytest.raises(ProviderError, match="Too many requests"):
+        noaa_coops.parse_tide_events({"error": "Too many requests"}, "9410170")
+
+
+async def test_empty_hourly_tides(hass: HomeAssistant) -> None:
+    """An empty answer for the hourly heights is an error, not a crash."""
+    # aiohttp reads an empty body as None, which the test mocker doesn't do.
+    answers = AsyncMock(side_effect=[fixture("noaa_tides_9410170_hilo"), None])
+    with (
+        patch.object(noaa_coops, "fetch_json", answers),
+        pytest.raises(ProviderError),
+    ):
+        await noaa_coops.async_get_tides(
+            async_get_clientsession(hass), "9410170", BEGIN
+        )
 
 
 async def test_currents(
@@ -203,6 +222,19 @@ async def test_no_zones_outside_the_us(
     aioclient_mock.get(f"{nws.API}/points/51.5000,-0.1000", status=404, json={})
     zones = await nws.async_marine_zones(async_get_clientsession(hass), 51.5, -0.1)
     assert zones == ([], False)
+
+
+def test_empty_zone_outline() -> None:
+    """An empty polygon in a zone's outline is nowhere, not an error."""
+    square = [[[-117.3, 32.6], [-117.2, 32.6], [-117.2, 32.7], [-117.3, 32.6]]]
+    empty = {"type": "Polygon", "coordinates": []}
+    assert distance_to_area_km(*BAY_POINT, empty) == math.inf
+    found = distance_to_area_km(
+        *BAY_POINT, {"type": "MultiPolygon", "coordinates": [[], square]}
+    )
+    assert found == distance_to_area_km(
+        *BAY_POINT, {"type": "Polygon", "coordinates": square}
+    )
 
 
 @pytest.mark.parametrize(

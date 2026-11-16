@@ -8,11 +8,29 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
-from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import DOMAIN
-from custom_components.sailcast.providers import open_meteo, openfreemap
+from custom_components.sailcast.providers import nws, open_meteo, openfreemap
+
+from .conftest import mock_sources, set_up
+
+
+def nws_alert(event: str, start: str, end: str) -> dict[str, object]:
+    """Return an NWS alert for the test spots' zone, in effect from start to end."""
+    return {
+        "properties": {
+            "status": "Actual",
+            "messageType": "Alert",
+            "event": event,
+            "onset": start,
+            "effective": start,
+            "ends": end,
+            "expires": end,
+            "geocode": {"UGC": ["PZZ740"]},
+        }
+    }
 
 
 async def test_devices_and_subentries(
@@ -150,3 +168,61 @@ async def test_unavailable_without_a_forecast(
         "calendar.alex_sailing",
     ):
         assert hass.states.get(entity_id).state == STATE_UNAVAILABLE, entity_id
+
+
+async def test_warning_starts_and_ends_on_time(
+    hass: HomeAssistant,
+    sailcast_entry: MockConfigEntry,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The warning sensor changes when a warning starts or ends, not on the hour."""
+    # It's 2:36 PM: an advisory ends at 2:45 and a gale warning starts at 2:52.
+    aioclient_mock.get(
+        f"{nws.API}/alerts/active",
+        json={
+            "features": [
+                nws_alert(
+                    "Small Craft Advisory",
+                    "2026-11-02T14:00:00-08:00",
+                    "2026-11-02T14:45:00-08:00",
+                ),
+                nws_alert(
+                    "Gale Warning",
+                    "2026-11-02T14:52:00-08:00",
+                    "2026-11-02T20:00:00-08:00",
+                ),
+            ]
+        },
+    )
+    mock_sources(aioclient_mock)
+    await set_up(hass, sailcast_entry, freezer)
+    for minute, expected in ((36, "on"), (45, "off"), (52, "on")):
+        freezer.move_to(datetime(2026, 11, 2, 22, minute, 1, tzinfo=UTC))
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        state = hass.states.get("binary_sensor.harbor_marine_warning")
+        assert state.state == expected, minute
+
+
+async def test_next_tide_moves_on_as_it_passes(
+    hass: HomeAssistant,
+    loaded: MockConfigEntry,
+    entity_registry: er.EntityRegistry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The next high tide moves on to the one after as it passes, not on the hour."""
+    entity_registry.async_update_entity(
+        "sensor.harbor_next_high_tide", disabled_by=None
+    )
+    await hass.config_entries.async_reload(loaded.entry_id)
+    await hass.async_block_till_done()
+    # The top of the hour comes first, then the 3:30 PM high tide.
+    for time, expected in (
+        (datetime(2026, 11, 2, 23, 10, tzinfo=UTC), "2026-11-02T23:30:00+00:00"),
+        (datetime(2026, 11, 2, 23, 30, 1, tzinfo=UTC), "2026-11-03T13:21:00+00:00"),
+    ):
+        freezer.move_to(time)
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        assert hass.states.get("sensor.harbor_next_high_tide").state == expected

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
@@ -63,6 +64,21 @@ class MarineWarningSensor(SpotEntity, BinarySensorEntity):
             return None
         now = dt_util.utcnow()
         return any(alert.start <= now < alert.end for alert in conditions.alerts)
+
+    def next_change(self) -> datetime | None:
+        """Return when a warning next starts or ends."""
+        if (conditions := self.conditions) is None:
+            return None
+        now = dt_util.utcnow()
+        return min(
+            (
+                time
+                for alert in conditions.alerts
+                for time in (alert.start, alert.end)
+                if time > now
+            ),
+            default=None,
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:

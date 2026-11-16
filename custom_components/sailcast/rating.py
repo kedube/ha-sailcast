@@ -218,8 +218,8 @@ class _Rater:
             miles = hour.visibility / NAUTICAL_MILE
             key = "visibility_measured" if hour.visibility_measured else "visibility"
             # Forecast visibility is rough, so only a measured one makes an
-            # hour dangerous.
-            if hour.visibility_measured and miles < dangerous:
+            # hour dangerous, or one that isn't a number.
+            if math.isnan(miles) or (hour.visibility_measured and miles < dangerous):
                 self.set_floor(Level.DANGEROUS, key, visibility=hour.visibility)
             elif miles < not_recommended:
                 self.set_floor(Level.NOT_RECOMMENDED, key, visibility=hour.visibility)
@@ -272,7 +272,8 @@ def wind_chill(temperature: float, wind: float) -> float:
 
 
 def _two_levels(value: float, starts: tuple[float, float]) -> Level:
-    if value >= starts[1]:
+    # A value that isn't a number can't be shown to be safe.
+    if math.isnan(value) or value >= starts[1]:
         return Level.DANGEROUS
     if value >= starts[0]:
         return Level.CAUTION
@@ -280,6 +281,8 @@ def _two_levels(value: float, starts: tuple[float, float]) -> Level:
 
 
 def _three_levels(value: float, starts: tuple[float, float, float]) -> Level:
+    if math.isnan(value):
+        return Level.DANGEROUS
     for level, start in zip(
         (Level.DANGEROUS, Level.NOT_RECOMMENDED, Level.CAUTION),
         reversed(starts),

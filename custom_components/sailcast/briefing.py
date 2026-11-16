@@ -53,7 +53,8 @@ SAVE_DELAY: Final = 2.0
 # How long a provider gets to answer. A briefing is longer than a summary,
 # and providers running on the same machine can be slow.
 WAIT: Final = 120
-# Briefings older than this are dropped when SailCast starts.
+# Briefings older than this are dropped when SailCast starts, and when another
+# is written.
 KEEP: Final = timedelta(days=2)
 PICKS: Final = 3
 # The most characters each part may have, in any language.
@@ -101,13 +102,14 @@ ANSWER: Final = probatio.Schema(
         probatio.Required(
             "headline",
             description="One short sentence: the best choice this week, or that "
-            "there's no good window.",
+            f"there's no good window. At most {LONGEST['headline']} characters.",
         ): str,
         probatio.Required(
             "summary",
             description="Two to four sentences that compare the days, spots and "
             "boats: the trade-offs, how the wind and waves change, official "
-            "warnings, and what to watch for.",
+            f"warnings, and what to watch for. At most {LONGEST['summary']} "
+            "characters.",
         ): str,
         probatio.Required(
             "picks",
@@ -120,7 +122,9 @@ ANSWER: Final = probatio.Schema(
                         "window", description="The window's id, such as w3."
                     ): str,
                     probatio.Required(
-                        "why", description="One sentence on why it's a good choice."
+                        "why",
+                        description="One sentence on why it's a good choice. At "
+                        f"most {LONGEST['why']} characters.",
                     ): str,
                 }
             )
@@ -138,7 +142,8 @@ ANSWER: Final = probatio.Schema(
                         "note",
                         description="One or two sentences about the day for this "
                         "sailor: the best spot, boat and time, any rating that "
-                        "isn't good and why, and official warnings.",
+                        "isn't good and why, and official warnings. At most "
+                        f"{LONGEST['note']} characters.",
                     ): str,
                 }
             )
@@ -146,7 +151,8 @@ ANSWER: Final = probatio.Schema(
         probatio.Required(
             "recheck",
             description="When to check the forecast again and why, if it's "
-            "uncertain or a warning could change things. Otherwise empty.",
+            "uncertain or a warning could change things. Otherwise empty. At most "
+            f"{LONGEST['recheck']} characters.",
         ): str,
     }
 )
@@ -206,7 +212,8 @@ def read_answer(
     """Return the briefing in the AI's answer, checked, or raise if it isn't one.
 
     Picks that don't name a window SailCast sent, and notes for days it didn't
-    send, are left out.
+    send, are left out, and so is any part besides the headline and summary
+    that isn't text or is too long.
     """
     if isinstance(answer, str):
         try:
@@ -217,31 +224,40 @@ def read_answer(
         raise BadAnswerError("The answer wasn't a briefing")
     picks: dict[str, dict[str, Any]] = {}
     for pick in _items(answer.get("picks")):
+        if len(picks) == PICKS:
+            break
         number = pick.get("window")
         number = number.strip() if isinstance(number, str) else ""
         if number not in windows:
             LOGGER.debug("Leaving out a pick that isn't one of the windows: %s", pick)
             continue
-        picks.setdefault(
-            number,
-            dict(windows[number])
-            | {"why": clean(pick.get("why") or "", LONGEST["why"], required=False)},
-        )
+        if number not in picks:
+            picks[number] = dict(windows[number]) | {
+                "why": _optional(pick.get("why"), LONGEST["why"])
+            }
     notes: dict[str, str] = {}
     for day in _items(answer.get("days")):
         date = day.get("date")
-        note = clean(day.get("note") or "", LONGEST["note"], required=False)
-        if isinstance(date, str) and date in dates and date not in notes and note:
+        if not isinstance(date, str) or date not in dates or date in notes:
+            continue
+        if note := _optional(day.get("note"), LONGEST["note"]):
             notes[date] = note
     return {
         "headline": clean(answer.get("headline"), LONGEST["headline"]),
         "summary": clean(answer.get("summary"), LONGEST["summary"]),
-        "picks": list(picks.values())[:PICKS],
+        "picks": list(picks.values()),
         "days": notes,
-        "recheck": clean(
-            answer.get("recheck") or "", LONGEST["recheck"], required=False
-        ),
+        "recheck": _optional(answer.get("recheck"), LONGEST["recheck"]),
     }
+
+
+def _optional(value: Any, longest: int) -> str:
+    """Return an optional part of the answer, or nothing if it doesn't fit."""
+    try:
+        return clean(value or "", longest, required=False)
+    except BadAnswerError:
+        LOGGER.debug("Leaving out a part of the answer that isn't text that fits")
+        return ""
 
 
 def _items(value: Any) -> list[Mapping[str, Any]]:
@@ -329,10 +345,11 @@ class Briefings:
             try:
                 sailor, language = map(str, item["key"])
                 briefing = Briefing.from_stored(item)
+                old = briefing.made < oldest
             except AttributeError, KeyError, TypeError, ValueError:
                 LOGGER.warning("Ignoring an unreadable saved AI briefing")
                 continue
-            if briefing.made >= oldest:
+            if not old:
                 self._kept[sailor, language] = briefing
 
     async def async_remove(self) -> None:
@@ -356,6 +373,7 @@ class Briefings:
         context: Context | None,
     ) -> Briefing:
         """Return a current briefing, asking the AI for one if needed."""
+        self._forget_old()
         lock = self._locks.setdefault(key, asyncio.Lock())
         async with lock:
             if (kept := self._kept.get(key)) and kept.current(found):
@@ -382,6 +400,22 @@ class Briefings:
             self._kept[key] = briefing
             self._store.async_delay_save(self._data, SAVE_DELAY)
             return briefing
+
+    def _forget_old(self) -> None:
+        """Drop briefings older than KEEP, and the locks of keys without one.
+
+        A lock that was just let go may still have someone about to take it;
+        then the AI may be asked twice for the same briefing.
+        """
+        oldest = dt_util.utcnow() - KEEP
+        for key in [key for key, kept in self._kept.items() if kept.made < oldest]:
+            del self._kept[key]
+        for key in [
+            key
+            for key, lock in self._locks.items()
+            if key not in self._kept and not lock.locked()
+        ]:
+            del self._locks[key]
 
     def _data(self) -> dict[str, Any]:
         return {

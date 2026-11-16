@@ -30,6 +30,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 import html
 import json
+import logging
 import math
 import re
 from typing import Any, Final
@@ -39,12 +40,17 @@ import aiohttp
 from ..geo import distance_km, distance_to_area_km
 from . import ProviderError, fetch_bytes, fetch_json
 
+LOGGER = logging.getLogger(__package__)
+
 FEED_URL: Final = "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-{slug}"
 GEOCODES_LIST: Final = "https://gitlab.com/api/v4/projects/72863924/repository/tree"
 GEOCODES_URL: Final = (
     "https://gitlab.com/meteoalarm-pm-group/documents/-/raw/master/{name}"
 )
 GEOCODES_WAIT: Final = 300
+# The list of MeteoAlarm's files comes a page at a time.
+LIST_PAGE: Final = 100
+LIST_PAGES: Final = 10
 PREFIX: Final = "meteoalarm"
 LEVELS: Final = ("yellow", "orange", "red")
 # Where MeteoAlarm's countries are, roughly: south, north, west, east.
@@ -217,11 +223,18 @@ async def async_get_details(session: aiohttp.ClientSession, link: str) -> Detail
 
 async def async_geocodes_name(session: aiohttp.ClientSession) -> str:
     """Return the name of the newest file of region outlines MeteoAlarm publishes."""
-    listing = await fetch_json(session, GEOCODES_LIST, {"per_page": 100})
-    try:
-        names = [item["name"] for item in listing if _GEOCODES.match(item["name"])]
-    except (KeyError, TypeError) as err:
-        raise ProviderError(f"Unexpected list of MeteoAlarm files: {err}") from err
+    names: list[str] = []
+    for page in range(1, LIST_PAGES + 1):
+        listing = await fetch_json(
+            session, GEOCODES_LIST, {"per_page": LIST_PAGE, "page": page}
+        )
+        try:
+            names += [item["name"] for item in listing if _GEOCODES.match(item["name"])]
+        except (KeyError, TypeError) as err:
+            raise ProviderError(f"Unexpected list of MeteoAlarm files: {err}") from err
+        # A page that isn't full is the last.
+        if len(listing) < LIST_PAGE:
+            break
     if not names:
         raise ProviderError("MeteoAlarm publishes no region outlines")
     return str(max(names))
@@ -235,10 +248,14 @@ async def async_get_geocodes(session: aiohttp.ClientSession, name: str) -> bytes
 
 
 def parse_feed(text: str) -> list[Warning]:
-    """Read a feed's warnings, once each, leaving out green ones."""
+    """Read a feed's warnings, once each, leaving out green ones.
+
+    A warning that can't be read is left out, so it doesn't hide the rest.
+    """
     if "<feed" not in text:
         raise ProviderError("MeteoAlarm sent no feed")
     warnings: dict[str, Warning] = {}
+    problem: Exception | None = None
     for entry in _ENTRY.findall(text):
         title = _TITLE.search(entry)
         match = (
@@ -261,7 +278,9 @@ def parse_feed(text: str) -> list[Warning]:
                 link=html.unescape(link.group(1)),
             )
         except (TypeError, ValueError) as err:
-            raise ProviderError(f"Unexpected MeteoAlarm warning: {err}") from err
+            LOGGER.debug("Leaving out an unreadable MeteoAlarm warning: %s", err)
+            problem = err
+            continue
         # The feed lists a warning once for each of its regions and outlines.
         if seen := warnings.get(found.link):
             found = replace(
@@ -273,6 +292,8 @@ def parse_feed(text: str) -> list[Warning]:
                 outlines=seen.outlines + found.outlines,
             )
         warnings[found.link] = found
+    if problem is not None and not warnings:
+        raise ProviderError(f"Unexpected MeteoAlarm warning: {problem}") from problem
     return list(warnings.values())
 
 
@@ -297,10 +318,10 @@ def parse_regions(body: bytes) -> Table:
     The file is large, so it's read a region at a time rather than all at
     once. This takes a few seconds, so run it in an executor.
     """
-    text = body.decode("utf-8")
     decoder = json.JSONDecoder()
     regions = []
     try:
+        text = body.decode("utf-8")
         index = text.index("[", text.index('"features"')) + 1
         while True:
             while text[index] in " \t\r\n,":

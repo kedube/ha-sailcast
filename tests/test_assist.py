@@ -193,6 +193,21 @@ async def test_day(
         ("sailcast_week", {"date": "2026-12-25"}, "admin", "no forecast"),
         ("sailcast_day", {}, "admin", "Say which day"),
         ("sailcast_day", {"date": "2026-12-25"}, "admin", "no forecast"),
+        # Home Assistant passes on whatever the AI sends, such as a list.
+        (
+            "sailcast_week",
+            {"spot": ["Harbor", "Bay"]},
+            "admin",
+            "Give one spot at a time",
+        ),
+        ("sailcast_week", {"sailor": 5}, "admin", "Give one sailor at a time"),
+        ("sailcast_week", {"date": ["2026-11-07"]}, "admin", "Give one date"),
+        (
+            "sailcast_day",
+            {"date": "2026-11-07", "boat": {"name": "Keelboat"}},
+            "admin",
+            "Give one boat at a time",
+        ),
     ],
 )
 async def test_questions_it_cant_answer(

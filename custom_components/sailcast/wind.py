@@ -22,6 +22,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import math
+import time
 from typing import Any, Final
 
 import aiohttp
@@ -346,8 +347,9 @@ class WindGrids:
             tuple[float, float, float, float, int, int], asyncio.Lock
         ] = {}
         # When each grid was asked for and its calls, for the limits a minute
-        # and an hour.
-        self._spent: deque[tuple[datetime, float]] = deque()
+        # and an hour. Times are on the monotonic clock, so setting the clock
+        # back doesn't hold grids up.
+        self._spent: deque[tuple[float, float]] = deque()
 
     @property
     def grids(self) -> list[WindGrid]:
@@ -377,12 +379,13 @@ class WindGrids:
                 if grid is None:
                     raise BudgetSpentError
                 return grid, True
-            if wait := self._wait(cost, now):
+            moment = time.monotonic()
+            if wait := self._wait(cost, moment):
                 if grid is None:
                     raise TooSoonError(wait)
                 return grid, True
             # Counted before asking, so grids asked for together keep within it.
-            self._spent.append((now, cost))
+            self._spent.append((moment, cost))
             try:
                 wind = await open_meteo.async_get_wind(session, area.points)
             except ProviderError:
@@ -447,23 +450,40 @@ class WindGrids:
             default=None,
         )
 
-    def _wait(self, cost: float, now: datetime) -> float:
-        """Return the seconds until `cost` more calls keep within the limits."""
-        longest = max(span for span, _ in LIMITS)
+    def _wait(self, cost: float, now: float) -> float:
+        """Return the seconds until `cost` more calls keep within the limits.
+
+        `now` is on the monotonic clock.
+        """
+        longest = max(span for span, _ in LIMITS).total_seconds()
         while self._spent and now - self._spent[0][0] >= longest:
             self._spent.popleft()
         wait = 0.0
         for span, limit in LIMITS:
-            recent = [(when, calls) for when, calls in self._spent if now - when < span]
+            seconds = span.total_seconds()
+            recent = [
+                (when, calls) for when, calls in self._spent if now - when < seconds
+            ]
             total = sum(calls for _, calls in recent) + cost
             # The oldest calls age out first.
             for when, calls in recent:
                 if total <= limit:
                     break
                 total -= calls
-                wait = max(wait, (when + span - now).total_seconds())
+                wait = max(wait, when + seconds - now)
         return wait
 
     def _forget_before(self, when: datetime) -> None:
+        """Drop grids fetched before a time, and the locks of areas without one.
+
+        A lock that was just let go may still have someone about to take it;
+        then that area's grid may be fetched twice, still within the limits.
+        """
         for key in [key for key, grid in self._grids.items() if grid.fetched < when]:
             del self._grids[key]
+        for key in [
+            key
+            for key, lock in self._locks.items()
+            if key not in self._grids and not lock.locked()
+        ]:
+            del self._locks[key]

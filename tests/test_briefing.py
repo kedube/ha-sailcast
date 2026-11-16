@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
+import dataclasses
 from datetime import UTC, datetime, timedelta
 import json
 from typing import Any
@@ -496,6 +498,8 @@ async def test_saved_briefings_checked(
                 | {"made": "2026-11-04T08:00:00+00:00"},
                 {"key": ["sailor_sam", "en"]} | saved | {"facts": "kaputt"},
                 {"key": ["sailor_kim"]} | saved,
+                # Without a time zone.
+                {"key": ["sailor_sam", "fr"]} | saved | {"made": "2026-11-07T08:00:00"},
             ]
         },
     }
@@ -506,6 +510,28 @@ async def test_saved_briefings_checked(
     assert kept.headline == "Samstag."
     assert briefings.get(("sailor_sam", "de")) is None
     assert briefings.get(("sailor_sam", "en")) is None
+    assert briefings.get(("sailor_sam", "fr")) is None
+
+
+async def test_old_briefings_forgotten(
+    hass: HomeAssistant, ai_on: MockConfigEntry, stand_in: StandInTask, send: Send
+) -> None:
+    """Writing a briefing drops those older than two days, and idle locks."""
+    briefings = ai_on.runtime_data.briefings
+    await send("briefing", **WRITE)
+    kept = briefings.get(KEY)
+    assert kept is not None
+    old, idle = ("sailor_alex", "fr"), ("sailor_alex", "it")
+    briefings._kept[old] = dataclasses.replace(
+        kept, made=kept.made - briefing.KEEP - timedelta(minutes=1)
+    )
+    briefings._locks[idle] = asyncio.Lock()
+
+    assert "result" in await send("briefing", **(WRITE | {"language": "en"}))
+    assert briefings.get(old) is None
+    assert idle not in briefings._locks
+    assert briefings.get(KEY) is kept
+    assert briefings.get(("sailor_alex", "en")) is not None
 
 
 async def test_old_summaries_removed(
@@ -524,6 +550,46 @@ async def test_old_summaries_removed(
     await set_up(hass, sailcast_entry, freezer)
     await hass.async_block_till_done()
     assert briefing.OLD_STORAGE_KEY not in hass_storage
+
+
+def test_answer_parts_left_out() -> None:
+    """Optional parts that aren't text that fits are left out, not the briefing.
+
+    Picks past the third, picks named again and notes for days that weren't
+    sent are skipped before they're checked.
+    """
+    windows = {f"w{number}": {"window": number} for number in range(1, 5)}
+    long = "x" * 1000
+    answer = {
+        "headline": "Samstag.",
+        "summary": "Gut.",
+        "picks": [
+            {"window": "w1", "why": long},
+            {"window": "w1", "why": 5},
+            {"window": "w2", "why": "Gut."},
+            {"window": "w3", "why": ["kaputt"]},
+            {"window": "w4", "why": long},
+        ],
+        "days": [
+            {"date": "2026-11-07", "note": long},
+            {"date": "2026-11-08", "note": "Ruhig."},
+            {"date": "2026-11-08", "note": long},
+            {"date": "2026-12-01", "note": long},
+            {"date": 20261108, "note": long},
+        ],
+        "recheck": long,
+    }
+    assert briefing.read_answer(answer, windows, {"2026-11-07", "2026-11-08"}) == {
+        "headline": "Samstag.",
+        "summary": "Gut.",
+        "picks": [
+            {"window": 1, "why": ""},
+            {"window": 2, "why": "Gut."},
+            {"window": 3, "why": ""},
+        ],
+        "days": {"2026-11-08": "Ruhig."},
+        "recheck": "",
+    }
 
 
 def test_clean() -> None:

@@ -93,7 +93,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
 
     entry.async_on_unload(data.results.async_add_listener(_async_results_changed))
 
-    async def _async_measure_shorelines(_: datetime | None = None) -> None:
+    async def _async_measure_shorelines() -> None:
         """Measure new pins' shorelines, and rate again with them."""
         pins = [
             (spot.latitude, spot.longitude) for spot in data.profiles.spots.values()
@@ -101,11 +101,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: SailCastConfigEntry) -> 
         if await data.sources.shorelines.async_measure_pins(pins):
             await data.results.async_request_refresh()
 
-    entry.async_create_background_task(
-        hass, _async_measure_shorelines(), "sailcast shorelines"
-    )
+    @callback
+    def _async_check_shorelines(_: datetime | None = None) -> None:
+        """Measure as the entry's own task, which unloading stops."""
+        entry.async_create_background_task(
+            hass, _async_measure_shorelines(), "sailcast shorelines"
+        )
+
+    _async_check_shorelines()
     entry.async_on_unload(
-        async_track_time_interval(hass, _async_measure_shorelines, SHORELINE_CHECK)
+        async_track_time_interval(hass, _async_check_shorelines, SHORELINE_CHECK)
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_register_panel(hass)

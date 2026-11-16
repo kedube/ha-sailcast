@@ -26,6 +26,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfLength, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.generated.languages import LANGUAGES as HA_LANGUAGES
 from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import DistanceConverter, TemperatureConverter
 
@@ -89,12 +90,18 @@ def _preferred(hass: HomeAssistant) -> str | None:
 
 
 def language_name(language: str) -> str:
-    """Return a language's English name, for asking the AI to write in it."""
-    return (
-        LANGUAGES.get(language)
-        or LANGUAGES.get(language.split("-", maxsplit=1)[0])
-        or f"the language with the code {language}"
-    )
+    """Return a language's English name, for asking the AI to write in it.
+
+    Only Home Assistant's own language codes go into the instructions; any
+    other text gets English.
+    """
+    if name := LANGUAGES.get(language) or LANGUAGES.get(
+        language.split("-", maxsplit=1)[0]
+    ):
+        return name
+    if language in HA_LANGUAGES:
+        return f"the language with the code {language}"
+    return LANGUAGES["en"]
 
 
 def clean(answer: Any, longest: int, *, required: bool = True) -> str:

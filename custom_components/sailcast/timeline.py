@@ -17,7 +17,7 @@ import statistics
 from typing import TYPE_CHECKING, Any
 
 from astral import Observer
-from astral.sun import elevation, sun
+from astral.sun import elevation, sunrise, sunset
 
 from .geo import mean_direction
 from .nowcast import Adjustment, Observation, latest, nudge
@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from .providers.open_meteo import Forecast, Marine, Spread
 
 HOUR = timedelta(hours=1)
+# How often the sun is looked at where astral finds no sunrise or sunset.
+SUN_STEP = timedelta(minutes=10)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -107,19 +109,62 @@ class Daylight:
 
 
 def daylight(latitude: float, longitude: float, day: date, zone: tzinfo) -> Daylight:
-    """Return sunrise and sunset at a place on a local date."""
+    """Return sunrise and sunset at a place on a local date.
+
+    Of the sun's times up around the date, the one that covers most of the
+    local day counts, so a spot far from the time zone gets its own day.
+    Near the polar day and night, where astral finds no sunrise or sunset,
+    the sun is looked at every few minutes instead. Either way the times
+    err toward dark: an hour in the dark never counts as daylight.
+    """
     observer = Observer(latitude, longitude)
-    try:
-        times = sun(observer, date=day, tzinfo=zone)
-    except ValueError:
-        midnight = datetime.combine(day, time(), zone)
-        noon = midnight + timedelta(hours=12)
-        if elevation(observer, noon) > 0:
-            return Daylight(
-                day, _utc(midnight), _utc(midnight + timedelta(days=1)), zone
-            )
-        return Daylight(day, _utc(noon), _utc(noon), zone)
-    return Daylight(day, _utc(times["sunrise"]), _utc(times["sunset"]), zone)
+    start = _utc(datetime.combine(day, time(), zone))
+    end = _utc(datetime.combine(day + timedelta(days=1), time(), zone))
+    spans = []
+    missing = False
+    for offset in (-1, 0, 1):
+        when = day + timedelta(days=offset)
+        try:
+            rise = sunrise(observer, when, tzinfo=zone)
+            fall = sunset(observer, when, tzinfo=zone)
+        except ValueError:
+            missing = True
+            continue
+        spans.append((_utc(rise), _utc(fall)))
+    if missing and (up := _sun_up(observer, start, end)):
+        spans.append(up)
+
+    def overlap(span: tuple[datetime, datetime]) -> timedelta:
+        return min(span[1], end) - max(span[0], start)
+
+    best = max(spans, key=overlap, default=None)
+    if best is None or overlap(best) <= timedelta():
+        noon = _utc(datetime.combine(day, time(12), zone))
+        return Daylight(day, noon, noon, zone)
+    return Daylight(day, *best, zone)
+
+
+def _sun_up(
+    observer: Observer, start: datetime, end: datetime
+) -> tuple[datetime, datetime] | None:
+    """Return the longest time the sun is seen up between two times, if any.
+
+    The first and last looks that find it up stand for sunrise and sunset,
+    so they're a little late and early.
+    """
+    best = None
+    first = None
+    when = start
+    while when <= end:
+        if elevation(observer, when) > 0:
+            if first is None:
+                first = when
+            if best is None or when - first > best[1] - best[0]:
+                best = (first, when)
+        else:
+            first = None
+        when += SUN_STEP
+    return best
 
 
 def _utc(when: datetime) -> datetime:

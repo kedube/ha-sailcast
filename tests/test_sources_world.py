@@ -9,11 +9,13 @@ from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+import pytest
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.sailcast.const import DOMAIN, NAME, SUBENTRY_SPOT
 from custom_components.sailcast.providers import (
+    ProviderError,
     chs,
     eccc,
     kartverket,
@@ -261,3 +263,38 @@ async def test_regions_kept_when_meteoalarm_cannot_be_reached(
     aioclient_mock.clear_requests()
     assert await Regions(hass).async_place(*HALIFAX) == meteoalarm.Place((), ())
     assert aioclient_mock.call_count == 0
+
+
+async def test_regions_download_waits_after_failing(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """With no regions kept, a failed download waits an hour, then longer."""
+    freezer.move_to(WORLD_RECORDED)
+    name = "MeteoAlarm_Geocodes_2026_07_31.json"
+    aioclient_mock.get(meteoalarm.GEOCODES_LIST, json=[{"name": name}])
+    aioclient_mock.get(meteoalarm.GEOCODES_URL.format(name=name), status=503)
+    regions = Regions(hass)
+
+    def downloads() -> int:
+        return sum("/-/raw/" in str(call[1]) for call in aioclient_mock.mock_calls)
+
+    for _ in range(3):
+        with pytest.raises(ProviderError):
+            await regions.async_place(*WADDEN_POINT)
+    assert downloads() == 1
+    freezer.tick(timedelta(minutes=61))
+    with pytest.raises(ProviderError):
+        await regions.async_place(*WADDEN_POINT)
+    assert downloads() == 2
+    # The next wait is two hours.
+    freezer.tick(timedelta(minutes=61))
+    with pytest.raises(ProviderError):
+        await regions.async_place(*WADDEN_POINT)
+    assert downloads() == 2
+    # Once the file can be downloaded, its regions are used.
+    aioclient_mock.clear_requests()
+    mock_world(aioclient_mock)
+    freezer.tick(timedelta(minutes=61))
+    assert (await regions.async_place(*WADDEN_POINT)).regions == ("NL806", "NL809")

@@ -16,7 +16,7 @@ from custom_components.sailcast.profiles import (
     Spot,
     WaterType,
 )
-from custom_components.sailcast.timeline import Daylight, Hour
+from custom_components.sailcast.timeline import Daylight, Hour, daylight
 from custom_components.sailcast.week import week
 
 from .conftest import HARBOR_POINT
@@ -208,3 +208,34 @@ def test_a_day_off() -> None:
     page = week(usual, usual.boats[0], conditions(), at(5).astimezone(UTC))
     assert page["days"][0]["hours"] is None
     assert page["days"][0]["changed"] is False
+
+
+def test_no_windows_in_the_arctic_dark() -> None:
+    """In Bodø in December, a boat without lights gets no window after dark."""
+    oslo = ZoneInfo("Europe/Oslo")
+    day = daylight(67.28, 14.40, date(2026, 12, 10), oslo)
+    midnight = datetime(2026, 12, 10, tzinfo=oslo).astimezone(UTC)
+    hours = tuple(
+        Hour(
+            start=midnight + timedelta(hours=index),
+            daylight=day.covers(midnight + timedelta(hours=index)),
+            wind=12.0,
+            gust=14.0,
+            wind_direction=270.0,
+            temperature=4.0,
+            visibility=20_000.0,
+        )
+        for index in range(24)
+    )
+    bodo = SpotConditions(spot=SPOT, hours=hours, days=(day,))
+    thursdays = Sailor(
+        id="sailor_alex",
+        name="Alex",
+        skill=Skill.INTERMEDIATE,
+        boats=(LIT.id, UNLIT.id),
+        week={"thu": ALL_DAY},
+    )
+    lit, unlit = outlook(thursdays, bodo, BOATS).boats
+    assert spans(lit) == [(midnight, midnight + timedelta(days=1))]
+    assert sum(item.hour.daylight for item in unlit.hours) <= 2
+    assert all(end - start <= timedelta(hours=2) for start, end in spans(unlit))

@@ -48,6 +48,9 @@ def distance_to_area_km(lat: float, lon: float, geometry: dict[str, Any]) -> flo
     nearest = math.inf
     for polygon in polygons:
         rings = [[project(point) for point in ring] for ring in polygon]
+        # GeoJSON allows an empty polygon, which is nowhere.
+        if not rings:
+            continue
         if _inside(rings[0]) and not any(_inside(hole) for hole in rings[1:]):
             return 0.0
         for ring in rings:

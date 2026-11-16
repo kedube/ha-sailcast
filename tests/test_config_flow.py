@@ -715,7 +715,8 @@ async def test_sailor_comfort_and_calendar(
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"], sailor
     )
-    assert result["errors"] == {"calendar": "calendar_read_only"}
+    # Shown above the section, since Home Assistant shows no errors inside one.
+    assert result["errors"] == {"auto_calendar": "calendar_read_only"}
 
     sailor["auto_calendar"]["calendar"] = family  # type: ignore[index]
     result = await hass.config_entries.subentries.async_configure(
@@ -751,8 +752,8 @@ async def test_sailor_comfort_and_calendar(
 @pytest.mark.parametrize(
     ("comfort", "errors"),
     [
-        ({"ideal_low": 14, "ideal_high": 8}, {"ideal_high": "ideal_high_below_low"}),
-        ({"coldest": 40}, {"coldest": "coldest_out_of_range"}),
+        ({"ideal_low": 14, "ideal_high": 8}, {"comfort": "ideal_high_below_low"}),
+        ({"coldest": 40}, {"comfort": "coldest_out_of_range"}),
     ],
 )
 async def test_sailor_comfort_errors(
@@ -761,7 +762,7 @@ async def test_sailor_comfort_errors(
     comfort: dict[str, Any],
     errors: dict[str, str],
 ) -> None:
-    """A backwards ideal range and far-off cold are caught."""
+    """A backwards ideal range and far-off cold are caught, above the section."""
     result = await _edit(hass, full_entry, "sailor_alex")
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -775,6 +776,110 @@ async def test_sailor_comfort_errors(
         | {"comfort": {"rain": "some"} | comfort},
     )
     assert result["errors"] == errors
+
+
+@pytest.mark.parametrize(
+    ("changes", "error"),
+    [
+        ({"auto_days": []}, "no_days"),
+        ({"auto_spots": []}, "no_spots"),
+    ],
+)
+async def test_sailor_auto_calendar_errors(
+    hass: HomeAssistant,
+    full_entry: MockConfigEntry,
+    family: str,
+    changes: dict[str, Any],
+    error: str,
+) -> None:
+    """Automatic adding's problems show above its section."""
+    result = await _edit(hass, full_entry, "sailor_alex")
+    auto = {
+        "calendar": family,
+        "auto_days": ["sat"],
+        "min_score": "60",
+        "ahead": "2",
+        "auto_spots": ["spot_harbor"],
+    }
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Alex",
+            "skill": "intermediate",
+            "default_boat": "boat_keelboat",
+            "days": ["sat"],
+        }
+        | SECTIONS
+        | {"auto_calendar": auto | changes},
+    )
+    assert result["errors"] == {"auto_calendar": error}
+
+
+async def test_spot_removed_from_automatic_adding(
+    hass: HomeAssistant, sailcast_entry: MockConfigEntry, family: str
+) -> None:
+    """A removed spot isn't offered again, so the sailor can still be saved."""
+    alex = sailcast_entry.subentries["sailor_alex"]
+    auto = {
+        "calendar": family,
+        "days": ["sat"],
+        "min_score": 60,
+        "ahead": 2,
+        "spots": ["spot_harbor", "spot_bay"],
+    }
+    hass.config_entries.async_update_subentry(
+        sailcast_entry, alex, data=dict(alex.data) | {"auto_calendar": auto}
+    )
+    hass.config_entries.async_remove_subentry(sailcast_entry, "spot_bay")
+
+    result = await _edit(hass, sailcast_entry, "sailor_alex")
+    spots = _suggested_in(result, "auto_calendar", "auto_spots")
+    assert spots == ["spot_harbor"]
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Alex",
+            "skill": "intermediate",
+            "default_boat": "boat_keelboat",
+            "days": ["sat"],
+        }
+        | SECTIONS
+        | {
+            "auto_calendar": {
+                "calendar": family,
+                "auto_days": ["sat"],
+                "min_score": "60",
+                "ahead": "2",
+                "auto_spots": spots,
+            }
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert sailcast_entry.subentries["sailor_alex"].data["auto_calendar"]["spots"] == [
+        "spot_harbor"
+    ]
+
+
+async def test_hours_that_arent_stretches(
+    hass: HomeAssistant, full_entry: MockConfigEntry
+) -> None:
+    """Home Assistant lets an empty item through the hours; it's left out."""
+    result = await _edit(hass, full_entry, "sailor_alex")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Alex",
+            "skill": "intermediate",
+            "default_boat": "boat_keelboat",
+            "days": ["sat"],
+        }
+        | SECTIONS
+        | {"hours": {"sat": ["", {"start": "09:00:00", "end": "12:00:00"}, []]}},
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert full_entry.subentries["sailor_alex"].data["hours"] == {
+        "sat": [{"start": "09:00:00", "end": "12:00:00"}]
+    }
 
 
 async def test_options_keep_the_worldtides_key(

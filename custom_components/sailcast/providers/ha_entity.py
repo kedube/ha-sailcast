@@ -8,6 +8,7 @@ reported, so a sensor that stops reporting expires like a buoy.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import math
 from typing import Final
 
 from homeassistant.const import (
@@ -37,9 +38,11 @@ def read(hass: HomeAssistant, sensors: Mapping[str, str]) -> Readings:
         if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
             continue
         try:
-            value = convert(
-                key, float(state.state), state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-            )
+            number = float(state.state)
+            # "nan" and "inf" read as numbers, but aren't readings.
+            if not math.isfinite(number):
+                continue
+            value = convert(key, number, state.attributes.get(ATTR_UNIT_OF_MEASUREMENT))
         except HomeAssistantError, ValueError:
             continue
         if value is not None:

@@ -101,6 +101,35 @@ def test_polar_days() -> None:
     assert not winter.covers(noon)
 
 
+def test_night_near_the_polar_day_and_night() -> None:
+    """Where twilight lasts all night or the sun barely rises, night isn't day."""
+    oslo = ZoneInfo("Europe/Oslo")
+    # Trondheim at midsummer: the sun sets at 11:37 PM and rises at 3:03 AM.
+    trondheim = daylight(63.43, 10.39, date(2026, 6, 21), oslo)
+    assert not trondheim.covers(datetime(2026, 6, 21, 1, tzinfo=oslo))
+    assert trondheim.covers(datetime(2026, 6, 21, 12, tzinfo=oslo))
+    assert trondheim.sunset.astimezone(oslo).hour == 23
+    # Bodø in December: the sun is up for at most an hour or two around noon.
+    bodo = daylight(67.28, 14.40, date(2026, 12, 10), oslo)
+    assert bodo.sunset - bodo.sunrise <= timedelta(hours=2)
+    assert not bodo.covers(datetime(2026, 12, 10, 8, tzinfo=oslo))
+    assert not bodo.covers(datetime(2026, 12, 10, 21, tzinfo=oslo))
+    # Reykjavik at midsummer: the sun sets just after midnight.
+    reykjavik = ZoneInfo("Atlantic/Reykjavik")
+    summer = daylight(64.15, -21.94, date(2026, 6, 20), reykjavik)
+    assert summer.sunset.astimezone(reykjavik).date() == date(2026, 6, 21)
+    assert not summer.covers(datetime(2026, 6, 20, 1, tzinfo=reykjavik))
+
+
+def test_daylight_far_from_the_time_zone() -> None:
+    """A spot far from Home Assistant's time zone gets its own daylight."""
+    # Sydney, seen from California: the sun is up from about 10:45 AM to
+    # 12:35 AM, and down in the small hours.
+    sydney = daylight(-33.86, 151.21, date(2026, 11, 16), PACIFIC)
+    assert sydney.covers(datetime(2026, 11, 16, 14, tzinfo=PACIFIC))
+    assert not sydney.covers(datetime(2026, 11, 16, 4, tzinfo=PACIFIC))
+
+
 def test_marine_data(
     forecasts: list[open_meteo.Forecast], marine: list[open_meteo.Marine]
 ) -> None:

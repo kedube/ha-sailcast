@@ -178,11 +178,15 @@ class NextWindowSensor(SailorEntity, SensorEntity):
 
 @dataclass(frozen=True, kw_only=True)
 class SpotSensorDescription(SensorEntityDescription):
-    """A spot condition, read from the hour now or the tide events."""
+    """A spot condition, read from the hour now or the tide events.
+
+    `changes` says when one that doesn't follow the hours changes next.
+    """
 
     value: Callable[[SpotConditions, Hour], Any]
     applies: Callable[[Spot], bool] = lambda spot: True
     attributes: Callable[[SpotConditions], dict[str, Any] | None] = lambda _: None
+    changes: Callable[[SpotConditions], datetime | None] = lambda _: None
 
 
 def _has_tide_times(spot: Spot) -> bool:
@@ -202,10 +206,21 @@ def _next_tide(conditions: SpotConditions, high: bool) -> Any:
     )
 
 
-def _tide_time(high: bool) -> Callable[[SpotConditions, Hour], datetime | None]:
-    def value(conditions: SpotConditions, hour: Hour) -> datetime | None:
+def _next_tide_time(high: bool) -> Callable[[SpotConditions], datetime | None]:
+    """Return when the next high or low tide is, which is when it moves on."""
+
+    def when(conditions: SpotConditions) -> datetime | None:
         event = _next_tide(conditions, high)
         return event.time if event else None
+
+    return when
+
+
+def _tide_time(high: bool) -> Callable[[SpotConditions, Hour], datetime | None]:
+    when = _next_tide_time(high)
+
+    def value(conditions: SpotConditions, hour: Hour) -> datetime | None:
+        return when(conditions)
 
     return value
 
@@ -279,6 +294,7 @@ SPOT_SENSORS: tuple[SpotSensorDescription, ...] = (
         value=_tide_time(high=True),
         applies=_has_tide_times,
         attributes=_tide_height(high=True),
+        changes=_next_tide_time(high=True),
     ),
     SpotSensorDescription(
         key="next_low_tide",
@@ -288,6 +304,7 @@ SPOT_SENSORS: tuple[SpotSensorDescription, ...] = (
         value=_tide_time(high=False),
         applies=_has_tide_times,
         attributes=_tide_height(high=False),
+        changes=_next_tide_time(high=False),
     ),
 )
 
@@ -326,3 +343,9 @@ class SpotSensor(SpotEntity, SensorEntity):
         if (conditions := self.conditions) is None:
             return None
         return self.entity_description.attributes(conditions)
+
+    def next_change(self) -> datetime | None:
+        """Return when the condition next changes between hours, if it does."""
+        if (conditions := self.conditions) is None:
+            return None
+        return self.entity_description.changes(conditions)

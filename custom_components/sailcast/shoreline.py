@@ -142,10 +142,9 @@ class _Water:
         self.tiles = [self._tile(tile) for tile in tiles]
 
     def _local(self, latitude: float, longitude: float) -> Point:
-        return (
-            (longitude - self.longitude) * self.east_km,
-            (latitude - self.latitude) * KM_PER_DEGREE,
-        )
+        # Tiles across the antimeridian are a degree or so away, not 359.
+        east = (longitude - self.longitude + 180) % 360 - 180
+        return (east * self.east_km, (latitude - self.latitude) * KM_PER_DEGREE)
 
     def _tile(self, tile: WaterTile) -> _Tile:
         west, north = self._local(*openfreemap.position(tile, 0, 0))
@@ -288,9 +287,11 @@ class Shorelines:
 
             async def fetch(z: int, x: int, y: int) -> None:
                 async with limit:
-                    tiles[z, x, y] = await openfreemap.async_get_water(
-                        session, template, z, x, y
-                    )
+                    body = await openfreemap.async_get_tile(session, template, z, x, y)
+                # Reading a tile is slow, so it's done off the event loop.
+                tiles[z, x, y] = await self.hass.async_add_executor_job(
+                    openfreemap.water, body, z, x, y
+                )
 
             around = openfreemap.tiles_around(latitude, longitude, REACH_KM)
             await asyncio.gather(

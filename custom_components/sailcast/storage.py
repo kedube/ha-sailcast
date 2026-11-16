@@ -11,6 +11,7 @@ date has passed.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass, fields
 from datetime import date, datetime
@@ -79,11 +80,14 @@ class PlannedSail:
 class SailCastStore:
     """Preferences, planned sails, skipped days and the hours set for dates.
 
-    Each is saved shortly after a change.
+    Each is saved shortly after a change. Planners take turns with `lock` to
+    add, move and take out planned sails, so an entry that's reloading and
+    the one replacing it never change them at once.
     """
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Set up the store; call async_load before using it."""
+        self.lock = asyncio.Lock()
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self._preferences: dict[str, dict[str, str]] = {}
         self._planned: dict[str, PlannedSail] = {}

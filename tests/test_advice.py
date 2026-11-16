@@ -11,6 +11,7 @@ import pytest
 from custom_components.sailcast.advice import Advice, advise
 from custom_components.sailcast.profiles import SizeClass, Skill, Spot, WaterType
 from custom_components.sailcast.providers import TideEvent
+from custom_components.sailcast.rating import rate
 from custom_components.sailcast.summary import Trend, summarize
 from custom_components.sailcast.timeline import Alert, Daylight, Hour
 
@@ -217,6 +218,19 @@ def test_wind_against_current() -> None:
     }
     slack = hours([12, 12], current=0.3, current_direction=85.0)
     assert "against_current" not in keys(advise(SPOT, C, ADV, DAY, slack))
+
+
+def test_current_the_rating_counts_is_mentioned() -> None:
+    """In short waves, a weaker current that the rating counts gets advice too."""
+    short = hours([12], current=0.78, current_direction=270.0, wave_period=3.0)
+    assert "wind_against_flood" in [
+        reason.key for reason in rate(short[0], C, ADV).reasons
+    ]
+    assert "against_current" in keys(advise(SPOT, C, ADV, DAY, short))
+    # In longer waves, neither counts it.
+    long = hours([12], current=0.78, current_direction=270.0, wave_period=8.0)
+    assert not rate(long[0], C, ADV).reasons
+    assert "against_current" not in keys(advise(SPOT, C, ADV, DAY, long))
 
 
 def test_offshore_wind_for_dinghies() -> None:

@@ -135,3 +135,34 @@ async def test_windows_tomorrow(
         )
     await hass.async_block_till_done()
     assert sent(notified) == expected
+
+
+async def test_windows_tomorrow_without_a_forecast(
+    hass: HomeAssistant,
+    phone: str,
+    loaded: MockConfigEntry,
+    notified: AsyncMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """With the calendar unavailable, nothing is sent and nothing fails."""
+    results = loaded.runtime_data.results
+    results.last_update_success = False
+    results.async_update_listeners()
+    await hass.async_block_till_done()
+    assert hass.states.get("calendar.sam_sailing").state == "unavailable"
+    await use_blueprint(
+        hass,
+        "windows_tomorrow.yaml",
+        calendar="calendar.sam_sailing",
+        notify_device=phone,
+    )
+    for action in ("trigger", "turn_off"):
+        await hass.services.async_call(
+            "automation",
+            action,
+            {"entity_id": "automation.windows_tomorrow"},
+            blocking=True,
+        )
+    await hass.async_block_till_done()
+    assert sent(notified) == []
+    assert "did not match any entities" not in caplog.text

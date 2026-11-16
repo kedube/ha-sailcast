@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -23,10 +25,53 @@ ATTRIBUTION = (
 
 
 class SailCastEntity(CoordinatorEntity[ResultsCoordinator]):
-    """An entity that reads SailCast's results."""
+    """An entity that reads SailCast's results.
+
+    The results are worked out hourly or when a source changes. An entity
+    whose state changes in between, such as when a warning starts, says when
+    in `next_change`, and is woken up then.
+    """
 
     _attr_has_entity_name = True
     _attr_attribution = ATTRIBUTION
+    _unsub_wake: CALLBACK_TYPE | None = None
+
+    def next_change(self) -> datetime | None:
+        """Return when the state next changes between results, if it does."""
+        return None
+
+    async def async_added_to_hass(self) -> None:
+        """Follow the results, and wake up at the next change."""
+        await super().async_added_to_hass()
+        self.async_on_remove(self._async_cancel_wake)
+        self._async_schedule_wake()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._async_schedule_wake()
+        super()._handle_coordinator_update()
+
+    @callback
+    def _async_schedule_wake(self) -> None:
+        """Wake up at the next change, in place of any wake-up set before."""
+        self._async_cancel_wake()
+        when = self.next_change()
+        if when is not None and when > dt_util.utcnow():
+            self._unsub_wake = async_track_point_in_utc_time(
+                self.hass, self._async_wake, when
+            )
+
+    @callback
+    def _async_wake(self, _: datetime) -> None:
+        self._unsub_wake = None
+        self._async_schedule_wake()
+        self.async_write_ha_state()
+
+    @callback
+    def _async_cancel_wake(self) -> None:
+        if self._unsub_wake is not None:
+            self._unsub_wake()
+            self._unsub_wake = None
 
 
 class SpotEntity(SailCastEntity):

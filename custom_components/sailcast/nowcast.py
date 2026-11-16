@@ -7,7 +7,8 @@ your sensors are taken to be at the spot. A buoy's wind and gusts arrive
 already scaled to the 10 m that forecasts give (see providers/ndbc.py). Each
 field expires on its own and comes from the best source that has it: your
 sensors, then the buoy, then the airport. Without a gust reading, gusts move
-with the wind.
+with the wind. A reading can raise wind, gusts and waves any amount, but
+lower them by at most a quarter.
 
 A measured visibility replaces the forecast's for the hour under way. Only a
 measured visibility can make an hour dangerous.
@@ -19,6 +20,7 @@ from bisect import bisect_right
 from collections.abc import Callable, MutableMapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import math
 import statistics
 from typing import TYPE_CHECKING, Any, Final
 
@@ -30,6 +32,11 @@ if TYPE_CHECKING:
 
 HOUR: Final = timedelta(hours=1)
 FADE: Final = timedelta(hours=6)
+# A reading can lower wind, gusts and waves by at most this share of the
+# hour's forecast, so a broken or sheltered sensor can't erase a dangerous
+# one. Day-ahead wind is off by about 2.5 kt on average, and a real drop of
+# more than a quarter is rare. Readings can raise them any amount.
+MAX_DROP: Final = 0.25
 # A reading a little ahead of the clock still counts.
 AHEAD: Final = timedelta(minutes=10)
 # Wind directions mean little in lighter air than this (kt).
@@ -112,6 +119,7 @@ def latest(
                 for observation in observations
                 if observation.kind == kind
                 and (reading := observation.readings.get(key)) is not None
+                and math.isfinite(reading.value)
                 and now - fresh <= reading.time <= now + AHEAD
             ]
             if found:
@@ -135,7 +143,7 @@ def nudge(
             continue
         observation, reading = chosen[key]
         expected = _expected(key, observation, forecast, marine, reading.time)
-        if expected is None:
+        if expected is None or not math.isfinite(expected):
             continue
         if key == "wind_direction":
             wind = chosen.get("wind")
@@ -188,16 +196,21 @@ def _spread(
         if key == "wind_direction":
             row[key] = (value + shift) % 360
         elif key in ("wind", "gust", "wave_height"):
-            row[key] = max(0.0, value + shift)
+            row[key] = _lowered(value, shift)
         else:
             row[key] = value + shift
         if key == "wind":
             row["wind_models"] = tuple(
-                None if model is None else max(0.0, model + shift)
+                None if model is None else _lowered(model, shift)
                 for model in row.get("wind_models", ())
             )
         if key not in row.get("adjusted", ()):
             row["adjusted"] = (*row.get("adjusted", ()), key)
+
+
+def _lowered(value: float, shift: float) -> float:
+    """Return a forecast moved by a shift, but never down by more than MAX_DROP."""
+    return max(value * (1 - MAX_DROP), value + shift)
 
 
 def _expected(

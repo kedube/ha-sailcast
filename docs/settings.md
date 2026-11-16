@@ -29,7 +29,7 @@ After the spot, SailCast suggests the nearest sources for its pin. Pick **None**
 | Official warnings | Where official warnings, such as a Small Craft Advisory, come from. On a lake with no marine zone, pick the National Weather Service's alerts at the pin. |
 | Buoy | Readings of wind, waves and water temperature from a buoy or coastal station. A fresh reading nudges the next few hours. |
 | Airport | Hourly reports of wind, visibility and air temperature. If there's a choice, pick one near the water. |
-| Your own sensors | Wind speed, gusts, wind direction, air temperature and water temperature from your own weather station or a boat's instruments. They come first, ahead of the buoy and airport, and SailCast takes them to be at the spot. |
+| Your own sensors | Wind speed, gusts, wind direction, air temperature and water temperature from your own weather station or a boat's instruments. They come first, ahead of the buoy and airport, and SailCast takes them to be at the spot. A reading can raise the forecast wind, gusts and waves any amount but lower them by at most a quarter, so a broken or sheltered sensor can't hide a strong wind. |
 
 ## Boats
 
@@ -51,7 +51,7 @@ A sailor is a person who sails. Each one is a device, with ratings, scores and w
 | Usual boat | The boat SailCast rates unless the sailor picks another. |
 | Other boats | Other boats the sailor takes out. The panel can rate any of them. |
 | Sailing days | The days windows are found on. Every day unless you change it. |
-| Hours each day | When windows can start and end, set for each sailing day, such as 5 PM on weekdays and sunrise at weekends. A day can have up to four stretches, for a break in the day, such as 9 AM to 11 AM and 3 PM to 7 PM: in the panel, **+** adds one and **×** takes it out. Each stretch has its own windows, and stretches can't overlap, though one can start where another ends. A day without hours, or a start or finish left empty, follows sunrise and sunset, or allows any hour in a boat with navigation lights. Sailors saved before each day had its own hours keep their one start and finish on every sailing day. |
+| Hours each day | When windows can start and end, set for each sailing day, such as 5 PM on weekdays and sunrise at weekends. A day can have up to four stretches, for a break in the day, such as 9 AM to 11 AM and 3 PM to 7 PM: in the panel, **+** adds one and **×** takes it out. Each stretch has its own windows, and stretches can't overlap, though one can start where another ends. A day without hours, or a start or finish left empty, follows sunrise and sunset, or allows any hour in a boat with navigation lights. Sailors saved before each day had its own hours keep their one start and finish on every sailing day. Where the clock is set off from UTC by half an hour, as in Adelaide, forecast hours start at half past, so an hour counts when most of it is inside a stretch. |
 | Home Assistant user | The panel opens on this sailor for that user. |
 
 ### One day's hours

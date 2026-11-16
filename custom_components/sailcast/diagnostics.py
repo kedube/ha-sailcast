@@ -1,7 +1,7 @@
 """Diagnostics for an issue report, without showing where anyone sails.
 
-Spot positions, names, stations, sensors and marine zones can each point to a
-place, so they're redacted along with people's names, linked users and
+Spot positions, names, notes, stations, sensors and marine zones can each point
+to a place, so they're redacted along with people's names, linked users and
 calendars. API keys are only said to be set. Errors keep their kind, the
 service's host and the status, but not the addresses, which can hold a
 station or a position, nor any station or zone a spot uses. Which provider a
@@ -33,6 +33,7 @@ TO_REDACT = {
     "longitude",
     "marine_zone",
     "name",
+    "notes",
     "sensors",
     "source_names",
     "source_points",

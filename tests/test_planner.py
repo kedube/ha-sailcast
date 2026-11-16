@@ -2,11 +2,14 @@
 
 Events go into a real Local Calendar. Two stand-in calendars behave like
 Google Calendar (which can't update events) and CalDAV (which can only add
-them).
+them), and a flaky one fails when asked to.
 """
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import dataclasses
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import patch
@@ -17,12 +20,18 @@ from homeassistant.components.calendar import (
     CalendarEntityFeature,
     CalendarEvent,
 )
-from homeassistant.components.calendar.const import DATA_COMPONENT
+from homeassistant.components.calendar.const import (
+    DATA_COMPONENT,
+    EVENT_END,
+    EVENT_START,
+)
 from homeassistant.components.persistent_notification import (
     _async_get_or_create_notifications,
+    async_create,
 )
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant.common import MockConfigEntry, async_capture_events
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
@@ -45,6 +54,12 @@ AUTO = {
     "ahead": 6,
     "spots": ["spot_harbor", "spot_bay", "spot_river"],
 }
+# Saturday's automatic event, in the flaky calendar.
+FLAKY = AUTO | {"calendar": "calendar.flaky", "days": ["sat"]}
+# Saturday's window an hour later.
+LATER = Window(
+    start=SATURDAY + timedelta(hours=1), end=SATURDAY_END, average=75, hours=2
+)
 
 
 class StandInCalendar(CalendarEntity):
@@ -93,6 +108,85 @@ class StandInCalendar(CalendarEntity):
     ) -> None:
         """Delete an event."""
         self.events = [event for event in self.events if event.uid != uid]
+
+
+class FlakyCalendar(StandInCalendar):
+    """A stand-in calendar that can update events, and fails when asked to.
+
+    `failing` has what it fails at: "create", "update", "delete" or "get".
+    With a `gate`, adding an event waits for it.
+    """
+
+    def __init__(self, name: str, features: CalendarEntityFeature) -> None:
+        """Set up the calendar."""
+        super().__init__(name, features)
+        self.failing: set[str] = set()
+        self.gate: asyncio.Event | None = None
+        self.adding = False
+
+    def _check(self, action: str) -> None:
+        if action in self.failing:
+            raise HomeAssistantError(f"Couldn't {action}")
+
+    async def async_get_events(
+        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
+    ) -> list[CalendarEvent]:
+        """Return the events between two times."""
+        self._check("get")
+        return await super().async_get_events(hass, start_date, end_date)
+
+    async def async_create_event(self, **kwargs: Any) -> None:
+        """Add an event, once the gate opens."""
+        self._check("create")
+        self.adding = True
+        if self.gate is not None:
+            await self.gate.wait()
+        await super().async_create_event(**kwargs)
+
+    async def async_update_event(
+        self,
+        uid: str,
+        event: dict[str, Any],
+        recurrence_id: str | None = None,
+        recurrence_range: str | None = None,
+    ) -> None:
+        """Move an event."""
+        self._check("update")
+        self.events = [
+            dataclasses.replace(item, start=event[EVENT_START], end=event[EVENT_END])
+            if item.uid == uid
+            else item
+            for item in self.events
+        ]
+
+    async def async_delete_event(
+        self,
+        uid: str,
+        recurrence_id: str | None = None,
+        recurrence_range: str | None = None,
+    ) -> None:
+        """Delete an event."""
+        self._check("delete")
+        await super().async_delete_event(uid, recurrence_id, recurrence_range)
+
+
+ALL_CHANGES = (
+    CalendarEntityFeature.CREATE_EVENT
+    | CalendarEntityFeature.UPDATE_EVENT
+    | CalendarEntityFeature.DELETE_EVENT
+)
+
+
+async def flaky(
+    hass: HomeAssistant,
+    features: CalendarEntityFeature = ALL_CHANGES,
+    failing: set[str] | None = None,
+) -> FlakyCalendar:
+    """Add the flaky calendar, as calendar.flaky."""
+    calendar = FlakyCalendar("Flaky", features)
+    calendar.failing = failing or set()
+    await hass.data[DATA_COMPONENT].async_add_entities([calendar])
+    return calendar
 
 
 def alex(**data: Any) -> ConfigSubentryData:
@@ -426,3 +520,212 @@ async def test_unwatched_sail(
     await planner(entry).async_sync()
     assert sail.worse
     assert changes == []
+
+
+async def test_failed_move_tried_again(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A sail keeps its window when its event couldn't be moved, and moves later."""
+    calendar = await flaky(hass)
+    entry = await setup(hass, freezer, alex(auto_calendar=FLAKY))
+    (sail,) = hass.data[DATA_STORE].planned
+    calendar.failing = {"update"}
+    with patch.object(Planner, "_best_window", return_value=("spot_river", LATER)):
+        await planner(entry).async_sync()
+        assert sail.start == SATURDAY
+        assert calendar.events[0].start == SATURDAY
+
+        calendar.failing = set()
+        await planner(entry).async_sync()
+    assert sail.start == LATER.start
+    assert calendar.events[0].start == LATER.start
+
+
+async def test_failed_move_after_delete(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A sail whose event was deleted but not added again goes in again later.
+
+    Its day isn't skipped, as no one took it out.
+    """
+    features = CalendarEntityFeature.CREATE_EVENT | CalendarEntityFeature.DELETE_EVENT
+    calendar = await flaky(hass, features)
+    entry = await setup(hass, freezer, alex(auto_calendar=FLAKY))
+    store = hass.data[DATA_STORE]
+    (sail,) = store.planned
+    async_create(hass, "Worse", notification_id=f"{DOMAIN}_{sail.id}")
+    calendar.failing = {"create"}
+    with patch.object(Planner, "_best_window", return_value=("spot_river", LATER)):
+        await planner(entry).async_sync()
+    assert calendar.events == []
+    assert store.planned == []
+    assert store.skipped("sailor_alex") == set()
+    assert f"{DOMAIN}_{sail.id}" not in _async_get_or_create_notifications(hass)
+
+    calendar.failing = set()
+    await planner(entry).async_sync()
+    assert [event.start for event in calendar.events] == [SATURDAY]
+    assert len(store.planned) == 1
+
+
+async def test_changed_automatic_calendar(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An event in the calendar automatic events used to go into stays watched."""
+    entry = await setup(hass, freezer, alex(auto_calendar=AUTO | {"days": ["sat"]}))
+    calendar = await flaky(hass)
+    subentry = entry.subentries["sailor_alex"]
+    hass.config_entries.async_update_subentry(
+        entry,
+        subentry,
+        data=dict(subentry.data) | {"auto_calendar": FLAKY},
+    )
+    await hass.async_block_till_done(wait_background_tasks=True)
+    store = hass.data[DATA_STORE]
+    (sail,) = store.planned
+    assert sail.calendar == family
+    assert store.skipped("sailor_alex") == set()
+    assert len(await events(hass, family)) == 1
+    assert calendar.events == []
+
+
+async def test_window_gone_but_event_stays(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A sail whose event couldn't be taken out is kept, so it isn't added twice."""
+    calendar = await flaky(hass)
+    entry = await setup(hass, freezer, alex(auto_calendar=FLAKY))
+    store = hass.data[DATA_STORE]
+    calendar.failing = {"delete"}
+    with patch.object(Planner, "_best_window", return_value=None):
+        await planner(entry).async_sync()
+    assert len(calendar.events) == 1
+    assert len(store.planned) == 1
+
+    calendar.failing = set()
+    await planner(entry).async_sync()
+    assert len(calendar.events) == 1
+    with patch.object(Planner, "_best_window", return_value=None):
+        await planner(entry).async_sync()
+    assert calendar.events == []
+    assert store.planned == []
+
+
+async def test_event_id_learned_later(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An event that couldn't be found when it was added gets its ID later."""
+    calendar = await flaky(hass, failing={"get"})
+    entry = await setup(hass, freezer, alex(auto_calendar=FLAKY))
+    (sail,) = hass.data[DATA_STORE].planned
+    assert sail.uid is None
+
+    calendar.failing = set()
+    await planner(entry).async_sync()
+    assert sail.uid == calendar.events[0].uid
+
+
+async def test_cancelled_while_adding(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An event added while SailCast unloads is kept, and isn't added again."""
+    calendar = await flaky(hass, failing={"create"})
+    entry = await setup(hass, freezer, alex(auto_calendar=FLAKY))
+    store = hass.data[DATA_STORE]
+    assert store.planned == []
+
+    calendar.failing, calendar.gate = set(), asyncio.Event()
+    syncing = hass.async_create_task(planner(entry).async_sync())
+    for _ in range(100):
+        if calendar.adding:
+            break
+        await asyncio.sleep(0)
+    assert calendar.adding
+    # Unloading cancels the sync.
+    syncing.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await syncing
+    calendar.gate.set()
+    for _ in range(10):
+        await asyncio.sleep(0)
+    assert len(calendar.events) == 1
+    assert len(store.planned) == 1
+
+    await planner(entry).async_sync()
+    assert len(calendar.events) == 1
+
+
+async def test_planners_take_turns(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Planners share the store's lock, so a reloading entry's waits its turn."""
+    entry = await setup(hass, freezer, SAILOR)
+    store = hass.data[DATA_STORE]
+    sail = await add(hass, entry, family)
+    async with store.lock:
+        removing = hass.async_create_task(planner(entry).async_remove(sail))
+        for _ in range(20):
+            await asyncio.sleep(0)
+        assert not removing.done()
+        assert store.get(sail.id) is sail
+    assert await removing
+    assert store.get(sail.id) is None
+
+
+async def test_removed_boat(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Automatic events in a boat that's gone are taken out for the next boat's."""
+    entry = await setup(hass, freezer, alex(auto_calendar=AUTO))
+    hass.config_entries.async_remove_subentry(entry, "boat_keelboat")
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert [event["start"] for event in await events(hass, family)] == [
+        "2026-11-07T14:00:00-08:00"
+    ]
+    (sail,) = hass.data[DATA_STORE].planned
+    assert sail.boat == "boat_cruiser"
+
+
+async def test_removed_boat_in_a_calendar_that_cannot_delete(
+    hass: HomeAssistant,
+    family: str,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An event that can't be taken out keeps its day, so it isn't added twice."""
+    club = StandInCalendar("Club", CalendarEntityFeature.CREATE_EVENT)
+    await hass.data[DATA_COMPONENT].async_add_entities([club])
+    entry = await setup(
+        hass, freezer, alex(auto_calendar=AUTO | {"calendar": "calendar.club"})
+    )
+    assert len(club.events) == 2
+    hass.config_entries.async_remove_subentry(entry, "boat_keelboat")
+    await hass.async_block_till_done(wait_background_tasks=True)
+    store = hass.data[DATA_STORE]
+    assert len(club.events) == 2
+    assert store.planned == []
+    assert store.skipped("sailor_alex") == {SATURDAY.date(), SUNDAY.date()}

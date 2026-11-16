@@ -152,6 +152,9 @@ def score(
         elif hour.visibility < 5000:
             value -= 15
     value = min(value, SCORE_CAPS[rating.level])
+    # Values that aren't numbers can't make an hour any good.
+    if not math.isfinite(value):
+        return 0
     return max(0, round_half_up(value))
 
 
@@ -181,13 +184,25 @@ def _joined(hours: Sequence[Hours]) -> list[tuple[str, str]]:
 
 
 def _fits(start: str, end: str, hour: datetime) -> bool:
-    """Return whether the hour that begins at `hour` is inside a stretch."""
-    if start != DAY_START and hour.time() < time.fromisoformat(start):
-        return False
-    if end != DAY_END:
-        finish = datetime.combine(hour.date(), time.fromisoformat(end), hour.tzinfo)
-        return hour + HOUR <= finish
-    return True
+    """Return whether the hour that begins at `hour` is inside a stretch.
+
+    Where the clock is set off from UTC by part of an hour, as in Adelaide,
+    hours begin partway through the clock's hours. There the middle of the
+    hour has to be inside, or a stretch from 10 to 12 would hold one hour.
+    """
+    if hour.minute:
+        middle = hour + HOUR / 2
+        return (start == DAY_START or middle >= _clock(hour, start)) and (
+            end == DAY_END or middle < _clock(hour, end)
+        )
+    return (start == DAY_START or hour >= _clock(hour, start)) and (
+        end == DAY_END or hour + HOUR <= _clock(hour, end)
+    )
+
+
+def _clock(hour: datetime, value: str) -> datetime:
+    """Return a time of day such as "17:00:00" on the hour's date."""
+    return datetime.combine(hour.date(), time.fromisoformat(value), hour.tzinfo)
 
 
 @dataclass(frozen=True, slots=True)

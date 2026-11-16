@@ -132,7 +132,14 @@ class _ForecastTool(llm.Tool):
     def chosen(
         self, data: SailCastData, args: dict[str, Any]
     ) -> tuple[Sailor, set[str] | None, set[str] | None] | str:
-        """Return the sailor, spots and boats asked about, or what's wrong."""
+        """Return the sailor, spots and boats asked about, or what's wrong.
+
+        Home Assistant doesn't check the arguments against the parameters, so
+        anything but text, such as a list of spots, is turned away here.
+        """
+        for key in ("sailor", "spot", "boat", "date"):
+            if args.get(key) is not None and not isinstance(args[key], str):
+                return f"Give one {key} at a time, as text."
         profiles = data.profiles
         sailor = self.asking
         if name := args.get("sailor"):

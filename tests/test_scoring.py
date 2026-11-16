@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from itertools import product
+import math
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -99,6 +100,21 @@ def test_score_above_the_ideal_range() -> None:
     assert score(hour(21), K, ADV, GOOD) == 70
     # Past a beginner's limit the score drops fast.
     assert score(hour(11), K, BEG, GOOD) == 40
+
+
+@pytest.mark.parametrize(
+    "conditions",
+    [
+        hour(math.nan),
+        hour(math.inf),
+        hour(10, rain_chance=math.nan),
+        hour(10, temperature=-math.inf),
+    ],
+    ids=["nan_wind", "endless_wind", "nan_rain", "endless_cold"],
+)
+def test_values_that_arent_numbers_score_nothing(conditions: Hour) -> None:
+    """A NaN or infinite value scores 0 rather than failing."""
+    assert score(conditions, K, INT, GOOD) == 0
 
 
 @pytest.mark.parametrize(
@@ -262,6 +278,25 @@ def test_available_in_several_stretches() -> None:
         hour for hour in range(24) if is_available(edges, DAY + timedelta(hours=hour))
     ]
     assert free == [0, 1, 2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 23]
+
+
+def test_available_where_the_clock_is_off_the_hour() -> None:
+    """In Adelaide, hours start at half past, and their middle has to fit."""
+    adelaide = ZoneInfo("Australia/Adelaide")
+    hours = [
+        datetime(2026, 11, 13, 14, tzinfo=UTC) + timedelta(hours=n) for n in range(24)
+    ]
+    starts = [hour.astimezone(adelaide) for hour in hours]
+    assert starts[0].hour == 0
+    assert starts[0].minute == 30
+
+    def free(day: tuple[Hours, ...]) -> list[str]:
+        return [f"{h:%H:%M}" for h in starts if is_available(day, h)]
+
+    assert free((Hours("10:00:00", "12:00:00"),)) == ["09:30", "10:30"]
+    assert free((Hours("10:00:00", "11:00:00"),)) == ["09:30"]
+    # Stretches on the half hour fit the hours exactly.
+    assert free((Hours("09:30:00", "11:30:00"),)) == ["09:30", "10:30"]
 
 
 def test_steady_level() -> None:

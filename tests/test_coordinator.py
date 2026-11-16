@@ -2,26 +2,45 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.components.calendar.const import DATA_COMPONENT
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
+from custom_components.sailcast import alerts as alert_sources
 from custom_components.sailcast.const import DOMAIN, NAME
 from custom_components.sailcast.coordinator import (
     FORECAST_INTERVAL,
+    REGIONS_WAIT,
     SLOW_FORECAST_INTERVAL,
     STORAGE_KEY,
+    AlertCoordinator,
     Budget,
 )
-from custom_components.sailcast.providers import noaa_coops, open_meteo
+from custom_components.sailcast.profiles import Profiles
+from custom_components.sailcast.providers import meteoalarm, noaa_coops, open_meteo
+from custom_components.sailcast.regions import Regions
 from custom_components.sailcast.timeline import Alert
 
-from .conftest import BAY, KEELBOAT, RECORDED, SAILOR, mock_sources
+from .conftest import (
+    BAY,
+    GARDA,
+    HARBOR,
+    KEELBOAT,
+    RECORDED,
+    SAILOR,
+    WORLD_RECORDED,
+    mock_sources,
+    set_up,
+)
 
 
 def noaa_calls(aioclient_mock: AiohttpClientMocker) -> int:
@@ -177,3 +196,128 @@ async def test_no_zone_no_warnings_request(
     assert not any("alerts" in str(call[1]) for call in aioclient_mock.mock_calls)
     assert hass.states.get("binary_sensor.bay_marine_warning") is None
     assert hass.states.get("sensor.alex_bay_rating").state == "not_recommended"
+
+
+async def test_kept_warnings_are_not_repeated(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """A failed source's warnings stay until they end, once each.
+
+    A pin can ask more than one country, so while one fails, the other's
+    warnings still come in fresh.
+    """
+    freezer.move_to(WORLD_RECORDED)
+    entry = MockConfigEntry(
+        domain=DOMAIN, title=NAME, data={}, subentries_data=[HARBOR, GARDA, SAILOR]
+    )
+    entry.add_to_hass(hass)
+    warnings = AlertCoordinator(hass, entry, Profiles.from_entry(entry))
+    garda = alert_sources.key(warnings.profiles.spots["spot_garda"])
+    assert garda
+    warnings.places[garda] = meteoalarm.Place((), ("IT", "AT"))
+    storm = Alert(
+        event="Thunderstorm",
+        zone=garda,
+        start=WORLD_RECORDED,
+        end=WORLD_RECORDED + timedelta(hours=3),
+    )
+    wind = Alert(
+        event="Wind",
+        zone=garda,
+        start=WORLD_RECORDED,
+        end=WORLD_RECORDED + timedelta(hours=1),
+    )
+    both = alert_sources.Fetched([storm, wind])
+    # Austria's feed fails from here on; Italy's storm keeps coming in.
+    one = [alert_sources.Fetched([storm], {garda: "busy"}) for _ in range(4)]
+    with patch.object(
+        alert_sources, "async_fetch", AsyncMock(side_effect=[both, *one])
+    ):
+        await warnings.async_refresh()
+        for _ in range(3):
+            freezer.tick(timedelta(minutes=5))
+            await warnings.async_refresh()
+            assert warnings.data == (storm, wind)
+        freezer.tick(timedelta(hours=1))
+        await warnings.async_refresh()
+    assert warnings.data == (storm,)
+
+
+@pytest.mark.parametrize("slow", [False, True])
+async def test_regions_downloaded_in_the_background(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, slow: bool
+) -> None:
+    """A slow first download of MeteoAlarm's regions doesn't hold up warnings.
+
+    Regions that come at once are used straight away. A download that takes
+    longer goes on in the background, and the pin's warnings come after it.
+    """
+    freezer.move_to(WORLD_RECORDED)
+    entry = MockConfigEntry(
+        domain=DOMAIN, title=NAME, data={}, subentries_data=[HARBOR, GARDA, SAILOR]
+    )
+    entry.add_to_hass(hass)
+    warnings = AlertCoordinator(hass, entry, Profiles.from_entry(entry))
+    garda = alert_sources.key(warnings.profiles.spots["spot_garda"])
+    assert garda
+    storm = Alert(
+        event="Thunderstorm",
+        zone=garda,
+        start=WORLD_RECORDED,
+        end=WORLD_RECORDED + timedelta(hours=3),
+    )
+    asked, downloaded = asyncio.Event(), asyncio.Event()
+
+    async def place(_: Regions, latitude: float, longitude: float) -> Any:
+        asked.set()
+        await downloaded.wait()
+        return meteoalarm.Place((), ("IT",))
+
+    async def fetch(*_: Any, **__: Any) -> alert_sources.Fetched:
+        if garda in warnings.places:
+            return alert_sources.Fetched([storm])
+        return alert_sources.Fetched([], {garda: "No regions yet"})
+
+    with (
+        patch.object(Regions, "async_place", place),
+        patch.object(alert_sources, "async_fetch", fetch),
+    ):
+        refresh = hass.async_create_task(warnings.async_refresh())
+        await asked.wait()
+        if slow:
+            # The clock is frozen, so the wait ends only when it's moved on.
+            freezer.tick(timedelta(seconds=REGIONS_WAIT + 1))
+            async_fire_time_changed(hass)
+        else:
+            downloaded.set()
+        await refresh
+        assert warnings.last_update_success
+        assert warnings.data == (() if slow else (storm,))
+        downloaded.set()
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert warnings.data == (storm,)
+    await warnings.async_shutdown()
+
+
+async def test_no_results_yet(
+    hass: HomeAssistant,
+    sailcast_entry: MockConfigEntry,
+    sources: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """If the first results can't be worked out, there are none, not an error."""
+    with patch(
+        "custom_components.sailcast.coordinator.compute", side_effect=ValueError
+    ):
+        await set_up(hass, sailcast_entry, freezer)
+    results = sailcast_entry.runtime_data.results
+    assert not results.last_update_success
+    assert results.data.conditions == {}
+    assert hass.states.get("sensor.alex_harbor_rating").state == STATE_UNAVAILABLE
+    calendar = hass.data[DATA_COMPONENT].get_entity("calendar.alex_sailing")
+    assert calendar
+    assert hass.states.get("calendar.alex_sailing").state == STATE_UNAVAILABLE
+    assert (
+        await calendar.async_get_events(hass, RECORDED, RECORDED + timedelta(days=7))
+        == []
+    )

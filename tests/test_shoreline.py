@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+import gzip
+import threading
 from typing import Any
+from unittest.mock import patch
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
@@ -30,6 +33,7 @@ from .conftest import (
     RECORDED,
     RIVER_POINT,
     TILE_URL,
+    fixture,
     mock_sources,
     mock_tiles,
     set_up,
@@ -95,6 +99,23 @@ def test_tile_seam() -> None:
     east = tile((square(-64, 1024, 2048, 3072),), x=X + 1)
     found = rays(west, east)
     assert found[30] == pytest.approx(4096 * UNIT_KM, rel=0.01)
+
+
+def test_across_the_antimeridian() -> None:
+    """Tiles wrap round the antimeridian, as off Fiji, and count as near."""
+    fiji = (-17.0, 179.95)
+    around = openfreemap.tiles_around(*fiji, REACH_KM)
+    assert {x for _, x, _ in around} == {4093, 4094, 4095, 0, 1}
+    west = openfreemap.tiles_around(-17.0, -179.95, REACH_KM)
+    assert {x for _, x, _ in west} == {4094, 4095, 0, 1, 2}
+    # Open water reaches the middle of the first tile past the antimeridian.
+    sea = square(-64, -64, 4160, 4160)
+    shapes = {4093: sea, 4094: sea, 4095: sea, 0: square(-64, -64, 2048, 4160)}
+    tiles = [tile((shapes[x],), x=x, y=y) for _, x, y in sorted(around) if x in shapes]
+    on_water, found = measure(*fiji, tiles)
+    assert on_water
+    assert found[30] == pytest.approx(9.99, abs=0.05)  # east
+    assert found[90] == REACH_KM  # west
 
 
 def test_open_sea() -> None:
@@ -168,6 +189,27 @@ def test_reading_a_tile() -> None:
         openfreemap.water(b"\x1a\xff", z, x, y)
     assert openfreemap.only_layer(body, "water") == body
     assert openfreemap.only_layer(body, "roads") == b""
+    # Other layers are passed over unread, even one that couldn't be read.
+    roads = b"\x1a\x08\x0a\x05roads\x0f"
+    assert openfreemap.water(roads + body, z, x, y) == water
+    assert openfreemap.water(gzip.compress(roads + body), z, x, y) == water
+
+
+def test_unreadable_tiles(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A tile cut short, too big or without a size is an error."""
+    z, x, y = 12, 714, 1653
+    body = (FIXTURES / "tiles" / str(z) / str(x) / f"{y}.pbf").read_bytes()
+    packed = gzip.compress(body)
+    with pytest.raises(ProviderError, match="cut short"):
+        openfreemap.water(packed[:-10], z, x, y)
+    with pytest.raises(ProviderError):
+        openfreemap.water(packed[:12] + b"\x00" * 20, z, x, y)
+    # The water layer, named, with an extent of 0.
+    with pytest.raises(ProviderError, match="extent"):
+        openfreemap.water(b"\x1a\x09\x0a\x05water\x28\x00", z, x, y)
+    monkeypatch.setattr(openfreemap, "MAX_TILE_BYTES", len(body) - 1)
+    with pytest.raises(ProviderError, match="too big"):
+        openfreemap.water(packed, z, x, y)
 
 
 def test_tiles_around() -> None:
@@ -246,6 +288,43 @@ async def test_failure_is_tried_again_later(
     freezer.tick(timedelta(minutes=2))
     assert await shorelines.async_measure_pins([RIVER_POINT])
     assert shorelines.get(*RIVER_POINT) is not None
+
+
+async def test_unreadable_tile_tried_again_later(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A tile that can't be read fails its pin, which waits before trying again."""
+    freezer.move_to(RECORDED)
+    aioclient_mock.get(openfreemap.TILEJSON_URL, json=fixture("openfreemap_tilejson"))
+    aioclient_mock.get(TILE_URL, content=gzip.compress(bytes(range(256)) * 8)[:60])
+    shorelines = Shorelines(hass)
+    assert not await shorelines.async_measure_pins([RIVER_POINT])
+    asked = aioclient_mock.call_count
+    assert not await shorelines.async_measure_pins([RIVER_POINT])
+    assert aioclient_mock.call_count == asked
+
+
+async def test_tiles_read_off_the_event_loop(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Tiles are read in an executor, not on the event loop."""
+    freezer.move_to(RECORDED)
+    mock_tiles(aioclient_mock)
+    read = openfreemap.water
+    threads = set()
+
+    def spy(*args: Any) -> WaterTile:
+        threads.add(threading.get_ident())
+        return read(*args)
+
+    with patch.object(openfreemap, "water", spy):
+        assert await Shorelines(hass).async_measure_pins([RIVER_POINT])
+    assert threads
+    assert threading.get_ident() not in threads
 
 
 async def test_unused_pins_are_forgotten(

@@ -13,7 +13,15 @@ from dataclasses import dataclass, field
 from typing import Any, Final
 
 from .geo import angle_between, compass_point
-from .limits import BOAT_LIMITS, SKILL_WIND_LIMITS, WARNING_FLOORS, Level, warning_group
+from .limits import (
+    AGAINST_CURRENT_MIN_PERIOD,
+    AGAINST_CURRENT_MODIFIER,
+    BOAT_LIMITS,
+    SKILL_WIND_LIMITS,
+    WARNING_FLOORS,
+    Level,
+    warning_group,
+)
 from .profiles import SizeClass, Skill, Spot
 from .providers import TideEvent
 from .summary import Summary, summarize
@@ -23,7 +31,8 @@ LIGHT_AIR: Final = 5.0
 GUSTY_SPREAD: Final = 8.0
 NEAR_LIMIT: Final = 2.0
 REEF_MARGIN: Final = 3.0
-# Wind against current that's worth a mention, below the rating's threshold.
+# Wind against current that's worth a mention: current of this much (kt), or
+# less where the rating already counts it, in short waves.
 AGAINST_CURRENT: Final = 0.8
 AGAINST_CURRENT_WIND: Final = 10.0
 AGAINST_CURRENT_ANGLE: Final = 120.0
@@ -192,8 +201,11 @@ def _against_current(hour: Hour) -> bool:
     if hour.current is None or hour.current_direction is None:
         return False
     downwind = (hour.wind_direction + 180) % 360
+    # The rating's own threshold, which is lower in short waves.
+    period = max(AGAINST_CURRENT_MIN_PERIOD, hour.wave_period or 0)
+    rated = AGAINST_CURRENT_MODIFIER * period
     return (
-        abs(hour.current) >= AGAINST_CURRENT
+        abs(hour.current) >= min(AGAINST_CURRENT, rated)
         and hour.wind >= AGAINST_CURRENT_WIND
-        and angle_between(downwind, hour.current_direction) > AGAINST_CURRENT_ANGLE
+        and angle_between(downwind, hour.current_direction) >= AGAINST_CURRENT_ANGLE
     )

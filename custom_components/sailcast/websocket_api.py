@@ -17,13 +17,14 @@ from typing import Any, Final
 
 from homeassistant.auth.models import User
 from homeassistant.auth.permissions.const import POLICY_CONTROL
-from homeassistant.components import websocket_api
+from homeassistant.components import persistent_notification, websocket_api
 from homeassistant.components.calendar import CalendarEntityFeature
 from homeassistant.components.calendar.const import DATA_COMPONENT
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, WEEKDAYS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, Unauthorized
+from homeassistant.generated.languages import LANGUAGES
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -103,6 +104,15 @@ def _time_of_day(value: Any) -> str | None:
     if parsed is None:
         raise probatio.Invalid("Not a time of day")
     return parsed.strftime("%H:%M:%S")
+
+
+def _language(value: Any) -> str | None:
+    """Accept one of Home Assistant's languages; any other code becomes None.
+
+    None stands for Home Assistant's own language, so the panel still works.
+    """
+    language = cv.string(value)
+    return language if language in LANGUAGES else None
 
 
 def _choices(options: Any) -> probatio.In:
@@ -377,7 +387,7 @@ def ws_forecast(
     {
         probatio.Required("type"): "sailcast/briefing",
         probatio.Required("sailor"): cv.string,
-        probatio.Required("language"): cv.string,
+        probatio.Required("language"): _language,
         # Write a new one if the kept one isn't current. Without it, the kept
         # one is sent as it is, which is how open panels follow updates.
         probatio.Optional("write", default=False): cv.boolean,
@@ -391,7 +401,8 @@ async def ws_briefing(
 ) -> None:
     """Send a sailor's AI briefing, writing one as the user if asked to.
 
-    The answer is None when there's no briefing and none was asked for.
+    The answer is None when there's no briefing and none was asked for. A
+    language Home Assistant doesn't have gets Home Assistant's own.
     """
     if (data := _data(hass, connection, msg)) is None:
         return
@@ -407,7 +418,8 @@ async def ws_briefing(
     now = dt_util.utcnow()
     weeks = ai.boat_weeks(data.results.data, sailor, now)
     found = briefing.facts(weeks, now)
-    key = (sailor.id, msg["language"])
+    language = msg["language"] or hass.config.language
+    key = (sailor.id, language)
     kept = data.briefings.get(key)
     if not msg["write"] or (kept and kept.current(found)):
         connection.send_result(msg["id"], kept.as_dict(found) if kept else None)
@@ -423,7 +435,7 @@ async def ws_briefing(
             hass,
             key,
             found,
-            briefing.instructions(week_data, sailor, msg["language"]),
+            briefing.instructions(week_data, sailor, language),
             windows=windows,
             dates={day["date"] for day in week_data["days"]},
             entity_id=entry.options.get(CONF_AI_TASK),
@@ -696,7 +708,9 @@ def ws_settings_delete(
                 )
                 return
     if msg["kind"] == SUBENTRY_SAILOR:
-        hass.data[DATA_STORE].forget_sailor(subentry.subentry_id)
+        # Their sails' warnings go too, as when a sail is taken out.
+        for sail in hass.data[DATA_STORE].forget_sailor(subentry.subentry_id):
+            persistent_notification.async_dismiss(hass, f"{DOMAIN}_{sail.id}")
     hass.config_entries.async_remove_subentry(entry, subentry.subentry_id)
     connection.send_result(msg["id"], {"profile": subentry.subentry_id})
 
@@ -798,7 +812,7 @@ async def ws_settings_shoreline(
         probatio.Required("title"): cv.string,
         probatio.Optional("watch", default=True): cv.boolean,
         # The panel's language, for the event's description.
-        probatio.Optional("language"): cv.string,
+        probatio.Optional("language"): _language,
     }
 )
 @websocket_api.async_response

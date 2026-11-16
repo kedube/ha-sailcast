@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from itertools import product
+import math
 from typing import Any
 
 import pytest
@@ -256,6 +257,24 @@ def test_measured_visibility(size: SizeClass, miles: float, level: Level) -> Non
     rating = rate(measured, size, ADV)
     assert rating.level is level
     assert rating.reasons[0].key == "visibility_measured"
+
+
+@pytest.mark.parametrize(
+    "conditions",
+    [
+        hour(math.nan, 10),
+        hour(8, math.nan),
+        hour(8, 10, wave_height=math.nan),
+        hour(8, 10, visibility=math.nan),
+    ],
+    ids=["wind", "gust", "waves", "visibility"],
+)
+@pytest.mark.parametrize("size", list(SizeClass))
+def test_values_that_arent_numbers_are_dangerous(
+    conditions: Hour, size: SizeClass
+) -> None:
+    """A NaN can't pass a limit: it rates the hour dangerous."""
+    assert rate(conditions, size, ADV).level is DANGEROUS
 
 
 def test_thunderstorms() -> None:

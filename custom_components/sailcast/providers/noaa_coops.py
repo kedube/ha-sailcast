@@ -52,7 +52,7 @@ async def async_get_tides(
     )
     hourly = await _predictions(session, station, begin, "h")
     # Subordinate stations answer hourly requests with an error.
-    if "error" in hourly:
+    if isinstance(hourly, dict) and "error" in hourly:
         return Tides(station, events)
     return Tides(station, events, parse_tide_heights(hourly, station))
 
@@ -203,7 +203,8 @@ def _checked(payload: Any, station: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ProviderError(f"Unexpected response for {station}")
     if "error" in payload:
-        message = payload["error"].get("message", payload["error"])
+        error = payload["error"]
+        message = error.get("message", error) if isinstance(error, dict) else error
         raise ProviderError(f"NOAA has no predictions for {station}: {message}")
     return payload
 

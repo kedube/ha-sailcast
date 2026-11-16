@@ -104,10 +104,13 @@ def turning_points(hourly: Sequence[tuple[datetime, float]]) -> tuple[TideEvent,
     """Return the highs and lows of hourly heights.
 
     Each is placed on the parabola through its hour and the hours either
-    side, so its time falls between the hours.
+    side, so its time falls between the hours. Where hours are missing, the
+    parabola can't be placed, so no turn is found across the gap.
     """
     events = []
     for before, here, after in zip(hourly, hourly[1:], hourly[2:], strict=False):
+        if here[0] - before[0] != after[0] - here[0]:
+            continue
         rise, fall = here[1] - before[1], after[1] - here[1]
         if (rise > 0 >= fall) or (rise < 0 <= fall):
             curve = before[1] - 2 * here[1] + after[1]

@@ -5,13 +5,17 @@ from __future__ import annotations
 import contextlib
 from datetime import timedelta
 import math
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util import dt as dt_util
 import pytest
 from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
+from custom_components.sailcast import wind
 from custom_components.sailcast.coordinator import Budget
 from custom_components.sailcast.profiles import Spot, WaterType
 from custom_components.sailcast.providers import ProviderError, open_meteo
@@ -390,3 +394,41 @@ async def test_view_when_the_day_is_spent(
     assert await grids.async_get_view(session, close, [], budget) == (wide, True, None)
     with pytest.raises(BudgetSpentError):
         await grids.async_get_view(session, view_around((40.0, -117.0), 12), [], budget)
+
+
+async def test_refused_views_leave_no_locks(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Views asked for once the day's calls are spent don't each keep a lock."""
+    freezer.move_to(RECORDED.replace(hour=1))
+    grids, budget = WindGrids(), Budget()
+    budget.add(STOP_AT)
+    session = async_get_clientsession(hass)
+    for n in range(50):
+        view = view_around((10.0 + n / 10, -117.0), 30)
+        with pytest.raises(BudgetSpentError):
+            await grids.async_get_view(session, view, [], budget)
+    assert len(grids._locks) <= 1
+
+
+async def test_clock_set_back(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Setting the clock back doesn't hold grids up past the minute's limit."""
+    mock_wind(aioclient_mock)
+    freezer.move_to(RECORDED.replace(hour=1))
+    grids, budget = WindGrids(), Budget()
+    session = async_get_clientsession(hass)
+    views = [view_around((10.0 + n, -117.0), 30) for n in range(3)]
+    for view in views[:2]:
+        assert (await grids.async_get_view(session, view, [], budget))[0] is not None
+    freezer.tick(timedelta(minutes=1))
+    earlier = dt_util.utcnow() - timedelta(hours=1)
+    with patch.object(wind, "dt_util", SimpleNamespace(utcnow=lambda: earlier)):
+        grid, _, retry = await grids.async_get_view(session, views[2], [], budget)
+    assert grid is not None
+    assert retry is None

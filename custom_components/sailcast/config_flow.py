@@ -121,6 +121,17 @@ SOURCES = (
 )
 # Sources whose position is kept, for the forecast where they are.
 PLACED = (CONF_BUOY, CONF_AIRPORT)
+# The sailor form's sections, with the fields whose errors show above them.
+SECTION_FIELDS = {
+    CONF_COMFORT: (CONF_IDEAL_LOW, CONF_IDEAL_HIGH, CONF_COLDEST),
+    CONF_AUTO_CALENDAR: (
+        CONF_CALENDAR,
+        CONF_AUTO_DAYS,
+        CONF_AUTO_SPOTS,
+        CONF_MIN_SCORE,
+        CONF_AHEAD,
+    ),
+}
 SENSOR_CLASSES = {
     "wind": SensorDeviceClass.WIND_SPEED,
     "gust": SensorDeviceClass.WIND_SPEED,
@@ -858,8 +869,10 @@ class SailorFlow(ProfileFlow):
 
     def _to_form(self, subentry: ConfigSubentry) -> dict[str, Any]:
         data = subentry.data
+        # Boats and spots removed since aren't choices any more.
         existing = {option["value"] for option in self._boat_options()}
         boats = [boat for boat in data[CONF_BOATS] if boat in existing]
+        spots = {option["value"] for option in self._spot_options()}
         comfort = dict(data.get(CONF_COMFORT) or {})
         if comfort.get(CONF_COLDEST) is not None:
             comfort[CONF_COLDEST] = round(
@@ -899,7 +912,7 @@ class SailorFlow(ProfileFlow):
                 CONF_AUTO_DAYS: list(auto[CONF_DAYS]),
                 CONF_MIN_SCORE: str(auto[CONF_MIN_SCORE]),
                 CONF_AHEAD: str(auto[CONF_AHEAD]),
-                CONF_AUTO_SPOTS: list(auto[CONF_SPOTS]),
+                CONF_AUTO_SPOTS: [spot for spot in auto[CONF_SPOTS] if spot in spots],
             }
             if auto
             else _auto_defaults(self._spot_options()),
@@ -930,6 +943,10 @@ class SailorFlow(ProfileFlow):
             and supports(entity, CalendarEntityFeature.CREATE_EVENT)
         ):
             errors[CONF_CALENDAR] = "calendar_read_only"
+        # So do comfort and automatic adding: the first problem in each.
+        for name, fields in SECTION_FIELDS.items():
+            if found := [errors.pop(field) for field in fields if field in errors]:
+                errors[name] = found[0]
         return errors
 
 
@@ -952,12 +969,17 @@ def _hours_selector() -> ObjectSelector:
 
 
 def _day_data(items: Iterable[Mapping[str, Any]]) -> list[dict[str, str | None]]:
-    """Return a day's stretches from the form as they're saved, earliest first."""
+    """Return a day's stretches from the form as they're saved, earliest first.
+
+    Home Assistant lets through list items that aren't stretches, such as an
+    empty string; they're left out.
+    """
     return profiles.hours_data(
         profiles.day_hours(
             [
                 {key: profiles.clock(item.get(key)) for key in (CONF_START, CONF_END)}
                 for item in items
+                if isinstance(item, Mapping)
             ]
         )
     )

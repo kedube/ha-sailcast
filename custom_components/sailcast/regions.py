@@ -4,6 +4,8 @@ MeteoAlarm's region outlines aren't openly licensed, so SailCast doesn't
 include them. The first spot in Europe downloads MeteoAlarm's file (about
 33 MB), and a simplified copy (about 1 MB) is kept on disk. Each month
 SailCast looks for a newer file; if it can't, the copy it has stays in use.
+Until a first copy is kept, a failed download is tried again after an hour,
+then after twice as long each time, up to a day.
 """
 
 from __future__ import annotations
@@ -26,6 +28,8 @@ STORAGE_KEY: Final = f"{DOMAIN}.meteoalarm_regions"
 CHECK_EVERY: Final = timedelta(days=30)
 # After a failed check, the copy on disk is used this long before asking again.
 RETRY_AFTER: Final = timedelta(days=1)
+# With no copy, the first failed download is tried again after this long.
+FIRST_RETRY: Final = timedelta(hours=1)
 
 DATA_REGIONS: HassKey[Regions] = HassKey(f"{DOMAIN}_meteoalarm_regions")
 
@@ -42,6 +46,9 @@ class Regions:
         self._table: meteoalarm.Table | None = None
         self._name: str | None = None
         self._checked: datetime | None = None
+        # With no copy yet, the failed downloads in a row and when to try again.
+        self._failures = 0
+        self._retry: datetime | None = None
 
     async def async_place(self, latitude: float, longitude: float) -> meteoalarm.Place:
         """Return the regions and countries a pin takes MeteoAlarm warnings from.
@@ -71,14 +78,24 @@ class Regions:
                 and now - self._checked < CHECK_EVERY
             ):
                 return self._table
+            if self._table is None and self._retry and now < self._retry:
+                raise ProviderError(
+                    "MeteoAlarm's regions couldn't be downloaded; trying again later"
+                )
             try:
-                return await self._async_download(now)
+                table = await self._async_download(now)
             except ProviderError:
                 if self._table is None:
+                    # 1, 2, 4, 8 and 16 hours, then a day.
+                    wait = FIRST_RETRY * 2 ** min(self._failures, 5)
+                    self._retry = now + min(wait, RETRY_AFTER)
+                    self._failures += 1
                     raise
                 # Keep the copy on disk, and ask again tomorrow.
                 self._checked = now - CHECK_EVERY + RETRY_AFTER
                 return self._table
+            self._failures, self._retry = 0, None
+            return table
 
     async def _async_download(self, now: datetime) -> meteoalarm.Table:
         """Fetch the newest region outlines, unless they're the ones kept."""

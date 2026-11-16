@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-import gzip
 import math
 from typing import Any, Final
+import zlib
 
 import aiohttp
 
@@ -25,6 +25,8 @@ ZOOM: Final = 12
 REACH_KM: Final = 20.0
 # Water that isn't open water.
 SKIPPED: Final = frozenset({"swimming_pool"})
+# Tiles are well under a megabyte unpacked; one far bigger is broken.
+MAX_TILE_BYTES: Final = 16 * 1024 * 1024
 
 _LAYERS: Final = 3
 _LAYER_NAME: Final = 1
@@ -70,26 +72,30 @@ async def async_get_template(session: aiohttp.ClientSession) -> str:
     return template
 
 
-async def async_get_water(
+async def async_get_tile(
     session: aiohttp.ClientSession, template: str, z: int, x: int, y: int
-) -> WaterTile:
-    """Return the open water in one tile."""
-    body = await fetch_bytes(session, template.format(z=z, x=x, y=y))
-    return water(body, z, x, y)
+) -> bytes:
+    """Return one tile as it comes, to be read with water() in an executor."""
+    url = template.replace("{z}", str(z)).replace("{x}", str(x)).replace("{y}", str(y))
+    return await fetch_bytes(session, url)
 
 
 def tiles_around(
     latitude: float, longitude: float, km: float, zoom: int = ZOOM
 ) -> set[tuple[int, int, int]]:
-    """Return the tiles that cover a distance around a point."""
+    """Return the tiles that cover a distance around a point.
+
+    Columns wrap round the antimeridian, and rows stop at the map's edges.
+    """
+    n = 2**zoom
     lat_span = km / 111.195
     lon_span = km / (111.195 * max(0.01, math.cos(math.radians(latitude))))
     x0, y0 = tile_of(latitude + lat_span, longitude - lon_span, zoom)
     x1, y1 = tile_of(latitude - lat_span, longitude + lon_span, zoom)
     return {
-        (zoom, x, y)
-        for x in range(int(x0), int(x1) + 1)
-        for y in range(int(y0), int(y1) + 1)
+        (zoom, x % n, y)
+        for x in range(math.floor(x0), math.floor(x1) + 1)
+        for y in range(max(0, math.floor(y0)), min(n - 1, math.floor(y1)) + 1)
     }
 
 
@@ -112,17 +118,20 @@ def position(tile: WaterTile, column: float, row: float) -> tuple[float, float]:
 
 
 def water(body: bytes, z: int, x: int, y: int) -> WaterTile:
-    """Read the open water from a tile."""
-    if body[:2] == b"\x1f\x8b":
-        body = gzip.decompress(body)
+    """Read the open water from a tile.
+
+    This is slow for a tile with a lot of coast, so run it in an executor.
+    """
     try:
+        if body[:2] == b"\x1f\x8b":
+            body = _gunzip(body)
         for number, value in _fields(body):
             if number == _LAYERS and isinstance(value, bytes):
                 layer = _layer(value)
                 if layer is not None:
                     extent, polygons = layer
                     return WaterTile(z, x, y, extent, polygons)
-    except (IndexError, ValueError, UnicodeDecodeError) as err:
+    except (IndexError, ValueError, zlib.error) as err:
         raise ProviderError(f"Couldn't read map tile {z}/{x}/{y}: {err}") from err
     return WaterTile(z, x, y, 4096, ())
 
@@ -130,13 +139,24 @@ def water(body: bytes, z: int, x: int, y: int) -> WaterTile:
 def only_layer(body: bytes, name: str) -> bytes:
     """Return a tile with only one of its layers, for recording small fixtures."""
     if body[:2] == b"\x1f\x8b":
-        body = gzip.decompress(body)
+        body = _gunzip(body)
     for number, value in _fields(body):
         if number == _LAYERS and isinstance(value, bytes):
             names = [v for n, v in _fields(value) if n == _LAYER_NAME]
             if names and isinstance(names[0], bytes) and names[0].decode() == name:
                 return bytes([_LAYERS << 3 | 2]) + _varint_bytes(len(value)) + value
     return b""
+
+
+def _gunzip(body: bytes) -> bytes:
+    """Unpack a gzipped tile, refusing one that's cut short or too big."""
+    stream = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    data = stream.decompress(body, MAX_TILE_BYTES)
+    if stream.unconsumed_tail:
+        raise ValueError("tile too big")
+    if not stream.eof:
+        raise ValueError("tile cut short")
+    return data
 
 
 def _layer(body: bytes) -> tuple[int, tuple[tuple[Ring, ...], ...]] | None:
@@ -148,6 +168,9 @@ def _layer(body: bytes) -> tuple[int, tuple[tuple[Ring, ...], ...]] | None:
     for number, value in _fields(body):
         if number == _LAYER_NAME and isinstance(value, bytes):
             name = value.decode()
+            # Other layers are passed over unread; the name usually comes first.
+            if name != "water":
+                return None
         elif number == _LAYER_EXTENT and isinstance(value, int):
             extent = value
         elif number == _LAYER_KEYS and isinstance(value, bytes):
@@ -158,6 +181,8 @@ def _layer(body: bytes) -> tuple[int, tuple[tuple[Ring, ...], ...]] | None:
             features.append(value)
     if name != "water":
         return None
+    if extent <= 0:
+        raise ValueError(f"extent {extent}")
     polygons = []
     for feature in features:
         kind, properties, geometry = _feature(feature, keys, values)

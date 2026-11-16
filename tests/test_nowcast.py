@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+import math
 from typing import Any
 
 import pytest
 
+from custom_components.sailcast.limits import Level
 from custom_components.sailcast.nowcast import (
     AIRPORT,
     BUOY,
@@ -15,6 +17,7 @@ from custom_components.sailcast.nowcast import (
     latest,
     nudge,
 )
+from custom_components.sailcast.profiles import SizeClass, Skill
 from custom_components.sailcast.providers import Reading, Readings
 from custom_components.sailcast.providers.open_meteo import (
     MODELS,
@@ -22,6 +25,8 @@ from custom_components.sailcast.providers.open_meteo import (
     Forecast,
     Marine,
 )
+from custom_components.sailcast.rating import rate
+from custom_components.sailcast.timeline import Hour
 
 NOON = datetime(2026, 11, 2, 20, tzinfo=UTC)
 HOUR = timedelta(hours=1)
@@ -120,6 +125,41 @@ def test_wind_fades_over_six_hours() -> None:
     assert by_time[NOON]["wind_models"][1] == pytest.approx(first)
     assert by_time[NOON]["gust"] == pytest.approx(14 + first - 10)
     assert by_time[NOON]["adjusted"] == ("wind", "gust")
+
+
+def test_a_reading_lowers_by_a_quarter_at_most() -> None:
+    """A broken or sheltered sensor can't erase a dangerous forecast."""
+    hours = rows()
+    for hour in hours:
+        hour.update(
+            wind=24.0, gust=30.0, wind_models=(23.0, 24.0, 25.0), wave_height=0.2
+        )
+    sensors = Observation(SENSORS, None, readings(wind=0.0))
+    nudge(
+        hours,
+        latest([sensors], NOON),
+        forecast=forecast(24.0),
+        marine=None,
+        now=NOON,
+    )
+    # The hour it was read in, and the next few, stop at three quarters.
+    for hour in hours[2:6]:
+        assert hour["wind"] == pytest.approx(18.0)
+        assert hour["gust"] == pytest.approx(22.5)
+        assert hour["wind_models"] == pytest.approx((17.25, 18.0, 18.75))
+    conditions = Hour(**(hours[2] | {"daylight": True}))
+    assert rate(conditions, SizeClass.DINGHY, Skill.ADVANCED).level is Level.CAUTION
+
+
+def test_readings_that_arent_numbers_are_left_out() -> None:
+    """A NaN or infinite reading never moves the forecast."""
+    sensors = Observation(
+        SENSORS, None, readings(wind=math.nan, gust=-math.inf, temperature=math.inf)
+    )
+    assert latest([sensors], NOON) == {}
+    hours = rows()
+    nudge(hours, latest([sensors], NOON), forecast=forecast(), marine=None, now=NOON)
+    assert hours[2]["wind"] == 10.0
 
 
 def test_gusts_and_light_air() -> None:

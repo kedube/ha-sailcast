@@ -10,6 +10,7 @@ worker thread, with your own sensors' latest readings.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta, tzinfo
@@ -59,6 +60,9 @@ SLOW_FORECAST_INTERVAL: Final = timedelta(hours=3)
 MARINE_INTERVAL: Final = timedelta(hours=3)
 PREDICTION_INTERVAL: Final = timedelta(hours=1)
 ALERT_INTERVAL: Final = timedelta(minutes=5)
+# How long a warnings update waits for MeteoAlarm's regions, in seconds. The
+# first download can take minutes, so it carries on in the background.
+REGIONS_WAIT: Final = 10
 SPREAD_INTERVAL: Final = timedelta(hours=6)
 # Readings are checked this often; each kind is fetched on its own schedule.
 OBSERVATION_INTERVAL: Final = timedelta(minutes=10)
@@ -561,6 +565,8 @@ class AlertCoordinator(SourceCoordinator[tuple[Alert, ...]]):
         super().__init__(hass, entry, profiles, "warnings", ALERT_INTERVAL)
         self.places: dict[str, meteoalarm.Place] = {}
         self.details: dict[str, meteoalarm.Details] = {}
+        self._placing: asyncio.Task[None] | None = None
+        self._waited_out = False
 
     async def _async_update_data(self) -> tuple[Alert, ...]:
         keys = {
@@ -570,18 +576,13 @@ class AlertCoordinator(SourceCoordinator[tuple[Alert, ...]]):
         }
         if not keys:
             return ()
-        regions = self.hass.data.setdefault(DATA_REGIONS, Regions(self.hass))
-        for key in keys:
-            if (
-                alert_sources.provider(key) == alert_sources.METEOALARM
-                and key not in self.places
-            ):
-                try:
-                    self.places[key] = await regions.async_place(
-                        *alert_sources.pin(key)
-                    )
-                except ProviderError as err:
-                    LOGGER.warning("Couldn't get MeteoAlarm's regions: %s", err)
+        if new := sorted(
+            key
+            for key in keys
+            if alert_sources.provider(key) == alert_sources.METEOALARM
+            and key not in self.places
+        ):
+            await self._async_wait_for_places(new)
         fetched = await alert_sources.async_fetch(
             self.session,
             keys,
@@ -592,18 +593,56 @@ class AlertCoordinator(SourceCoordinator[tuple[Alert, ...]]):
         if len(fetched.failed) == len(keys):
             message = next(iter(fetched.failed.values()))
             raise UpdateFailed(f"Couldn't get warnings: {message}")
+        # A pin can ask several countries, so while one fails, the others'
+        # warnings still come in; those aren't kept a second time.
+        now = dt_util.utcnow()
+        fresh = set(fetched.alerts)
         kept = [
             alert
             for alert in self.data or ()
-            if any(alert_sources.applies(alert, key) for key in fetched.failed)
+            if alert.end > now
+            and alert not in fresh
+            and any(alert_sources.applies(alert, key) for key in fetched.failed)
         ]
         return tuple(fetched.alerts + kept)
+
+    async def _async_wait_for_places(self, keys: list[str]) -> None:
+        """Find new pins' MeteoAlarm regions, waiting a few seconds at most.
+
+        The regions kept on disk are read at once, but the first download
+        can take minutes. It goes on in the background, so setup and the
+        other spots' warnings don't wait for it. Until it's done those pins'
+        warnings count as failed, and they're asked for again then.
+        """
+        if self._placing is None or self._placing.done():
+            self._placing = self.entry.async_create_background_task(
+                self.hass, self._async_place(keys), "sailcast meteoalarm regions"
+            )
+        try:
+            async with asyncio.timeout(REGIONS_WAIT):
+                await asyncio.shield(self._placing)
+        except TimeoutError:
+            self._waited_out = True
+
+    async def _async_place(self, keys: list[str]) -> None:
+        """Find each pin's MeteoAlarm regions, then update if nothing waited."""
+        regions = self.hass.data.setdefault(DATA_REGIONS, Regions(self.hass))
+        for key in keys:
+            try:
+                self.places[key] = await regions.async_place(*alert_sources.pin(key))
+            except ProviderError as err:
+                LOGGER.warning("Couldn't get MeteoAlarm's regions: %s", err)
+        if self._waited_out:
+            self._waited_out = False
+            await self.async_request_refresh()
 
 
 class ResultsCoordinator(DataUpdateCoordinator[Results]):
     """Ratings, scores and windows, worked out again when a source changes.
 
-    The hours sailors set for single dates come from the store.
+    The hours sailors set for single dates come from the store. Until the
+    first results are worked out there are none, and the entities are
+    unavailable.
     """
 
     def __init__(
@@ -628,6 +667,7 @@ class ResultsCoordinator(DataUpdateCoordinator[Results]):
         self.profiles = profiles
         self.sources = sources
         self.store = store
+        self.data = Results()
         # Calendar text in Home Assistant's language, read again each time.
         self.wording: Wording | None = None
 

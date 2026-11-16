@@ -58,6 +58,8 @@ def test_turning_points() -> None:
     assert [event.high for event in events] == [True, False, True, False, True]
     assert abs(events[0].time - (BEGIN + timedelta(hours=3.3))) < timedelta(minutes=3)
     assert events[1].height == pytest.approx(-1.5, abs=0.01)
+    # With hours missing around a high, it isn't guessed from either side.
+    assert turning_points(hourly[:3] + hourly[6:]) == events[1:]
 
 
 def test_rijkswaterstaat() -> None:
@@ -310,6 +312,14 @@ def test_meteoalarm_feed() -> None:
     assert warning_group(warning.event) is WarningGroup.ADVISORY
     with pytest.raises(ProviderError):
         meteoalarm.parse_feed("<html>busy</html>")
+    # A warning that can't be read is left out, and the rest are kept.
+    no_end = re.compile(r"<cap:expires>[^<]*</cap:expires>")
+    kept = meteoalarm.parse_feed(no_end.sub("", entry, count=1))
+    regions = {region for warning in kept for region in warning.regions}
+    assert "NL801" not in regions
+    assert {"NL802", "NL803"} <= regions
+    with pytest.raises(ProviderError, match="no time"):
+        meteoalarm.parse_feed(f"<feed>{no_end.sub('', first)}</feed>")
 
 
 def test_meteoalarm_details() -> None:
@@ -356,6 +366,30 @@ def test_meteoalarm_regions() -> None:
     assert not meteoalarm.applies(outlined, wadden, *WADDEN_POINT)
     with pytest.raises(ProviderError):
         meteoalarm.parse_regions(b'{"features": [{"properties": 1}]}')
+    with pytest.raises(ProviderError):
+        meteoalarm.parse_regions(b'{"features": ["\xff"]}')
+
+
+async def test_meteoalarm_files_on_later_pages(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """The newest file of region outlines is found on any page of the list."""
+    older = [
+        {"name": f"MeteoAlarm_Geocodes_2025_{month:02}_01.json"}
+        for month in range(1, 13)
+    ]
+    others = [{"name": f"Document_{number:03}.pdf"} for number in range(88)]
+    aioclient_mock.get(
+        meteoalarm.GEOCODES_LIST, params={"page": 1}, json=older + others
+    )
+    aioclient_mock.get(
+        meteoalarm.GEOCODES_LIST,
+        params={"page": 2},
+        json=[{"name": "MeteoAlarm_Geocodes_2026_07_31.json"}],
+    )
+    name = await meteoalarm.async_geocodes_name(async_get_clientsession(hass))
+    assert name == "MeteoAlarm_Geocodes_2026_07_31.json"
+    assert aioclient_mock.call_count == 2
 
 
 def test_warning_sources() -> None:

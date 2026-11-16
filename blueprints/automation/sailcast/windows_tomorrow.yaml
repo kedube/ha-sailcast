@@ -49,6 +49,10 @@ triggers:
     at: !input time
 
 actions:
+  # Without a forecast the calendar is unavailable, and asking it for events
+  # would stop the automation with an error.
+  - condition: template
+    value_template: "{{ has_value(calendar) }}"
   - action: calendar.get_events
     target:
       entity_id: !input calendar

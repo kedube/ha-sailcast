@@ -157,7 +157,6 @@ class Planner:
         self.store = store
         self.profiles = profiles
         self.results = results
-        self._lock = asyncio.Lock()
 
     def status(self, sail: PlannedSail) -> SailStatus:
         """Return a planned sail's status now."""
@@ -209,9 +208,8 @@ class Planner:
         # Warnings are about changes from here on.
         status = self.status(sail)
         sail.score, sail.worse = status.score, status.worse
-        async with self._lock:
+        async with self.store.lock:
             await self._async_create_event(entity, sail, wording)
-            self.store.add(sail)
         self._async_signal()
         return sail
 
@@ -222,7 +220,7 @@ class Planner:
         events, such as CalDAV, keep it; SailCast only stops watching. An
         automatic event's day isn't added again.
         """
-        async with self._lock:
+        async with self.store.lock:
             deleted = await self._async_delete_event(sail)
             if sail.auto:
                 self.store.skip(sail.sailor, self._local_date(sail.start))
@@ -234,9 +232,9 @@ class Planner:
     async def async_sync(self) -> None:
         """Keep automatic events in step and check every sail's forecast."""
         wording = await Wording.async_load(self.hass)
-        async with self._lock:
+        async with self.store.lock:
             now = dt_util.utcnow()
-            changed = self._forget_stale(now)
+            changed = await self._async_forget_stale(now)
             for sailor in self.profiles.sailors.values():
                 if sailor.auto_calendar and sailor.boats:
                     try:
@@ -244,6 +242,8 @@ class Planner:
                             sailor, sailor.auto_calendar, now, wording
                         )
                     except HomeAssistantError as err:
+                        # Some days may have changed before it failed.
+                        changed = True
                         _LOGGER.warning(
                             "Couldn't update %s's automatic calendar: %s",
                             sailor.name,
@@ -253,8 +253,14 @@ class Planner:
         if changed:
             self._async_signal()
 
-    def _forget_stale(self, now: datetime) -> bool:
-        """Drop sails long past, or whose sailor, boat or spot is gone."""
+    async def _async_forget_stale(self, now: datetime) -> bool:
+        """Drop sails long past, or whose sailor, boat or spot is gone.
+
+        A sailor's automatic events still to come whose boat or spot is gone
+        are taken out of the calendar too, as the day's best window goes in
+        again. If one can't be, its day is skipped, so it isn't added twice.
+        A removed sailor's events stay.
+        """
         profiles = self.profiles
         gone = [
             sail
@@ -265,6 +271,13 @@ class Planner:
             or sail.spot not in profiles.spots
         ]
         for sail in gone:
+            if (
+                sail.auto
+                and sail.start > now
+                and sail.sailor in profiles.sailors
+                and not await self._async_delete_event(sail)
+            ):
+                self.store.skip(sail.sailor, self._local_date(sail.start))
             self.store.remove(sail.id)
             self._async_dismiss(sail)
         self.store.forget_before(self._local_date(now))
@@ -313,10 +326,16 @@ class Planner:
                         score=window.score,
                     )
                     await self._async_create_event(entity, sail, wording)
-                    self.store.add(sail)
                     changed = True
                 continue
-            if not await self._async_still_there(entity, existing):
+            # It's looked for in its own calendar, which may not be the one
+            # automatic events go into now.
+            own = (
+                entity
+                if existing.calendar == auto.calendar
+                else calendar_entity(self.hass, existing.calendar)
+            )
+            if own is not None and not await self._async_still_there(own, existing):
                 # Taken out in the calendar app, so it stays out.
                 self.store.skip(sailor.id, day)
                 self.store.remove(existing.id)
@@ -328,8 +347,9 @@ class Planner:
                 # Leave it alone; watching warns if its forecast gets worse.
                 continue
             if best is None:
-                if supports(entity, CalendarEntityFeature.DELETE_EVENT):
-                    await self._async_delete_event(existing)
+                # Kept until its event is really gone, so it isn't left in
+                # the calendar unwatched and a second one added later.
+                if await self._async_delete_event(existing):
                     self.store.remove(existing.id)
                     self._async_dismiss(existing)
                     changed = True
@@ -375,21 +395,44 @@ class Planner:
         window: Window,
         wording: Wording,
     ) -> bool:
-        """Move an automatic event to a new window, if the calendar allows."""
+        """Move an automatic event to a new window, if the calendar allows.
+
+        If the calendar fails, the sail keeps its old window, so the move is
+        tried again next time. If the old event was deleted but the new one
+        couldn't be added, the sail is forgotten without skipping its day, so
+        the day's best window goes in again.
+        """
+        update = supports(entity, CalendarEntityFeature.UPDATE_EVENT)
+        if not sail.uid or not (
+            update or supports(entity, CalendarEntityFeature.DELETE_EVENT)
+        ):
+            return False
         old = (sail.start, sail.end, sail.spot, sail.title)
         sail.start, sail.end, sail.spot = window.start, window.end, spot
         sail.title = self._title(spot, wording)
-        sail.score, sail.worse = window.score, False
-        if sail.uid and supports(entity, CalendarEntityFeature.UPDATE_EVENT):
-            await entity.async_update_event(
-                sail.uid, self._event(sail, wording), recurrence_id=sail.recurrence_id
-            )
-        elif sail.uid and supports(entity, CalendarEntityFeature.DELETE_EVENT):
-            await entity.async_delete_event(sail.uid, recurrence_id=sail.recurrence_id)
-            await self._async_create_event(entity, sail, wording)
-        else:
+        try:
+            if update:
+                await entity.async_update_event(
+                    sail.uid,
+                    self._event(sail, wording),
+                    recurrence_id=sail.recurrence_id,
+                )
+            else:
+                await entity.async_delete_event(
+                    sail.uid, recurrence_id=sail.recurrence_id
+                )
+        except BaseException:
             sail.start, sail.end, sail.spot, sail.title = old
-            return False
+            raise
+        if not update:
+            sail.uid = sail.recurrence_id = None
+            try:
+                await self._async_create_event(entity, sail, wording)
+            except HomeAssistantError:
+                self.store.remove(sail.id)
+                self._async_dismiss(sail)
+                raise
+        sail.score, sail.worse = window.score, False
         self._async_dismiss(sail)
         self.store.async_changed()
         return True
@@ -418,14 +461,26 @@ class Planner:
     async def _async_create_event(
         self, entity: CalendarEntity, sail: PlannedSail, wording: Wording
     ) -> None:
-        """Add a sail's event, then find it again to learn its ID."""
-        await entity.async_create_event(**self._event(sail, wording))
+        """Add a sail's event and keep the sail, then find it to learn its ID.
+
+        Adding the event and keeping the sail finish together even if the
+        sync is cancelled, as unloading SailCast does, so an event is never
+        left in the calendar unwatched and added again.
+        """
+        event = self._event(sail, wording)
+
+        async def _async_add() -> None:
+            await entity.async_create_event(**event)
+            self.store.add(sail)
+
+        await asyncio.shield(_async_add())
         try:
             events = await _async_events(self.hass, entity, sail, timedelta(minutes=1))
         except HomeAssistantError:
             return
         if found := _find(events, sail):
             sail.uid, sail.recurrence_id = found.uid, found.recurrence_id
+            self.store.async_changed()
 
     async def _async_delete_event(self, sail: PlannedSail) -> bool:
         """Delete a sail's event if its calendar allows, and say if it did."""
@@ -447,12 +502,21 @@ class Planner:
     async def _async_still_there(
         self, entity: CalendarEntity, sail: PlannedSail
     ) -> bool:
-        """Return whether a sail's event is still in its calendar."""
+        """Return whether a sail's event is still in its calendar.
+
+        An event whose ID wasn't learned when it was added gets it now, so
+        it can be moved and taken out.
+        """
         try:
             events = await _async_events(self.hass, entity, sail, LOOK_AROUND)
         except HomeAssistantError:
             return True
-        return _find(events, sail) is not None
+        if (found := _find(events, sail)) is None:
+            return False
+        if not sail.uid and found.uid:
+            sail.uid, sail.recurrence_id = found.uid, found.recurrence_id
+            self.store.async_changed()
+        return True
 
     def _event(self, sail: PlannedSail, wording: Wording) -> dict[str, Any]:
         """Return a sail's event, as the calendar's create and update take it."""

@@ -329,6 +329,15 @@ async def test_sensors(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> N
     assert readings.get("temperature").value == pytest.approx(20)  # type: ignore[union-attr]
     assert readings.get("wind").time == datetime(2026, 11, 2, 22, tzinfo=UTC)  # type: ignore[union-attr]
     assert ha_entity.read(hass, {"gust": "sensor.odd"}).fields == {}
+    # "nan" and "inf" read as numbers, but aren't readings.
+    hass.states.async_set("sensor.broken", "nan", {"unit_of_measurement": "kn"})
+    hass.states.async_set("sensor.wild", "inf", {"unit_of_measurement": "°"})
+    assert (
+        ha_entity.read(
+            hass, {"wind": "sensor.broken", "wind_direction": "sensor.wild"}
+        ).fields
+        == {}
+    )
     # Without a unit, knots and °C are assumed.
     assert ha_entity.convert("wind", 7, None) == 7
     assert ha_entity.convert("visibility", 7, None) is None
