@@ -717,7 +717,7 @@ The integration follows Home Assistant's quality scale checklist (Bronze, then S
 - **`manifest.json`:** `domain`, `name`, `version`, `documentation`, `issue_tracker`, `codeowners: ["@kedube"]`, `iot_class: "cloud_polling"`, `config_flow: true`, `dependencies: ["http", "panel_custom"]`, `after_dependencies: ["ai_task"]`, and a Marketplace category. No third-party Python requirements; it uses the `aiohttp` session Home Assistant provides.
 - **Releases:** a GitHub release per version (a tag alone isn't enough), made by running the Release workflow by hand from the Actions tab. It works out the version from the last release, saves it in the manifest and tags the release with it. Betas are pre-releases.
 - **Brand:** `custom_components/sailcast/brand/` holds the icon (256 and 512 px) and the logo for light and dark backgrounds (256 and 512 px tall). They're drawn and approved, with SVG sources in `docs/brand/`. No submission to the brands repository is needed.
-- **Default catalog:** a pull request to `hacs/default` once there's a stable release. Reviews can take months, so this goes in early. Until then, people install by adding the GitHub repo as a custom repository in Marketplace.
+- **Default catalog:** a pull request to `hacs/default` once there's a stable release. Reviews can take months, so this goes in early. Until then, people install by adding the GitHub repo as a custom repository in Marketplace. The pull request ([hacs/default#13741](https://github.com/hacs/default/pull/13741)) went in with 1.00 on November 9 and was merged on November 17.
 - **Repository:** public, with a description, topics, issues turned on and a README.
 
 **Development setup** (no Docker needed)

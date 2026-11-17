@@ -1,7 +1,7 @@
 # SailCast for Home Assistant
 
-[![Marketplace: Custom repository](https://img.shields.io/badge/Marketplace-Custom%20repository-41BDF5.svg)](https://www.hacs.xyz/docs/marketplace/)
-[![GitHub release](https://img.shields.io/github/v/release/kedube/ha-sailcast?include_prereleases)](https://github.com/kedube/ha-sailcast/releases)
+[![Marketplace: Default](https://img.shields.io/badge/Marketplace-Default-41BDF5.svg)](https://www.hacs.xyz/docs/marketplace/)
+[![GitHub release](https://img.shields.io/github/v/release/kedube/ha-sailcast)](https://github.com/kedube/ha-sailcast/releases)
 [![CI](https://github.com/kedube/ha-sailcast/actions/workflows/ci.yml/badge.svg)](https://github.com/kedube/ha-sailcast/actions/workflows/ci.yml)
 ![Home Assistant 2026.11+](https://img.shields.io/badge/Home%20Assistant-2026.11%2B-41BDF5.svg)
 [![License](https://img.shields.io/github/license/kedube/ha-sailcast)](LICENSE)
@@ -59,7 +59,7 @@ SailCast needs Home Assistant 2026.11 or newer, and installs through the Marketp
 
 [![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=kedube&repository=ha-sailcast&category=integration)
 
-1. Select the button above to add SailCast to your Marketplace as a custom repository. Or go to **Settings → Marketplace** and add `https://github.com/kedube/ha-sailcast` yourself, as an **Integration**. SailCast isn't in the Marketplace's catalog yet, and adding a repository from outside it needs the Marketplace connected to GitHub.
+1. Select the button above to open SailCast in the Marketplace. Or go to **Settings → Marketplace** and search for **SailCast**.
 2. Install SailCast. You can set it up right away, without a restart.
 
 New versions show up under **Settings → Updates**, with their release notes. After an update, restart Home Assistant when **Settings → Repairs** asks you to.
